@@ -1,12 +1,273 @@
-local v0=Instance.new("ScreenGui");local v1=Instance.new("Frame");local v2=Instance.new("TextLabel");local v3=Instance.new("UICorner");local v4=Instance.new("TextButton");local v5=false;local v6=Instance.new("TextButton");local v7=Instance.new("TextButton");local v8=Instance.new("TextButton");local v9=Instance.new("ScrollingFrame");local v10=Instance.new("ScrollingFrame");local v11=Instance.new("ScrollingFrame");local v12=Instance.new("TextButton");local v13=Instance.new("TextButton");local v14=Instance.new("TextButton");local v15=Instance.new("TextButton");v0.Name="DrakHub";v0.Parent=game.Players.LocalPlayer:WaitForChild("PlayerGui");v0.ResetOnSpawn=false;v1.Name="MainFrame";v1.Parent=v0;v1.BackgroundColor3=Color3.fromRGB(20,54 -34 ,80 -50 );v1.BorderColor3=Color3.fromRGB(154 -69 ,124 + 46 ,1252 -(915 + 82) );v1.BorderSizePixel=5 -3 ;v1.Size=UDim2.new(0 + 0 ,450,0 -0 ,1587 -(1069 + 118) );v1.Position=UDim2.new(0.5 -0 , -(492 -267),0.5 + 0 , -(355 -155));v1.Active=true;v1.Draggable=true;v3.CornerRadius=UDim.new(0 + 0 ,803 -(368 + 423) );v3.Parent=v1;v2.Name="Title";v2.Parent=v1;v2.Text="DrakHub";v2.Font=Enum.Font.GothamBold;v2.TextSize=75 -51 ;v2.TextColor3=Color3.fromRGB(255,255,255);v2.BackgroundTransparency=19 -(10 + 8) ;v2.Size=UDim2.new(3 -2 ,442 -(416 + 26) ,0,40);v6.Name="CombatButton";v6.Parent=v1;v6.Text="Combat";v6.Font=Enum.Font.Gotham;v6.TextSize=18;v6.TextColor3=Color3.fromRGB(814 -559 ,110 + 145 ,255);v6.BackgroundColor3=Color3.fromRGB(45,85,450 -195 );v6.Size=UDim2.new(438 -(145 + 293) ,550 -(44 + 386) ,1486 -(998 + 488) ,13 + 27 );v6.Position=UDim2.new(0 + 0 ,782 -(201 + 571) ,1138 -(116 + 1022) ,60);local v49=Instance.new("UICorner");v49.CornerRadius=UDim.new(0,8);v49.Parent=v6;v7.Name="VisualButton";v7.Parent=v1;v7.Text="Visual";v7.Font=Enum.Font.Gotham;v7.TextSize=74 -56 ;v7.TextColor3=Color3.fromRGB(150 + 105 ,930 -675 ,905 -650 );v7.BackgroundColor3=Color3.fromRGB(45,1114 -(814 + 45) ,209 -124 );v7.Size=UDim2.new(0 + 0 ,43 + 77 ,0,925 -(261 + 624) );v7.Position=UDim2.new(0,17 -7 ,1080 -(1020 + 60) ,1533 -(630 + 793) );local v61=Instance.new("UICorner");v61.CornerRadius=UDim.new(0,8);v61.Parent=v7;v8.Name="ExtraButton";v8.Parent=v1;v8.Text="Extra";v8.Font=Enum.Font.Gotham;v8.TextSize=18;v8.TextColor3=Color3.fromRGB(863 -608 ,1207 -952 ,101 + 154 );v8.BackgroundColor3=Color3.fromRGB(255,292 -207 ,1792 -(760 + 987) );v8.Size=UDim2.new(1913 -(1789 + 124) ,886 -(745 + 21) ,0 + 0 ,110 -70 );v8.Position=UDim2.new(0 -0 ,1 + 9 ,0,126 + 34 );local v73=Instance.new("UICorner");v73.CornerRadius=UDim.new(1055 -(87 + 968) ,35 -27 );v73.Parent=v8;v9.Name="CombatFrame";v9.Parent=v1;v9.BackgroundColor3=Color3.fromRGB(46 + 4 ,113 -63 ,70);v9.BorderColor3=Color3.fromRGB(1498 -(447 + 966) ,465 -295 ,2072 -(1703 + 114) );v9.BorderSizePixel=703 -(376 + 325) ;v9.Size=UDim2.new(0 -0 ,861 -581 ,0,83 + 207 );v9.Position=UDim2.new(0 -0 ,154 -(9 + 5) ,376 -(85 + 291) ,60);v9.Visible=false;v9.CanvasSize=UDim2.new(1265 -(243 + 1022) ,0 -0 ,2 + 0 ,1180 -(1123 + 57) );v9.ScrollBarThickness=6;local v86=Instance.new("UICorner");v86.CornerRadius=UDim.new(0 + 0 ,262 -(163 + 91) );v86.Parent=v9;v10.Name="VisualFrame";v10.Parent=v1;v10.BackgroundColor3=Color3.fromRGB(1980 -(1869 + 61) ,20 + 50 ,176 -126 );v10.BorderColor3=Color3.fromRGB(69 -24 ,255,85);v10.BorderSizePixel=2;v10.Size=UDim2.new(0 + 0 ,384 -104 ,0,273 + 17 );v10.Position=UDim2.new(1474 -(1329 + 145) ,140,971 -(140 + 831) ,60);v10.Visible=false;v10.CanvasSize=UDim2.new(1850 -(1409 + 441) ,718 -(15 + 703) ,1 + 1 ,438 -(262 + 176) );v10.ScrollBarThickness=1727 -(345 + 1376) ;local v99=Instance.new("UICorner");v99.CornerRadius=UDim.new(0,8);v99.Parent=v10;v11.Name="ExtraFrame";v11.Parent=v1;v11.BackgroundColor3=Color3.fromRGB(758 -(198 + 490) ,220 -170 ,119 -69 );v11.BorderColor3=Color3.fromRGB(1461 -(696 + 510) ,178 -93 ,1307 -(1091 + 171) );v11.BorderSizePixel=1 + 1 ;v11.Size=UDim2.new(0 -0 ,928 -648 ,374 -(123 + 251) ,290);v11.Position=UDim2.new(0 -0 ,838 -(208 + 490) ,0,60);v11.Visible=false;v11.CanvasSize=UDim2.new(0 + 0 ,0 + 0 ,2,836 -(660 + 176) );v11.ScrollBarThickness=6;local v112=Instance.new("UICorner");v112.CornerRadius=UDim.new(0 + 0 ,8);v112.Parent=v11;v12.Name="AimbotButton";v12.Parent=v9;v12.Text="Aimbot: Off";v12.Font=Enum.Font.GothamBold;v12.TextSize=18;v12.TextColor3=Color3.fromRGB(457 -(14 + 188) ,930 -(534 + 141) ,103 + 152 );v12.BackgroundColor3=Color3.fromRGB(89 + 11 ,100,255);v12.Size=UDim2.new(0 + 0 ,504 -264 ,0 -0 ,40);v12.Position=UDim2.new(0,28 -18 ,0 + 0 ,7 + 3 );v13=Instance.new("TextButton");v13.Name="AimbotNPCButton";v13.Parent=v9;v13.Text="Aimbot NPC: Off";v13.Font=Enum.Font.GothamBold;v13.TextSize=414 -(115 + 281) ;v13.TextColor3=Color3.fromRGB(593 -338 ,212 + 43 ,255);v13.BackgroundColor3=Color3.fromRGB(100,100,255);v13.Size=UDim2.new(0 -0 ,880 -640 ,867 -(550 + 317) ,57 -17 );v13.Position=UDim2.new(0,10,0,60);v14.Name="ESPButton";v14.Parent=v10;v14.Text="ESP: Off";v14.Font=Enum.Font.GothamBold;v14.TextSize=18;v14.TextColor3=Color3.fromRGB(358 -103 ,712 -457 ,540 -(134 + 151) );v14.BackgroundColor3=Color3.fromRGB(1740 -(970 + 695) ,143 -68 ,2065 -(582 + 1408) );v14.Size=UDim2.new(0 -0 ,240,0,40);v14.Position=UDim2.new(0 -0 ,10,0 -0 ,10);v15.Name="HackDetectorButton";v15.Parent=v11;v15.Text="Hack Detector: Off";v15.Font=Enum.Font.GothamBold;v15.TextSize=1842 -(1195 + 629) ;v15.TextColor3=Color3.fromRGB(336 -81 ,255,496 -(187 + 54) );v15.BackgroundColor3=Color3.fromRGB(75,75,855 -(162 + 618) );v15.Size=UDim2.new(0,240,0,29 + 11 );v15.Position=UDim2.new(0 + 0 ,21 -11 ,0,16 -6 );v6.MouseButton1Click:Connect(function() v9.Visible= not v9.Visible;v10.Visible=false;v11.Visible=false;end);v7.MouseButton1Click:Connect(function() local v159=0 + 0 ;local v160;while true do if (v159==0) then v160=1636 -(1373 + 263) ;while true do if (v160==(1001 -(451 + 549))) then v11.Visible=false;break;end if (v160==(0 + 0)) then v10.Visible= not v10.Visible;v9.Visible=false;v160=1 -0 ;end end break;end end end);v8.MouseButton1Click:Connect(function() v11.Visible= not v11.Visible;v9.Visible=false;v10.Visible=false;end);local v151=false;v12.MouseButton1Click:Connect(function() local v164=0 -0 ;while true do if (v164==0) then v151= not v151;if v151 then local v171=0;while true do if (v171==(1384 -(746 + 638))) then v12.Text="Aimbot: On";loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/combat/aimbot.lua"))();break;end end else v12.Text="Aimbot: Off";if _G.disableAimbot then _G.disableAimbot();end end break;end end end);local v152=false;v13.MouseButton1Click:Connect(function() local v165=0 + 0 ;while true do if (v165==(0 -0)) then v152= not v152;if v152 then local v173=0;while true do if (v173==(341 -(218 + 123))) then v13.Text="Aimbot NPC: On";loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/combat/aimbotnpc.lua"))();break;end end else v13.Text="Aimbot NPC: Off";if _G.disableAimbotNPC then _G.disableAimbotNPC();end end break;end end end);local v153=false;v14.MouseButton1Click:Connect(function() local v166=1581 -(1535 + 46) ;while true do if (v166==(0 + 0)) then v153= not v153;if v153 then local v175=0;local v176;while true do if (v175==(0 + 0)) then v176=560 -(306 + 254) ;while true do if (v176==(0 + 0)) then v14.Text="ESP: On";loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/visual/ESP.lua"))();break;end end break;end end else local v177=0 -0 ;while true do if (v177==(1467 -(899 + 568))) then v14.Text="ESP: Off";if _G.disableESP then _G.disableESP();end break;end end end break;end end end);local v154=false;v15.MouseButton1Click:Connect(function() local v167=0;while true do if (v167==0) then v154= not v154;if v154 then local v178=0 + 0 ;while true do if (v178==0) then v15.Text="Hack Detector: On";loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/extra/detector.lua"))();break;end end else v15.Text="Hack Detector: Off";if _G.disableHackDetector then _G.disableHackDetector();end end break;end end end);local v155=game:GetService("UserInputService");v155.InputBegan:Connect(function(v168,v169) if ( not v169 and (v168.KeyCode==Enum.KeyCode.P)) then local v170=0 -0 ;while true do if (v170==0) then v5= not v5;v1.Visible= not v5;break;end end end end);
--- ⚠️ WARNING: integrity protected!
---[[
- .____                  ________ ___.    _____                           __                
- |    |    __ _______   \_____  \\_ |___/ ____\_ __  ______ ____ _____ _/  |_  ___________ 
- |    |   |  |  \__  \   /   |   \| __ \   __\  |  \/  ___// ___\\__  \\   __\/  _ \_  __ \
- |    |___|  |  // __ \_/    |    \ \_\ \  | |  |  /\___ \\  \___ / __ \|  | (  <_> )  | \/
- |_______ \____/(____  /\_______  /___  /__| |____//____  >\___  >____  /__|  \____/|__|   
-         \/          \/         \/    \/                \/     \/     \/                   
-          \_Welcome to LuaObfuscator.com   (Alpha 0.10.8) ~  Much Love, Ferib 
+-- Creación del GUI para DrakHub con colores
+local DrakHub = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local UICorner = Instance.new("UICorner")
+local MinimizeButton = Instance.new("TextButton")
 
-]]--
+local isMinimized = false
+-- Categorías
+local CombatButton = Instance.new("TextButton")
+local VisualButton = Instance.new("TextButton")
+local ExtraButton = Instance.new("TextButton")
+
+-- Submenús
+local CombatFrame = Instance.new("ScrollingFrame")
+local VisualFrame = Instance.new("ScrollingFrame")
+local ExtraFrame = Instance.new("ScrollingFrame")
+
+-- Funcionalidades
+local AimbotButton = Instance.new("TextButton")
+local AimbotNPCButton = Instance.new("TextButton")
+local ESPButton = Instance.new("TextButton")
+local HackDetectorButton = Instance.new("TextButton")
+
+-- Propiedades generales de la GUI
+DrakHub.Name = "DrakHub"
+DrakHub.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+DrakHub.ResetOnSpawn = false
+
+-- Frame principal con fondo degradado y borde
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = DrakHub
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30) -- Color principal oscuro
+MainFrame.BorderColor3 = Color3.fromRGB(85, 170, 255) -- Color de borde azul
+MainFrame.BorderSizePixel = 2 -- Grosor del borde
+MainFrame.Size = UDim2.new(0, 450, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -225, 0.5, -200)
+MainFrame.Active = true
+MainFrame.Draggable = true
+-- Esquinas redondeadas
+
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = MainFrame
+
+-- Título del menú
+Title.Name = "Title"
+Title.Parent = MainFrame
+Title.Text = "DrakHub"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 24
+Title.TextColor3 = Color3.fromRGB(255, 255, 255) -- Color del texto blanco
+Title.BackgroundTransparency = 1
+Title.Size = UDim2.new(1, 0, 0, 40)
+
+-- Botón de Combat con fondo degradado
+CombatButton.Name = "CombatButton"
+CombatButton.Parent = MainFrame
+CombatButton.Text = "Combat"
+CombatButton.Font = Enum.Font.Gotham
+CombatButton.TextSize = 18
+CombatButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CombatButton.BackgroundColor3 = Color3.fromRGB(45, 85, 255) -- Azul intenso
+CombatButton.Size = UDim2.new(0, 120, 0, 40)
+CombatButton.Position = UDim2.new(0, 10, 0, 60)
+local CombatUICorner = Instance.new("UICorner")
+CombatUICorner.CornerRadius = UDim.new(0, 8)
+CombatUICorner.Parent = CombatButton
+
+-- Botón de Visual con fondo degradado
+VisualButton.Name = "VisualButton"
+VisualButton.Parent = MainFrame
+VisualButton.Text = "Visual"
+VisualButton.Font = Enum.Font.Gotham
+VisualButton.TextSize = 18
+VisualButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+VisualButton.BackgroundColor3 = Color3.fromRGB(45, 255, 85) -- Verde intenso
+VisualButton.Size = UDim2.new(0, 120, 0, 40)
+VisualButton.Position = UDim2.new(0, 10, 0, 110)
+local VisualUICorner = Instance.new("UICorner")
+VisualUICorner.CornerRadius = UDim.new(0, 8)
+VisualUICorner.Parent = VisualButton
+
+-- Botón de Extra con fondo degradado
+ExtraButton.Name = "ExtraButton"
+ExtraButton.Parent = MainFrame
+ExtraButton.Text = "Extra"
+ExtraButton.Font = Enum.Font.Gotham
+ExtraButton.TextSize = 18
+ExtraButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ExtraButton.BackgroundColor3 = Color3.fromRGB(255, 85, 45) -- Naranja intenso
+ExtraButton.Size = UDim2.new(0, 120, 0, 40)
+ExtraButton.Position = UDim2.new(0, 10, 0, 160)
+local ExtraUICorner = Instance.new("UICorner")
+ExtraUICorner.CornerRadius = UDim.new(0, 8)
+ExtraUICorner.Parent = ExtraButton
+
+-- Submenú de Combat con borde personalizado
+CombatFrame.Name = "CombatFrame"
+CombatFrame.Parent = MainFrame
+CombatFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 70) -- Fondo oscuro
+CombatFrame.BorderColor3 = Color3.fromRGB(85, 170, 255) -- Borde azul
+CombatFrame.BorderSizePixel = 2
+CombatFrame.Size = UDim2.new(0, 280, 0, 290)
+CombatFrame.Position = UDim2.new(0, 140, 0, 60)
+CombatFrame.Visible = false
+CombatFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
+CombatFrame.ScrollBarThickness = 6
+local CombatFrameUICorner = Instance.new("UICorner")
+CombatFrameUICorner.CornerRadius = UDim.new(0, 8)
+CombatFrameUICorner.Parent = CombatFrame
+
+-- Submenú de Visual con borde personalizado
+VisualFrame.Name = "VisualFrame"
+VisualFrame.Parent = MainFrame
+VisualFrame.BackgroundColor3 = Color3.fromRGB(50, 70, 50)
+VisualFrame.BorderColor3 = Color3.fromRGB(45, 255, 85) -- Verde
+VisualFrame.BorderSizePixel = 2
+VisualFrame.Size = UDim2.new(0, 280, 0, 290)
+VisualFrame.Position = UDim2.new(0, 140, 0, 60)
+VisualFrame.Visible = false
+VisualFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
+VisualFrame.ScrollBarThickness = 6
+local VisualFrameUICorner = Instance.new("UICorner")
+VisualFrameUICorner.CornerRadius = UDim.new(0, 8)
+VisualFrameUICorner.Parent = VisualFrame
+
+-- Submenú de Extra con borde personalizado
+ExtraFrame.Name = "ExtraFrame"
+ExtraFrame.Parent = MainFrame
+ExtraFrame.BackgroundColor3 = Color3.fromRGB(70, 50, 50)
+ExtraFrame.BorderColor3 = Color3.fromRGB(255, 85, 45) -- Naranja
+ExtraFrame.BorderSizePixel = 2
+ExtraFrame.Size = UDim2.new(0, 280, 0, 290)
+ExtraFrame.Position = UDim2.new(0, 140, 0, 60)
+ExtraFrame.Visible = false
+ExtraFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
+ExtraFrame.ScrollBarThickness = 6
+local ExtraFrameUICorner = Instance.new("UICorner")
+ExtraFrameUICorner.CornerRadius = UDim.new(0, 8)
+ExtraFrameUICorner.Parent = ExtraFrame
+
+-- Funcionalidades de Combat con colores
+AimbotButton.Name = "AimbotButton"
+AimbotButton.Parent = CombatFrame
+AimbotButton.Text = "Aimbot: Off"
+AimbotButton.Font = Enum.Font.GothamBold
+AimbotButton.TextSize = 18
+AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimbotButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255) -- Azul claro
+AimbotButton.Size = UDim2.new(0, 240, 0, 40)
+AimbotButton.Position = UDim2.new(0, 10, 0, 10)
+
+-- Botón Aimbot NPC
+AimbotNPCButton = Instance.new("TextButton") -- Crea el botón
+AimbotNPCButton.Name = "AimbotNPCButton"
+AimbotNPCButton.Parent = CombatFrame
+AimbotNPCButton.Text = "Aimbot NPC: Off"
+AimbotNPCButton.Font = Enum.Font.GothamBold
+AimbotNPCButton.TextSize = 18
+AimbotNPCButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255) -- Azul claro
+AimbotNPCButton.Size = UDim2.new(0, 240, 0, 40)
+AimbotNPCButton.Position = UDim2.new(0, 10, 0, 60) -- Posición debajo del botón Aimbot
+
+-- Funcionalidades de Visual
+ESPButton.Name = "ESPButton"
+ESPButton.Parent = VisualFrame
+ESPButton.Text = "ESP: Off"
+ESPButton.Font = Enum.Font.GothamBold
+ESPButton.TextSize = 18
+ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+ESPButton.Size = UDim2.new(0, 240, 0, 40)
+ESPButton.Position = UDim2.new(0, 10, 0, 10)
+
+-- Funcionalidades de Extra
+HackDetectorButton.Name = "HackDetectorButton"
+HackDetectorButton.Parent = ExtraFrame
+HackDetectorButton.Text = "Hack Detector: Off"
+HackDetectorButton.Font = Enum.Font.GothamBold
+HackDetectorButton.TextSize = 18
+HackDetectorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+HackDetectorButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+HackDetectorButton.Size = UDim2.new(0, 240, 0, 40)
+HackDetectorButton.Position = UDim2.new(0, 10, 0, 10)
+
+-- Funcionalidades del menú
+CombatButton.MouseButton1Click:Connect(function()
+    CombatFrame.Visible = not CombatFrame.Visible
+    VisualFrame.Visible = false
+    ExtraFrame.Visible = false
+end)
+VisualButton.MouseButton1Click:Connect(function()
+    VisualFrame.Visible = not VisualFrame.Visible
+    CombatFrame.Visible = false
+    ExtraFrame.Visible = false
+end)
+ExtraButton.MouseButton1Click:Connect(function()
+    ExtraFrame.Visible = not ExtraFrame.Visible
+    CombatFrame.Visible = false
+    VisualFrame.Visible = false
+end)
+
+-- Toggle Aimbot
+local aimbotEnabled = false
+AimbotButton.MouseButton1Click:Connect(function()
+    aimbotEnabled = not aimbotEnabled
+    if aimbotEnabled then
+        AimbotButton.Text = "Aimbot: On"
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/combat/aimbot.lua"))()
+    else
+        AimbotButton.Text = "Aimbot: Off"
+        if _G.disableAimbot then
+            _G.disableAimbot()
+        end
+    end
+end)
+
+-- Toggle Aimbot NPC
+local npcAimbotEnabled = false
+AimbotNPCButton.MouseButton1Click:Connect(function()
+    npcAimbotEnabled = not npcAimbotEnabled
+    if npcAimbotEnabled then
+        AimbotNPCButton.Text = "Aimbot NPC: On"
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/combat/aimbotnpc.lua"))()
+    else
+        AimbotNPCButton.Text = "Aimbot NPC: Off"
+        if _G.disableAimbotNPC then
+            _G.disableAimbotNPC()
+        end
+    end
+end)
+
+-- Variables
+local espEnabled = false
+ESPButton.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    if espEnabled then
+        ESPButton.Text = "ESP: On"
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/visual/ESP.lua"))()            
+    else
+        ESPButton.Text = "ESP: Off"
+        if _G.disableESP then
+            _G.disableESP() -- Desactivar el ESP
+        end
+    end
+end)
+
+
+-- Toggle HackDetector
+local hackDetectorEnabled = false
+HackDetectorButton.MouseButton1Click:Connect(function()
+    hackDetectorEnabled = not hackDetectorEnabled
+    if hackDetectorEnabled then
+        HackDetectorButton.Text = "Hack Detector: On"
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/extra/detector.lua"))()
+    else
+        HackDetectorButton.Text = "Hack Detector: Off"
+        if _G.disableHackDetector then
+            _G.disableHackDetector()
+        end
+    end
+end)
+
+-- Funcionalidad para minimizar el menú con la tecla "P"
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.P then
+        isMinimized = not isMinimized
+        MainFrame.Visible = not isMinimized
+    end
+end)
