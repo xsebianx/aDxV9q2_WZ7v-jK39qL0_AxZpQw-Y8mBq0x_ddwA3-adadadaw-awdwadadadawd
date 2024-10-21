@@ -1,8 +1,9 @@
 local player = game.Players.LocalPlayer
+local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
 
 -- HWIDs autorizados (ejemplos ficticios)
 local permanentHWIDs = {
-    "11", -- HWID permanente
+    "9005F968-46DF-44FC-9C68-B173D505FF37", -- HWID permanente
     "11"  -- Otro HWID permanente
 }
 
@@ -15,13 +16,12 @@ local temporaryHWIDs = {
 local passwordSetTime = nil -- Para almacenar el tiempo cuando se ingresó la contraseña temporal
 local hwidExpirationTime = 604800 -- 604800 segundos = 1 semana
 
--- Simulación de obtener el HWID del jugador
-local function getHWID()
-    -- Aquí puedes implementar tu lógica para obtener el HWID real
-    return "9005F968-46DF-44FC-9C68-B173D505FF37" -- Reemplaza con la lógica real
+-- Función para obtener el Client ID (HWID)
+local function getClientId()
+    return RbxAnalyticsService:GetClientId()
 end
 
-local playerHWID = getHWID()
+local playerHWID = getClientId() -- Obtener el HWID del jugador
 
 local function checkHWID()
     local currentTime = os.time() -- Obtener el tiempo actual en segundos
@@ -59,7 +59,8 @@ local function checkHWID()
         end
     else
         print("Acceso denegado. Este HWID no está autorizado.")
-        player:Kick("Tu HWID no está autorizado para acceder al servidor.") -- Expulsar al jugador
+        -- Expulsar al jugador si el HWID no está autorizado
+        player:Kick("Tu HWID no está autorizado para acceder al servidor.")
     end
 end
 
