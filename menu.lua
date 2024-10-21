@@ -207,7 +207,7 @@ AimbotButton.MouseButton1Click:Connect(function()
     aimbotEnabled = not aimbotEnabled
     if aimbotEnabled then
         AimbotButton.Text = "Aimbot: On"
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/combat/aimbot.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbot.lua"))()
     else
         AimbotButton.Text = "Aimbot: Off"
         if _G.disableAimbot then
@@ -222,7 +222,7 @@ AimbotNPCButton.MouseButton1Click:Connect(function()
     npcAimbotEnabled = not npcAimbotEnabled
     if npcAimbotEnabled then
         AimbotNPCButton.Text = "Aimbot NPC: On"
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/combat/aimbotnpc.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbotnpc.lua"))()
     else
         AimbotNPCButton.Text = "Aimbot NPC: Off"
         if _G.disableAimbotNPC then
@@ -253,7 +253,7 @@ HackDetectorButton.MouseButton1Click:Connect(function()
     hackDetectorEnabled = not hackDetectorEnabled
     if hackDetectorEnabled then
         HackDetectorButton.Text = "Hack Detector: On"
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/extra/detector.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/detector.lua"))()
     else
         HackDetectorButton.Text = "Hack Detector: Off"
         if _G.disableHackDetector then
