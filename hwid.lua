@@ -59,6 +59,7 @@ local function checkHWID()
         end
     else
         print("Acceso denegado. Este HWID no está autorizado.")
+        player:Kick("Tu HWID no está autorizado para acceder al servidor.") -- Expulsar al jugador
     end
 end
 
