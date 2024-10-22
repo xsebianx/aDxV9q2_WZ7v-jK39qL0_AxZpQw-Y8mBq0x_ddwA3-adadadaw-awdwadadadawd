@@ -21,6 +21,7 @@ local AimbotButton = Instance.new("TextButton")
 local AimbotNPCButton = Instance.new("TextButton")
 local ESPButton = Instance.new("TextButton")
 local HackDetectorButton = Instance.new("TextButton")
+local VisorButton = Instance.new("TextButton")
 
 -- Propiedades generales de la GUI
 DrakHub.Name = "DrakHub"
