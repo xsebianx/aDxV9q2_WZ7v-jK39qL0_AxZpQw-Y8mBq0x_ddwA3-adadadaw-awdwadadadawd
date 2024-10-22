@@ -9,7 +9,12 @@ local function updateVisorVisibility()
     if plr and plr:FindFirstChild("PlayerGui") then
         local playerGui = plr.PlayerGui
         if playerGui:FindFirstChild("MainGui") then
-            playerGui.MainGui.MainFrame.ScreenEffects.Visor.Visible = visorVisible
+            local visor = playerGui.MainGui.MainFrame.ScreenEffects:FindFirstChild("Visor")
+            if visor then
+                visor.Visible = visorVisible
+            else
+                warn("Visor no encontrado.")
+            end
         else
             warn("MainGui no encontrado.")
         end
