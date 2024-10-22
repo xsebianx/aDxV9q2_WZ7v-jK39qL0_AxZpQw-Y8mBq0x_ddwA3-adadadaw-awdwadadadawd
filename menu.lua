@@ -172,16 +172,35 @@ AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255) -- Azul claro
 AimbotNPCButton.Size = UDim2.new(0, 240, 0, 40)
 AimbotNPCButton.Position = UDim2.new(0, 10, 0, 60) -- Posición debajo del botón Aimbot
 
--- Funcionalidades de Visual
+-- Crear el botón ESP
 ESPButton.Name = "ESPButton"
 ESPButton.Parent = VisualFrame
 ESPButton.Text = "ESP: Off"
 ESPButton.Font = Enum.Font.GothamBold
-ESPButton.TextSize = 18
+ESPButton.TextSize = 20  -- Aumenté el tamaño del texto
 ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+ESPButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)  -- Color de fondo más claro
+ESPButton.Size = UDim2.new(0, 250, 0, 50)  -- Tamaño del botón un poco más grande
+ESPButton.Position = UDim2.new(0, 20, 0, 20)  -- Posición ajustada para un poco de margen
+ESPButton.BorderSizePixel = 0  -- Sin borde
+ESPButton.BackgroundTransparency = 0.2  -- Transparencia para un efecto más suave
+
+-- Opcional: Añadir un efecto de esquina redondeada
+ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Un color de fondo oscuro
 ESPButton.Size = UDim2.new(0, 240, 0, 40)
-ESPButton.Position = UDim2.new(0, 10, 0, 10)
+ESPButton.Position = UDim2.new(0.5, -120, 0, 10)  -- Centrado horizontalmente
+ESPButton.BorderSizePixel = 0  -- Sin borde
+ESPButton.BackgroundTransparency = 0.3  -- Hacerlo un poco más transparente
+
+-- Crear un efecto de hover (opcional)
+ESPButton.MouseEnter:Connect(function()
+    ESPButton.BackgroundColor3 = Color3.fromRGB(120, 120, 120)  -- Color más claro al pasar el mouse
+end)
+
+ESPButton.MouseLeave:Connect(function()
+    ESPButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)  -- Volver al color original
+end)
+
 
 -- Funcionalidades de Visual
 local VisorButton = Instance.new("TextButton") -- Asegúrate de crear la instancia del botón
