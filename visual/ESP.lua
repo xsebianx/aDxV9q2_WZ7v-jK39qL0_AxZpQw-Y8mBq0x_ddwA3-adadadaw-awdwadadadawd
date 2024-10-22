@@ -21,13 +21,16 @@ local connections = {} -- Tabla para almacenar las conexiones
 local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
 local tan, rad = math.tan, math.rad
 local round = function(...)
+
     local a = {}
     for i, v in next, table.pack(...) do
         a[i] = math.round(v)
     end
     return unpack(a)
 end
+
 local wtvp = function(...)
+
     local a, b = camera.WorldToViewportPoint(camera, ...)
     return newVector2(a.X, a.Y), b, a.Z
 end
@@ -179,13 +182,5 @@ local function disableESP()
     connections = {}
 end
 
--- Exponer la función de desactivación globalmente para que pueda ser llamada desde fuera
+-- Exponer la función de desactivación globalmente
 _G.disableESP = disableESP
-
--- Función para activar el ESP
-local function enableESP()
-    espEnabled = true
-end
-
--- Exponer la función de activación globalmente
-_G.enableESP = enableESP

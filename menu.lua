@@ -258,11 +258,13 @@ ESPButton.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     if espEnabled then
         ESPButton.Text = "ESP: On"
+        -- Cargar el script de ESP
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/ESP.lua"))()
     else
         ESPButton.Text = "ESP: Off"
+        -- Desactivar el ESP
         if _G.disableESP then
-            _G.disableESP() -- Desactivar el ESP
+            _G.disableESP() -- Asegúrate de que esta función esté definida en tu script de ESP
         end
     end
 end)
