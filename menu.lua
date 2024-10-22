@@ -267,9 +267,9 @@ ESPButton.MouseButton1Click:Connect(function()
 end)
 
 local visorEnabled = false
-
 VisorButton.MouseButton1Click:Connect(function()
     visorEnabled = not visorEnabled
+    _G.toggleVisor = visorEnabled -- Actualiza el estado en _G.toggleVisor
     if visorEnabled then
         VisorButton.Text = "Visor: On"
         -- Cargar el visor
@@ -282,6 +282,7 @@ VisorButton.MouseButton1Click:Connect(function()
         end
     end
 end)
+
 -- Toggle HackDetector
 local hackDetectorEnabled = false
 HackDetectorButton.MouseButton1Click:Connect(function()
