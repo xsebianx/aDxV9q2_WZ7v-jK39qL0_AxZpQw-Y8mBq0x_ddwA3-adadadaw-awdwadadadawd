@@ -143,15 +143,15 @@ for _, player in next, players:GetPlayers() do
     end
 end
 
-connections[#connections + 1] = players.PlayerAdded:Connect(function(player)
+table.insert(connections, players.PlayerAdded:Connect(function(player)
     createEsp(player)
-end)
+end))
 
-connections[#connections + 1] = players.PlayerRemoving:Connect(function(player)
+table.insert(connections, players.PlayerRemoving:Connect(function(player)
     removeEsp(player)
-end)
+end))
 
-connections[#connections + 1] = runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
+table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
     if espEnabled then
         for player, drawings in next, espCache do
             if settings.teamcheck and player.Team == localPlayer.Team then
@@ -186,3 +186,11 @@ end
 
 -- Exponer la función de desactivación globalmente para que pueda ser llamada desde fuera
 _G.disableESP = disableESP
+
+-- Función para activar el ESP
+local function enableESP()
+    espEnabled = true
+end
+
+-- Exponer la función de activación globalmente
+_G.enableESP = enableESP
