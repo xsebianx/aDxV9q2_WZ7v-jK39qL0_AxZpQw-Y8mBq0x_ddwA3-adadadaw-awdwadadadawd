@@ -9,7 +9,6 @@ local permanentHWIDs = {
 
 local temporaryHWIDs = {
     "DC61583D-84CD-48E1-8AB3-212434BDC519",
-    "33"
 }
 
 -- Variables de tiempo
@@ -30,16 +29,7 @@ local function checkHWID()
     -- Verificar si el HWID está autorizado para acceso permanente
     if table.find(permanentHWIDs, playerHWID) then
         print("¡HWID autorizado para acceso permanente!")
-        
-        -- Intentar cargar el menú
-        local success, err = pcall(function()
-            loadstring(game:HttpGet("https://github.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/blob/main/menu.lua"))()
-
-        if not success then
-            print("Error al cargar el menú:", err)
-        else
-            print("Menú cargado exitosamente.")
-        end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
 
     -- Verificar si el HWID está autorizado para acceso temporal
     elseif table.find(temporaryHWIDs, playerHWID) then
@@ -49,33 +39,13 @@ local function checkHWID()
         if passwordSetTime == nil then
             passwordSetTime = currentTime
             print("Acceso temporal concedido por una semana.")
-            
-            -- Intentar cargar el menú
-            local success, err = pcall(function()
-                loadstring(game:HttpGet("https://github.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/blob/main/menu.lua"))()
-            end)
-
-            if not success then
-                print("Error al cargar el menú:", err)
-            else
-                print("Menú cargado exitosamente.")
-            end
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
 
         else
             local elapsedTime = currentTime - passwordSetTime
             if elapsedTime < hwidExpirationTime then
                 print("¡Acceso temporal todavía válido!")
-                
-                -- Intentar cargar el menú
-                local success, err = pcall(function()
-                    loadstring(game:HttpGet("https://github.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/blob/main/menu.lua"))()
-                end)
-
-                if not success then
-                    print("Error al cargar el menú:", err)
-                else
-                    print("Menú cargado exitosamente.")
-                end
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
             else
                 print("El acceso temporal ha expirado.")
                 passwordSetTime = nil
