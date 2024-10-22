@@ -18,73 +18,81 @@ local hwidExpirationTime = 604800 -- 604800 segundos = 1 semana
 
 -- Función para obtener el HWID del cliente
 local function getClientHWID()
-    local clientId = RbxAnalyticsService:GetClientId()
-    print("HWID obtenido:", clientId)  -- Imprimir el HWID para depuración
-    return clientId
+    return RbxAnalyticsService:GetClientId()
 end
 
 -- Función para verificar el HWID del jugador
 local function checkHWID()
     local playerHWID = getClientHWID() -- Obtener el HWID del jugador
-    print("HWID del cliente:", playerHWID)  -- Imprimir el HWID para depuración
     local currentTime = os.time() -- Obtener el tiempo actual en segundos
-
-    print("HWIDs permanentes:", table.concat(permanentHWIDs, ", "))
-    print("HWIDs temporales:", table.concat(temporaryHWIDs, ", "))
 
     -- Verificar si el HWID está autorizado para acceso permanente
     if table.find(permanentHWIDs, playerHWID) then
-        print("¡HWID autorizado para acceso permanente!")
         -- Intentar cargar el menú
         local success, err = pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
         end)
 
         if not success then
-            print("Error al cargar el menú:", err)
+            -- Si hay un error al cargar el menú, imprimir en la consola
+            warn("Error al cargar el menú:", err)
         else
-            print("Menú cargado exitosamente.")
+            -- Notificar que el acceso fue concedido
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Acceso concedido";
+                Text = "¡HWID autorizado para acceso permanente!";
+                Duration = 5;
+            })
         end
 
     -- Verificar si el HWID está autorizado para acceso temporal
     elseif table.find(temporaryHWIDs, playerHWID) then
-        print("¡HWID autorizado para acceso temporal!")
-
         -- Comprobar el tiempo de acceso
         if passwordSetTime == nil then
             passwordSetTime = currentTime
-            print("Acceso temporal concedido por una semana.")
             -- Intentar cargar el menú
             local success, err = pcall(function()
                 loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
             end)
 
             if not success then
-                print("Error al cargar el menú:", err)
+                warn("Error al cargar el menú:", err)
             else
-                print("Menú cargado exitosamente.")
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Acceso concedido";
+                    Text = "¡HWID autorizado para acceso temporal!";
+                    Duration = 5;
+                })
             end
 
         else
             local elapsedTime = currentTime - passwordSetTime
             if elapsedTime < hwidExpirationTime then
-                print("¡Acceso temporal todavía válido!")
                 -- Intentar cargar el menú
                 local success, err = pcall(function()
                     loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
                 end)
 
                 if not success then
-                    print("Error al cargar el menú:", err)
+                    warn("Error al cargar el menú:", err)
                 else
-                    print("Menú cargado exitosamente.")
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "Acceso concedido";
+                        Text = "¡Acceso temporal todavía válido!";
+                        Duration = 5;
+                    })
                 end
             else
-                print("El acceso temporal ha expirado.")
+                -- Expiración del acceso temporal
                 passwordSetTime = nil
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Acceso expirado";
+                    Text = "Tu acceso temporal ha expirado.";
+                    Duration = 5;
+                })
             end
 
-        end  -- Fin del segundo bloque if-elseif
+        end
 
     else
         -- Notificar al jugador que su HWID no está autorizado
@@ -96,7 +104,6 @@ local function checkHWID()
 
         -- Esperar un momento para que el jugador vea el mensaje antes de expulsarlo
         wait(3)
-        print("HWID no autorizado. Expulsando al jugador...")
         Players.LocalPlayer:Kick("Acceso denegado. Tu HWID no está autorizado.")
     end
 end
