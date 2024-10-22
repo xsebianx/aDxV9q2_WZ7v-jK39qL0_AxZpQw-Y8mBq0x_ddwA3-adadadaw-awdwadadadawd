@@ -33,8 +33,7 @@ local function checkHWID()
         
         -- Intentar cargar el menú
         local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
-        end)
+            loadstring(game:HttpGet("https://github.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/blob/main/menu.lua"))()
 
         if not success then
             print("Error al cargar el menú:", err)
@@ -53,7 +52,7 @@ local function checkHWID()
             
             -- Intentar cargar el menú
             local success, err = pcall(function()
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
+                loadstring(game:HttpGet("https://github.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/blob/main/menu.lua"))()
             end)
 
             if not success then
@@ -69,7 +68,7 @@ local function checkHWID()
                 
                 -- Intentar cargar el menú
                 local success, err = pcall(function()
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
+                    loadstring(game:HttpGet("https://github.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/blob/main/menu.lua"))()
                 end)
 
                 if not success then
