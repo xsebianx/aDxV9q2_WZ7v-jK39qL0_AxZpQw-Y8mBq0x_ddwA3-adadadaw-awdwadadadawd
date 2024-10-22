@@ -4,7 +4,7 @@ local TeleportService = game:GetService("TeleportService")
 
 -- HWIDs configurados directamente en el script
 local permanentHWIDs = {
-    ""
+    -- Puedes agregar HWIDs permanentes aquí
 }
 
 local temporaryHWIDs = {
@@ -70,44 +70,5 @@ local function checkHWID()
     end
 end
 
--- Función para manejar el reintento
-local function setupRejoinButton()
-    -- Auto execute highly recommended (use it)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "GGH52Lan";
-        Text = "Executed";
-        Duration = 5;
-        Icon = "rbxassetid://14260295451";
-    })
-
-    local gui = game.CoreGui.RobloxPromptGui.promptOverlay:WaitForChild("ErrorPrompt")
-    gui.Size = UDim2.new(0, 400, 0, 230)
-
-    local leave = gui.MessageArea.ErrorFrame.ButtonArea.LeaveButton
-    gui.MessageArea.MessageAreaPadding.PaddingTop = UDim.new(0, -20)
-    gui.MessageArea.ErrorFrame.ErrorFrameLayout.Padding = UDim.new(0, 5)
-    gui.MessageArea.ErrorFrame.ButtonArea.ButtonLayout.CellPadding = UDim2.new(0, 0, 0, 5)
-
-    if not leave.Parent:FindFirstChild("Rejoin") then
-        local rejoin = leave:Clone()
-        rejoin.Parent = leave.Parent
-        rejoin.Name = "Rejoin"
-        rejoin.ButtonText.Text = "Rejoin"
-
-        rejoin.MouseButton1Click:Connect(function()
-            if #Players:GetPlayers() <= 1 then
-                Players.LocalPlayer:Kick("Rejoining...")
-                wait(1)
-                TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
-            else
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Players.LocalPlayer)
-            end
-        end)
-    end
-end
-
 -- Ejecutar la verificación de HWID
 checkHWID()
-
--- Configurar el botón de reintento
-setupRejoinButton()
