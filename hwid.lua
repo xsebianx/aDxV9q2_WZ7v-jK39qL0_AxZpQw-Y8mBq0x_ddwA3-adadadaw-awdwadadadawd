@@ -4,8 +4,7 @@ local TeleportService = game:GetService("TeleportService")
 
 -- HWIDs configurados directamente en el script
 local permanentHWIDs = {
-    "9005F968-46DF-44FC-9C68-B173D505FF37",
-    "22"
+    "tu-hwid-aqui", -- Reemplaza esto con tu HWID real
 }
 
 local temporaryHWIDs = {
@@ -14,7 +13,7 @@ local temporaryHWIDs = {
 }
 
 -- Variables de tiempo
-local passwordSetTime = nil -- Para almacenar el tiempo cuando se ingresó la contraseña temporal
+local passwordSetTime = nil
 local hwidExpirationTime = 604800 -- 604800 segundos = 1 semana
 
 -- Función para obtener el HWID del cliente
@@ -25,13 +24,13 @@ end
 -- Función para verificar el HWID del jugador
 local function checkHWID()
     local playerHWID = getClientHWID() -- Obtener el HWID del jugador
+    print("HWID del cliente:", playerHWID)  -- Imprimir el HWID para depuración
     local currentTime = os.time() -- Obtener el tiempo actual en segundos
 
     -- Verificar si el HWID está autorizado para acceso permanente
     if table.find(permanentHWIDs, playerHWID) then
         print("¡HWID autorizado para acceso permanente!")
-        -- Aquí puedes añadir la funcionalidad adicional para acceso permanente
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))() -- Cambia la URL por el script permanente
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
 
     -- Verificar si el HWID está autorizado para acceso temporal
     elseif table.find(temporaryHWIDs, playerHWID) then
@@ -39,20 +38,18 @@ local function checkHWID()
 
         -- Comprobar el tiempo de acceso
         if passwordSetTime == nil then
-            passwordSetTime = currentTime -- Guardar el tiempo cuando se autorizó el HWID
+            passwordSetTime = currentTime
             print("Acceso temporal concedido por una semana.")
-            -- Aquí puedes añadir la funcionalidad adicional para acceso temporal
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))() -- Cambia la URL por el script temporal
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
 
         else
-            local elapsedTime = currentTime - passwordSetTime -- Calcular el tiempo transcurrido
+            local elapsedTime = currentTime - passwordSetTime
             if elapsedTime < hwidExpirationTime then
                 print("¡Acceso temporal todavía válido!")
-                -- Aquí puedes añadir la funcionalidad adicional para acceso temporal
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))() -- Cambia la URL por el script temporal
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
             else
                 print("El acceso temporal ha expirado.")
-                passwordSetTime = nil -- Reiniciar el tiempo
+                passwordSetTime = nil
             end
         end
 
