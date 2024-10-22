@@ -110,6 +110,12 @@ local function updateEsp(player, esp)
                 local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
+
+                -- Ajustar el tamaño del texto si la distancia es mayor a 800
+                local textSize = distance > 800 and 14 or 20 -- Ajustar tamaño del texto
+                esp.name.Size = textSize
+                esp.health.Size = textSize
+                esp.distance.Size = textSize
             end
         end
     else
