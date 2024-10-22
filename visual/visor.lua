@@ -2,7 +2,7 @@
 local plr = game.Players.LocalPlayer -- Debe estar en un contexto donde LocalPlayer es accesible
 
 -- Variable para el estado del visor
-local visorEnabled = true
+local visorEnabled = false
 
 -- Función para actualizar el estado del visor
 local function updateVisor()
