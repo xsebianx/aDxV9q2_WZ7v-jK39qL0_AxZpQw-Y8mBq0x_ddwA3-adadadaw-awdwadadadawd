@@ -13,9 +13,9 @@ local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
 local maxDistance = 5000
-local espEnabled = false -- Variable para controlar el estado del ESP
+local espEnabled = false -- Cambiado a false inicialmente
 local espCache = {}
-local connections = {} -- Tabla para almacenar las conexiones
+local connections = {}
 
 -- Funciones
 local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
@@ -98,28 +98,30 @@ local function updateEsp(player, esp)
                 esp.boxoutline.Size = esp.box.Size
                 esp.boxoutline.Position = esp.box.Position
 
-                -- Calcular el tamaño de las etiquetas basado en la distancia
-                local distanceFactor = math.clamp(1 - (depth / maxDistance), 0.5, 1) -- El tamaño se reduce según la distancia
-                local nameSize = 20 * distanceFactor
-                local healthSize = 20 * distanceFactor
-                local distanceSize = 20 * distanceFactor
-
                 -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
-                esp.name.Size = nameSize
-                esp.name.Position = newVector2(x, y - height / 2 - 20 * distanceFactor)
+                esp.name.Position = newVector2(x, y - height / 2 - 20)
 
                 local humanoid = character:FindFirstChild("Humanoid")
                 if humanoid then
                     esp.health.Text = string.format("Vida: %.0f%%", humanoid.Health / humanoid.MaxHealth * 100)
-                    esp.health.Size = healthSize
-                    esp.health.Position = newVector2(x, y - height / 2 - 40 * distanceFactor)
+                    esp.health.Position = newVector2(x, y - height / 2 - 40)
                 end
 
                 local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
-                esp.distance.Size = distanceSize
-                esp.distance.Position = newVector2(x, y + height / 2 + 20 * distanceFactor)
+                esp.distance.Position = newVector2(x, y + height / 2 + 20)
+
+                -- Ajustar el tamaño del texto según la distancia
+                if distance > 100 then
+                    esp.name.Size = 15
+                    esp.health.Size = 15
+                    esp.distance.Size = 15
+                else
+                    esp.name.Size = 20
+                    esp.health.Size = 20
+                    esp.distance.Size = 20
+                end
             end
         end
     else
@@ -145,15 +147,17 @@ local function disableESP()
     espEnabled = false
     for _, drawings in pairs(espCache) do
         for _, drawing in pairs(drawings) do
-            drawing.Visible = false -- Asegúrate de que todos los dibujos sean invisibles
+            drawing.Visible = false
         end
     end
     for _, connection in pairs(connections) do
         connection:Disconnect()
     end
     connections = {}
-    print("ESP desactivado correctamente.") -- Mensaje de depuración
 end
+
+-- Exponer la función de desactivación globalmente
+_G.disableESP = disableESP
 
 -- Principal
 for _, player in next, players:GetPlayers() do
@@ -183,11 +187,8 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
     else
         for _, drawings in pairs(espCache) do
             for _, drawing in pairs(drawings) do
-                drawing.Visible = false -- Asegúrate de que todos los dibujos sean invisibles al desactivar
+                drawing.Visible = false
             end
         end
     end
 end))
-
--- Exponer la función de desactivación globalmente para que pueda ser llamada desde fuera
-_G.disableESP = disableESP
