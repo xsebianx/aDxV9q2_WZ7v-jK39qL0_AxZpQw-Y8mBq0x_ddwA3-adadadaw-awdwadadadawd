@@ -267,19 +267,21 @@ ESPButton.MouseButton1Click:Connect(function()
 end)
 
 local visorEnabled = false
+
 VisorButton.MouseButton1Click:Connect(function()
     visorEnabled = not visorEnabled
     if visorEnabled then
         VisorButton.Text = "Visor: On"
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/visor.lua"))() -- Reemplaza "tu_url_de_visor_aqui" con la URL correspondiente
+        -- Cargar el visor
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/visor.lua"))()
     else
         VisorButton.Text = "Visor: Off"
+        -- Desactivar el visor
         if _G.disableVisor then
-            _G.disableVisor() -- Desactivar el visor
+            _G.disableVisor() -- Asegúrate de que esta función esté definida en tu script de visor
         end
     end
 end)
-
 -- Toggle HackDetector
 local hackDetectorEnabled = false
 HackDetectorButton.MouseButton1Click:Connect(function()
