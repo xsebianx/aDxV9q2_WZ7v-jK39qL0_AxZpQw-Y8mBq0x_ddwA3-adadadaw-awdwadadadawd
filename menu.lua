@@ -21,7 +21,6 @@ local AimbotButton = Instance.new("TextButton")
 local AimbotNPCButton = Instance.new("TextButton")
 local ESPButton = Instance.new("TextButton")
 local HackDetectorButton = Instance.new("TextButton")
-local VisorButton = instance.new("TextButton")
 
 -- Propiedades generales de la GUI
 DrakHub.Name = "DrakHub"
@@ -183,17 +182,6 @@ ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
 ESPButton.Size = UDim2.new(0, 240, 0, 40)
 ESPButton.Position = UDim2.new(0, 10, 0, 10)
 
--- Funcionalidades de Visual
-VisorButton.Name = "VisorButton" -- Cambié el nombre aquí
-VisorButton.Parent = VisualFrame
-VisorButton.Text = "Visor: Off" -- Cambié el texto para que se refiera al visor
-VisorButton.Font = Enum.Font.GothamBold
-VisorButton.TextSize = 18
-VisorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-VisorButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
-VisorButton.Size = UDim2.new(0, 240, 0, 40)
-VisorButton.Position = UDim2.new(0, 10, 0, 60) -- Cambié la posición para que esté debajo de ESP
-
 -- Funcionalidades de Extra
 HackDetectorButton.Name = "HackDetectorButton"
 HackDetectorButton.Parent = ExtraFrame
@@ -262,21 +250,6 @@ ESPButton.MouseButton1Click:Connect(function()
         ESPButton.Text = "ESP: Off"
         if _G.disableESP then
             _G.disableESP() -- Desactivar el ESP
-        end
-    end
-end)
-
-
-local visorEnabled = false
-VisorButton.MouseButton1Click:Connect(function()
-    visorEnabled = not visorEnabled
-    if visorEnabled then
-        VisorButton.Text = "Visor: On"
-        loadstring(game:HttpGet("https://github.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/blob/main/visual/visor.lua"))() -- Reemplaza "tu_url_de_visor_aqui" con la URL correspondiente
-    else
-        VisorButton.Text = "Visor: Off"
-        if _G.disableVisor then
-            _G.disableVisor() -- Desactivar el visor
         end
     end
 end)
