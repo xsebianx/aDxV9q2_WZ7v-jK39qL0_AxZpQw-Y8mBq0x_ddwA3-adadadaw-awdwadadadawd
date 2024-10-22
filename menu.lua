@@ -177,30 +177,29 @@ ESPButton.Name = "ESPButton"
 ESPButton.Parent = VisualFrame
 ESPButton.Text = "ESP: Off"
 ESPButton.Font = Enum.Font.GothamBold
-ESPButton.TextSize = 20  -- Aumenté el tamaño del texto
+ESPButton.TextSize = 20  -- Tamaño del texto
 ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)  -- Color de fondo más claro
-ESPButton.Size = UDim2.new(0, 250, 0, 50)  -- Tamaño del botón un poco más grande
-ESPButton.Position = UDim2.new(0, 20, 0, 20)  -- Posición ajustada para un poco de margen
+ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color de fondo oscuro
+ESPButton.Size = UDim2.new(0, 240, 0, 40)  -- Mantener el tamaño
+ESPButton.Position = UDim2.new(0, 10, 0, 10)  -- Mantener la posición
 ESPButton.BorderSizePixel = 0  -- Sin borde
-ESPButton.BackgroundTransparency = 0.2  -- Transparencia para un efecto más suave
+ESPButton.BackgroundTransparency = 0.1  -- Ligera transparencia para un efecto suave
 
--- Opcional: Añadir un efecto de esquina redondeada
-ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Un color de fondo oscuro
-ESPButton.Size = UDim2.new(0, 240, 0, 40)
-ESPButton.Position = UDim2.new(0.5, -120, 0, 10)  -- Centrado horizontalmente
-ESPButton.BorderSizePixel = 0  -- Sin borde
-ESPButton.BackgroundTransparency = 0.3  -- Hacerlo un poco más transparente
+-- Redondear esquinas
+ESPButton.AutoButtonColor = false
+ESPButton.ClipsDescendants = true
+local corner = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+corner.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+corner.Parent = ESPButton
 
--- Crear un efecto de hover (opcional)
+-- Efecto de hover (opcional)
 ESPButton.MouseEnter:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(120, 120, 120)  -- Color más claro al pasar el mouse
+    ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color más claro al pasar el mouse
 end)
 
 ESPButton.MouseLeave:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)  -- Volver al color original
+    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
 end)
-
 
 -- Funcionalidades de Visual
 local VisorButton = Instance.new("TextButton") -- Asegúrate de crear la instancia del botón
