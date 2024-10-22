@@ -4,7 +4,7 @@ local TeleportService = game:GetService("TeleportService")
 
 -- HWIDs configurados directamente en el script
 local permanentHWIDs = {
-    -- Puedes agregar HWIDs permanentes aquí
+    "9005F968-46DF-44FC-9C68-B173D505FF37"
 }
 
 local temporaryHWIDs = {
