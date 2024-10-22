@@ -1,29 +1,16 @@
 local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
 local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
 
--- Cargar HWIDs desde el archivo JSON en GitHub
-local function loadHWIDs(url)
-    local response = HttpService:GetAsync(url)
-    local data = HttpService:JSONDecode(response)
-    return data.permanentHWIDs, data.temporaryHWIDs
-end
+-- HWIDs configurados directamente en el script
+local permanentHWIDs = {
+    "11",
+    "9005F968-46DF-44FC-9C68-B173D505FF37"
+}
 
--- URL del archivo JSON en GitHub
-local hwidURL = "https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/hwids.json" -- Reemplaza con tu URL
-
-local permanentHWIDs, temporaryHWIDs
-
--- Llamar a loadHWIDs en un contexto permitido
-pcall(function()
-    permanentHWIDs, temporaryHWIDs = loadHWIDs(hwidURL)
-end)
-
--- Verificar si se cargaron correctamente los HWIDs
-if not permanentHWIDs or not temporaryHWIDs then
-    print("Error al cargar HWIDs. Asegúrate de que la URL sea correcta.")
-    return
-end
+local temporaryHWIDs = {
+    "DC61583D-84CD-48E1-8AB3-212434BDC519",
+    "33"
+}
 
 -- Variables de tiempo
 local passwordSetTime = nil -- Para almacenar el tiempo cuando se ingresó la contraseña temporal
