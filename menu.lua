@@ -183,7 +183,6 @@ ESPButton.Size = UDim2.new(0, 240, 0, 40)
 ESPButton.Position = UDim2.new(0, 10, 0, 10)
 
 -- Funcionalidades de Visual
-local VisorButton = Instance.new("TextButton") -- Asegúrate de crear la instancia del botón
 VisorButton.Name = "VisorButton" -- Cambié el nombre aquí
 VisorButton.Parent = VisualFrame
 VisorButton.Text = "Visor: Off" -- Cambié el texto para que se refiera al visor
@@ -265,6 +264,7 @@ ESPButton.MouseButton1Click:Connect(function()
         end
     end
 end)
+
 
 local visorEnabled = false
 VisorButton.MouseButton1Click:Connect(function()
