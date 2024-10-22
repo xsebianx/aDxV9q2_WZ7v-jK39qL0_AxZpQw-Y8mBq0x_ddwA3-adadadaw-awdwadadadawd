@@ -9,7 +9,8 @@ local permanentHWIDs = {
 
 local temporaryHWIDs = {
     "DC61583D-84CD-48E1-8AB3-212434BDC519",
-    "33"
+    -- Asegúrate de que este HWID sea válido
+    "33" -- Considera cambiarlo por un HWID más adecuado
 }
 
 -- Variables de tiempo
