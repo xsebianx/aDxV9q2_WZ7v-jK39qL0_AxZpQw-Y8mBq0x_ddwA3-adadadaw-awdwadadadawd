@@ -34,11 +34,3 @@ end
 
 -- Registra la función en el contexto global para que sea accesible desde el menú
 _G.toggleVisor = toggleVisor
-
--- Sincroniza el visor con el estado desde el menú
-_G.disableVisor = function()
-    toggleVisor(true) -- Desactiva el visor
-end
-
--- Asegúrate de que el visor se inicie con el estado correcto
-toggleVisor(_G.toggleVisor)
