@@ -148,26 +148,26 @@ AimbotButton.Text = "Aimbot: Off"
 AimbotButton.Font = Enum.Font.GothamBold
 AimbotButton.TextSize = 20
 AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
-AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color azul brillante
-AimbotButton.Size = UDim2.new(0, 240, 0, 50)
+AimbotButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color gris oscuro (igual que ESP)
+AimbotButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual al botón ESP
 AimbotButton.Position = UDim2.new(0, 10, 0, 10)
 AimbotButton.BorderSizePixel = 0  -- Sin borde
-AimbotButton.BackgroundTransparency = 0  -- Opaco
+AimbotButton.BackgroundTransparency = 0.1  -- Ligera transparencia
 
 -- Redondear esquinas
 AimbotButton.AutoButtonColor = false
 AimbotButton.ClipsDescendants = true
 local cornerAimbot = Instance.new("UICorner")  -- Añadir esquinas redondeadas
-cornerAimbot.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerAimbot.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas (igual que ESP)
 cornerAimbot.Parent = AimbotButton
 
 -- Efecto de hover (opcional)
 AimbotButton.MouseEnter:Connect(function()
-    AimbotButton.BackgroundColor3 = Color3.fromRGB(70, 130, 180)  -- Azul de mar al pasar el mouse (SteelBlue)
+    AimbotButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Azul claro al pasar el mouse
 end)
 
 AimbotButton.MouseLeave:Connect(function()
-    AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 150, 250)  -- Volver al color original (azul brillante)
+    AimbotButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al gris oscuro original
 end)
 
 -- Botón Aimbot NPC
@@ -176,28 +176,28 @@ AimbotNPCButton.Name = "AimbotNPCButton"
 AimbotNPCButton.Parent = CombatFrame
 AimbotNPCButton.Text = "Aimbot NPC: Off"
 AimbotNPCButton.Font = Enum.Font.GothamBold
-AimbotNPCButton.TextSize = 18
+AimbotNPCButton.TextSize = 20  -- Tamaño del texto ajustado
 AimbotNPCButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Azul claro
-AimbotNPCButton.Size = UDim2.new(0, 240, 0, 40)
-AimbotNPCButton.Position = UDim2.new(0, 10, 0, 60)  -- Posición debajo del botón Aimbot
+AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color inicial (igual al ESP y Aimbot)
+AimbotNPCButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual que el botón ESP
+AimbotNPCButton.Position = UDim2.new(0, 10, 0, 60)  -- Posición bajo el botón Aimbot
 AimbotNPCButton.BorderSizePixel = 0  -- Sin borde
-AimbotNPCButton.BackgroundTransparency = 0  -- Opaco
+AimbotNPCButton.BackgroundTransparency = 0.1  -- Ligera transparencia para suavidad
 
 -- Redondear esquinas
 AimbotNPCButton.AutoButtonColor = false
 AimbotNPCButton.ClipsDescendants = true
 local cornerAimbotNPC = Instance.new("UICorner")  -- Añadir esquinas redondeadas
-cornerAimbotNPC.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerAimbotNPC.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas (igual que ESP)
 cornerAimbotNPC.Parent = AimbotNPCButton
 
 -- Efecto de hover (opcional)
 AimbotNPCButton.MouseEnter:Connect(function()
-    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(70, 130, 180)  -- Azul de mar al pasar el mouse (SteelBlue)
+    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Color al pasar el mouse (azul claro)
 end)
 
 AimbotNPCButton.MouseLeave:Connect(function()
-    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Volver al color original (azul claro)
+    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original (gris oscuro)
 end)
 
 -- Crear el botón ESP
