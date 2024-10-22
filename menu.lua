@@ -267,7 +267,7 @@ ESPButton.MouseButton1Click:Connect(function()
     end
 end)
 
-local visorEnabled = false
+-- Conectar el evento del botón
 VisorButton.MouseButton1Click:Connect(function()
     visorEnabled = not visorEnabled
     _G.toggleVisor = visorEnabled -- Actualiza el estado en _G.toggleVisor

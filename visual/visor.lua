@@ -23,14 +23,14 @@ local function updateVisorVisibility()
     end
 end
 
--- Llama a la función al inicio para asegurarte de que el visor esté visible
-updateVisorVisibility()
-
--- Función para activar o desactivar el visor
-local function toggleVisor(state)
-    visorVisible = state -- Cambia el estado del visor
+-- Función para habilitar o deshabilitar el visor
+local function toggleVisor()
+    visorVisible = not visorVisible
     updateVisorVisibility() -- Actualiza la visibilidad del visor
 end
 
--- Registra la función en el contexto global para que sea accesible desde el menú
+-- Exponer la función de alternancia globalmente
 _G.toggleVisor = toggleVisor
+
+-- Llama a la función al inicio para asegurarte de que el visor esté visible
+updateVisorVisibility()
