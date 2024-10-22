@@ -1,16 +1,18 @@
 local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 
--- HWIDs autorizados (ejemplos ficticios)
-local permanentHWIDs = {
-    "11", -- HWID permanente
-    "9005F968-46DF-44FC-9C68-B173D505FF37"  -- Otro HWID permanente (puedes agregar más)
-}
+-- Cargar HWIDs desde el archivo JSON en GitHub
+local function loadHWIDs(url)
+    local response = HttpService:GetAsync(url)
+    local data = HttpService:JSONDecode(response)
+    return data.permanentHWIDs, data.temporaryHWIDs
+end
 
-local temporaryHWIDs = {
-    "DC61583D-84CD-48E1-8AB3-212434BDC519", -- HWID temporal
-    "33"  -- Otro HWID temporal (puedes agregar más)
-}
+-- URL del archivo JSON en GitHub
+local hwidURL = "https://raw.githubusercontent.com/tu_usuario/nombre_del_repositorio/main/hwids.json" -- Reemplaza con tu URL
+
+local permanentHWIDs, temporaryHWIDs = loadHWIDs(hwidURL)
 
 -- Variables de tiempo
 local passwordSetTime = nil -- Para almacenar el tiempo cuando se ingresó la contraseña temporal
@@ -48,7 +50,7 @@ local function checkHWID()
             if elapsedTime < hwidExpirationTime then
                 print("¡Acceso temporal todavía válido!")
                 -- Aquí puedes añadir la funcionalidad adicional para acceso temporal
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.luaL"))() -- Cambia la URL por el script temporal
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))() -- Cambia la URL por el script temporal
             else
                 print("El acceso temporal ha expirado.")
                 passwordSetTime = nil -- Reiniciar el tiempo
@@ -56,10 +58,17 @@ local function checkHWID()
         end
 
     else
+        -- Notificar al jugador que su HWID no está autorizado
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Acceso denegado";
+            Text = "Tu HWID no está autorizado para jugar.";
+            Duration = 5;
+        })
+
+        -- Esperar un momento para que el jugador vea el mensaje antes de expulsarlo
+        wait(3)
         print("HWID no autorizado. Expulsando al jugador...")
-        -- Expulsar al jugador si el HWID no está autorizado
-        local player = Players.LocalPlayer
-        player:Kick("HWID no autorizado. Acceso denegado.")
+        Players.LocalPlayer:Kick("Acceso denegado. Tu HWID no está autorizado.")
     end
 end
 
