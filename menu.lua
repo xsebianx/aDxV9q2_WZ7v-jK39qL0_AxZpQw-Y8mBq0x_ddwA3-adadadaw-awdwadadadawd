@@ -140,37 +140,65 @@ local ExtraFrameUICorner = Instance.new("UICorner")
 ExtraFrameUICorner.CornerRadius = UDim.new(0, 8)
 ExtraFrameUICorner.Parent = ExtraFrame
 
-local AimbotButton = Instance.new("TextButton") -- Asegúrate de crear el botón primero
+-- Crear el botón Aimbot
+local AimbotButton = Instance.new("TextButton")
 AimbotButton.Name = "AimbotButton"
 AimbotButton.Parent = CombatFrame
 AimbotButton.Text = "Aimbot: Off"
 AimbotButton.Font = Enum.Font.GothamBold
 AimbotButton.TextSize = 20
-AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- Color blanco para el texto
-AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 150, 250) -- Color azul más brillante
+AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
+AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color azul brillante
 AimbotButton.Size = UDim2.new(0, 240, 0, 50)
 AimbotButton.Position = UDim2.new(0, 10, 0, 10)
-AimbotButton.BorderSizePixel = 0 -- Sin borde
-AimbotButton.BackgroundTransparency = 0 -- Opaco
-AimbotButton.AutoButtonColor = false -- Para controlar el color al hacer clic
+AimbotButton.BorderSizePixel = 0  -- Sin borde
+AimbotButton.BackgroundTransparency = 0  -- Opaco
 
--- Mejora de la forma del botón
+-- Redondear esquinas
+AimbotButton.AutoButtonColor = false
 AimbotButton.ClipsDescendants = true
-local corner = Instance.new("UICorner") -- Añadir esquinas redondeadas
-corner.CornerRadius = UDim.new(0, 12) -- Radio de las esquinas
-corner.Parent = AimbotButton
+local cornerAimbot = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerAimbot.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerAimbot.Parent = AimbotButton
+
+-- Efecto de hover (opcional)
+AimbotButton.MouseEnter:Connect(function()
+    AimbotButton.BackgroundColor3 = Color3.fromRGB(70, 130, 180)  -- Azul de mar al pasar el mouse (SteelBlue)
+end)
+
+AimbotButton.MouseLeave:Connect(function()
+    AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 150, 250)  -- Volver al color original (azul brillante)
+end)
 
 -- Botón Aimbot NPC
-AimbotNPCButton = Instance.new("TextButton") -- Crea el botón
+AimbotNPCButton = Instance.new("TextButton")  -- Crea el botón
 AimbotNPCButton.Name = "AimbotNPCButton"
 AimbotNPCButton.Parent = CombatFrame
 AimbotNPCButton.Text = "Aimbot NPC: Off"
 AimbotNPCButton.Font = Enum.Font.GothamBold
 AimbotNPCButton.TextSize = 18
 AimbotNPCButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255) -- Azul claro
+AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Azul claro
 AimbotNPCButton.Size = UDim2.new(0, 240, 0, 40)
-AimbotNPCButton.Position = UDim2.new(0, 10, 0, 60) -- Posición debajo del botón Aimbot
+AimbotNPCButton.Position = UDim2.new(0, 10, 0, 60)  -- Posición debajo del botón Aimbot
+AimbotNPCButton.BorderSizePixel = 0  -- Sin borde
+AimbotNPCButton.BackgroundTransparency = 0  -- Opaco
+
+-- Redondear esquinas
+AimbotNPCButton.AutoButtonColor = false
+AimbotNPCButton.ClipsDescendants = true
+local cornerAimbotNPC = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerAimbotNPC.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerAimbotNPC.Parent = AimbotNPCButton
+
+-- Efecto de hover (opcional)
+AimbotNPCButton.MouseEnter:Connect(function()
+    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(70, 130, 180)  -- Azul de mar al pasar el mouse (SteelBlue)
+end)
+
+AimbotNPCButton.MouseLeave:Connect(function()
+    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Volver al color original (azul claro)
+end)
 
 -- Crear el botón ESP
 ESPButton.Name = "ESPButton"
@@ -209,7 +237,7 @@ VisorButton.Text = "Visor: Off"
 VisorButton.Font = Enum.Font.GothamBold
 VisorButton.TextSize = 18
 VisorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-VisorButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+VisorButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 VisorButton.Size = UDim2.new(0, 240, 0, 40)
 VisorButton.Position = UDim2.new(0, 10, 0, 60)
 VisorButton.BorderSizePixel = 0
@@ -294,7 +322,11 @@ ESPButton.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     if espEnabled then
         ESPButton.Text = "ESP: On"
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/ESP.lua"))()
+        -- Cargar el script de ESP solo si no está activo
+        if not _G.espLoaded then
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/ESP.lua"))()
+            _G.espLoaded = true  -- Marcar que el ESP ha sido cargado
+        end
     else
         ESPButton.Text = "ESP: Off"
         if _G.disableESP then
