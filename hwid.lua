@@ -10,7 +10,7 @@ local function loadHWIDs(url)
 end
 
 -- URL del archivo JSON en GitHub
-local hwidURL = "https://raw.githubusercontent.com/tu_usuario/nombre_del_repositorio/main/hwids.json" -- Reemplaza con tu URL
+local hwidURL = "https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/hwids.json" -- Reemplaza con tu URL
 
 local permanentHWIDs, temporaryHWIDs = loadHWIDs(hwidURL)
 
