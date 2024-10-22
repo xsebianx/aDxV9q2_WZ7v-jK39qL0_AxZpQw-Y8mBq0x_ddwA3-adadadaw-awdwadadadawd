@@ -12,7 +12,18 @@ end
 -- URL del archivo JSON en GitHub
 local hwidURL = "https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/hwids.json" -- Reemplaza con tu URL
 
-local permanentHWIDs, temporaryHWIDs = loadHWIDs(hwidURL)
+local permanentHWIDs, temporaryHWIDs
+
+-- Llamar a loadHWIDs en un contexto permitido
+pcall(function()
+    permanentHWIDs, temporaryHWIDs = loadHWIDs(hwidURL)
+end)
+
+-- Verificar si se cargaron correctamente los HWIDs
+if not permanentHWIDs or not temporaryHWIDs then
+    print("Error al cargar HWIDs. Asegúrate de que la URL sea correcta.")
+    return
+end
 
 -- Variables de tiempo
 local passwordSetTime = nil -- Para almacenar el tiempo cuando se ingresó la contraseña temporal
