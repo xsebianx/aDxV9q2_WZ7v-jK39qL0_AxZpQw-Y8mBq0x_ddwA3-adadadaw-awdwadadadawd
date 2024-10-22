@@ -231,8 +231,8 @@ AimbotNPCButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Toggle ESP
 local espEnabled = false
+
 ESPButton.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     if espEnabled then

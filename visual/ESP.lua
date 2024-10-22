@@ -27,7 +27,6 @@ local round = function(...)
     end
     return unpack(a)
 end
-
 local wtvp = function(...)
     local a, b = camera.WorldToViewportPoint(camera, ...)
     return newVector2(a.X, a.Y), b, a.Z
@@ -84,33 +83,29 @@ local function updateEsp(player, esp)
             esp.name.Visible = visible and depth <= maxDistance
             esp.health.Visible = visible and depth <= maxDistance
             esp.distance.Visible = visible and depth <= maxDistance
-
             if visible then
                 local scaleFactor = 1 / (depth * tan(rad(camera.FieldOfView / 2)) * 2) * 1000
                 local width, height = round(4 * scaleFactor, 5 * scaleFactor)
                 local x, y = round(position.X, position.Y)
-
                 esp.box.Size = newVector2(width, height)
                 esp.box.Position = newVector2(round(x - width / 2, y - height / 2))
                 esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor
-
                 esp.boxoutline.Size = esp.box.Size
                 esp.boxoutline.Position = esp.box.Position
-
                 -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
                 esp.name.Position = newVector2(x, y - height / 2 - 20)
-
+                
                 local humanoid = character:FindFirstChild("Humanoid")
                 if humanoid then
                     esp.health.Text = string.format("Vida: %.0f%%", humanoid.Health / humanoid.MaxHealth * 100)
                     esp.health.Position = newVector2(x, y - height / 2 - 40)
                 end
-
+                
                 local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
-
+                
                 -- Ajustar el tamaño del texto si la distancia es mayor a 800
                 local textSize = distance > 800 and 14 or 20 -- Ajustar tamaño del texto
                 esp.name.Size = textSize
