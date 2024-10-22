@@ -4,6 +4,11 @@ local detectionRadius = 75 -- Radio de detección ampliado para mayor facilidad 
 local closestTarget = nil
 local sound
 local connections = {} -- Tabla para almacenar las conexiones
+local updateInterval = 0.1 -- Intervalo de actualización en segundos
+local lastUpdateTime = 0
+local npcCache = {} -- Cache para almacenar los NPCs
+local npcCacheUpdateInterval = 5 -- Intervalo de actualización de la cache de NPCs en segundos
+local lastNpcCacheUpdateTime = 0
 
 -- Crear un sonido para alertas
 local function createAlertSound()
@@ -16,10 +21,20 @@ end
 -- Verificar si el objetivo es visible, sin obstáculos en el camino
 local function isVisible(part)
     local origin = workspace.CurrentCamera.CFrame.Position
-    local direction = (part.Position - origin).unit * 5000 -- Aumenta la longitud del rayo para mayor alcance
+    local direction = (part.Position - origin).unit * 1000 -- Reducir la longitud del rayo para mejorar el rendimiento
     local ray = Ray.new(origin, direction)
     local partHit, _ = workspace:FindPartOnRay(ray, game.Players.LocalPlayer.Character, false, true)
     return partHit and partHit:IsDescendantOf(part.Parent)
+end
+
+-- Actualizar la cache de NPCs
+local function updateNPCCache()
+    npcCache = {}
+    for _, npc in pairs(workspace:GetDescendants()) do -- Buscar en todo el workspace
+        if npc:IsA("Model") and npc:FindFirstChild("Head") and not game.Players:GetPlayerFromCharacter(npc) then
+            table.insert(npcCache, npc)
+        end
+    end
 end
 
 -- Función para encontrar el objetivo más cercano dentro del campo de visión y que esté visible
@@ -29,17 +44,15 @@ local function getClosestNPCInFOV()
     local camera = workspace.CurrentCamera
     local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
     
-    for _, npc in pairs(workspace:GetDescendants()) do -- Buscar en todo el workspace
-        if npc:IsA("Model") and npc:FindFirstChild("Head") and not game.Players:GetPlayerFromCharacter(npc) then
-            local headScreenPos = camera:WorldToViewportPoint(npc.Head.Position)
-            local distanceFromCenter = (screenCenter - Vector2.new(headScreenPos.X, headScreenPos.Y)).magnitude
-            -- Si el NPC está dentro del campo de visión y está visible
-            if distanceFromCenter < detectionRadius and isVisible(npc.Head) then
-                local distance = (camera.CFrame.Position - npc.Head.Position).magnitude
-                if distance < closestDistance then
-                    closestDistance = distance
-                    target = npc
-                end
+    for _, npc in pairs(npcCache) do
+        local headScreenPos = camera:WorldToViewportPoint(npc.Head.Position)
+        local distanceFromCenter = (screenCenter - Vector2.new(headScreenPos.X, headScreenPos.Y)).magnitude
+        -- Si el NPC está dentro del campo de visión y está visible
+        if distanceFromCenter < detectionRadius and isVisible(npc.Head) then
+            local distance = (camera.CFrame.Position - npc.Head.Position).magnitude
+            if distance < closestDistance then
+                closestDistance = distance
+                target = npc
             end
         end
     end
@@ -55,12 +68,16 @@ local function aimbot(target)
 end
 
 -- Actualizar el objetivo cada ciclo
-local function onRenderStepped()
+local function onRenderStepped(deltaTime)
     if aimEnabled then
-        local newTarget = getClosestNPCInFOV() -- Encontrar el NPC más cercano dentro del FOV y radio de detección
-        if newTarget and newTarget ~= closestTarget then
-            closestTarget = newTarget
-            sound:Play()
+        lastUpdateTime = lastUpdateTime + deltaTime
+        if lastUpdateTime >= updateInterval then
+            lastUpdateTime = 0
+            local newTarget = getClosestNPCInFOV() -- Encontrar el NPC más cercano dentro del FOV y radio de detección
+            if newTarget and newTarget ~= closestTarget then
+                closestTarget = newTarget
+                sound:Play()
+            end
         end
         if closestTarget then
             aimbot(closestTarget) -- Usar Aimbot para asegurar el impacto
@@ -103,6 +120,15 @@ localPlayer.CharacterAdded:Connect(onCharacterAdded)
 table.insert(connections, game:GetService("RunService").RenderStepped:Connect(onRenderStepped))
 table.insert(connections, game:GetService("UserInputService").InputBegan:Connect(onInputBegan))
 table.insert(connections, game:GetService("UserInputService").InputEnded:Connect(onInputEnded))
+
+-- Actualizar la cache de NPCs a intervalos regulares
+table.insert(connections, game:GetService("RunService").Stepped:Connect(function(deltaTime)
+    lastNpcCacheUpdateTime = lastNpcCacheUpdateTime + deltaTime
+    if lastNpcCacheUpdateTime >= npcCacheUpdateInterval then
+        lastNpcCacheUpdateTime = 0
+        updateNPCCache()
+    end
+end))
 
 -- Función para desactivar el aimbot NPC
 local function disableAimbotNPC()
