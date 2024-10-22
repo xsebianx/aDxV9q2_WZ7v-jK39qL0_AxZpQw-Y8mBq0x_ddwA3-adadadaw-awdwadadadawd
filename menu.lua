@@ -271,7 +271,7 @@ VisorButton.MouseButton1Click:Connect(function()
     visorEnabled = not visorEnabled
     if visorEnabled then
         VisorButton.Text = "Visor: On"
-        loadstring(game:HttpGet("tu_url_de_visor_aqui"))() -- Reemplaza "tu_url_de_visor_aqui" con la URL correspondiente
+        loadstring(game:HttpGet("https://github.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/blob/main/visual/visor.lua"))() -- Reemplaza "tu_url_de_visor_aqui" con la URL correspondiente
     else
         VisorButton.Text = "Visor: Off"
         if _G.disableVisor then
