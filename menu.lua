@@ -194,7 +194,7 @@ corner.Parent = ESPButton
 
 -- Efecto de hover (opcional)
 ESPButton.MouseEnter:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color más claro al pasar el mouse
+    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
 end)
 
 ESPButton.MouseLeave:Connect(function()
@@ -202,16 +202,34 @@ ESPButton.MouseLeave:Connect(function()
 end)
 
 -- Funcionalidades de Visual
-local VisorButton = Instance.new("TextButton") -- Asegúrate de crear la instancia del botón
-VisorButton.Name = "VisorButton" -- Cambié el nombre aquí
+local VisorButton = Instance.new("TextButton")
+VisorButton.Name = "VisorButton"
 VisorButton.Parent = VisualFrame
-VisorButton.Text = "Visor: Off" -- Cambié el texto para que se refiera al visor
+VisorButton.Text = "Visor: Off"
 VisorButton.Font = Enum.Font.GothamBold
 VisorButton.TextSize = 18
 VisorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 VisorButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
 VisorButton.Size = UDim2.new(0, 240, 0, 40)
-VisorButton.Position = UDim2.new(0, 10, 0, 60) -- Cambié la posición para que esté debajo de ESP
+VisorButton.Position = UDim2.new(0, 10, 0, 60)
+VisorButton.BorderSizePixel = 0
+VisorButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
+VisorButton.AutoButtonColor = false
+VisorButton.ClipsDescendants = true
+local cornerVisor = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerVisor.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerVisor.Parent = VisorButton
+
+-- Efecto de hover (opcional)
+VisorButton.MouseEnter:Connect(function()
+    VisorButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+end)
+
+VisorButton.MouseLeave:Connect(function()
+    VisorButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
+end)
 
 -- Funcionalidades de Extra
 HackDetectorButton.Name = "HackDetectorButton"
@@ -271,18 +289,16 @@ AimbotNPCButton.MouseButton1Click:Connect(function()
     end
 end)
 
-local espEnabled = false
+-- Botón de activación/desactivación del ESP
 ESPButton.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     if espEnabled then
         ESPButton.Text = "ESP: On"
-        -- Cargar el script de ESP
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/ESP.lua"))()
     else
         ESPButton.Text = "ESP: Off"
-        -- Desactivar el ESP
         if _G.disableESP then
-            _G.disableESP() -- Asegúrate de que esta función esté definida en tu script de ESP
+            _G.disableESP() -- Desactivar el ESP
         end
     end
 end)

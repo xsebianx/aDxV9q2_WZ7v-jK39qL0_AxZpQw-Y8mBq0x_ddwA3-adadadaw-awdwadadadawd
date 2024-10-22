@@ -13,28 +13,26 @@ local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
 local maxDistance = 5000
-local espEnabled = true -- Variable para controlar el estado del ESP
-local espCache = {}
-local connections = {} -- Tabla para almacenar las conexiones
+local espEnabled = false  -- Inicialmente el ESP está desactivado
+local espCache = {}  -- Cache para guardar los dibujos del ESP
+local connections = {}  -- Para guardar las conexiones de eventos
 
 -- Funciones
 local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
 local tan, rad = math.tan, math.rad
 local round = function(...)
-
     local a = {}
     for i, v in next, table.pack(...) do
         a[i] = math.round(v)
     end
     return unpack(a)
 end
-
 local wtvp = function(...)
-
     local a, b = camera.WorldToViewportPoint(camera, ...)
     return newVector2(a.X, a.Y), b, a.Z
 end
 
+-- Función para crear ESP
 local function createEsp(player)
     local drawings = {}
     drawings.box = newDrawing("Square")
@@ -75,6 +73,7 @@ local function createEsp(player)
     espCache[player] = drawings
 end
 
+-- Función para actualizar el ESP
 local function updateEsp(player, esp)
     local character = player and player.Character
     if character then
@@ -95,6 +94,7 @@ local function updateEsp(player, esp)
                 esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor
                 esp.boxoutline.Size = esp.box.Size
                 esp.boxoutline.Position = esp.box.Position
+
                 -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
                 esp.name.Position = newVector2(x, y - height / 2 - 20)
@@ -109,8 +109,7 @@ local function updateEsp(player, esp)
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
                 
-                -- Ajustar el tamaño del texto si la distancia es mayor a 800
-                local textSize = distance > 800 and 14 or 20 -- Ajustar tamaño del texto
+                local textSize = distance > 800 and 14 or 20
                 esp.name.Size = textSize
                 esp.health.Size = textSize
                 esp.distance.Size = textSize
@@ -125,16 +124,19 @@ local function updateEsp(player, esp)
     end
 end
 
+-- Función para remover ESP
 local function removeEsp(player)
     if espCache[player] then
         for _, drawing in pairs(espCache[player]) do
-            drawing:Remove()
+            if drawing.Remove then
+                drawing:Remove()
+            end
         end
         espCache[player] = nil
     end
 end
 
--- Principal
+-- Activación y actualización del ESP
 for _, player in next, players:GetPlayers() do
     if player ~= localPlayer then
         createEsp(player)
@@ -169,18 +171,24 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
 end))
 
 -- Función para desactivar el ESP
-local function disableESP()
+function _G.disableESP()
     espEnabled = false
+    
+    -- Eliminar todos los dibujos del ESP
     for _, drawings in pairs(espCache) do
         for _, drawing in pairs(drawings) do
-            drawing.Visible = false
+            if drawing.Remove then
+                drawing:Remove()
+            end
         end
     end
-    for _, connection in pairs(connections) do
-        connection:Disconnect()
-    end
-    connections = {}
-end
+    espCache = {}  -- Vaciar la cache
 
--- Exponer la función de desactivación globalmente
-_G.disableESP = disableESP
+    -- Desconectar todas las conexiones
+    for _, connection in pairs(connections) do
+        if connection.Disconnect then
+            connection:Disconnect()
+        end
+    end
+    connections = {}  -- Vaciar las conexiones
+end
