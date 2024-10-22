@@ -3,8 +3,7 @@ local Players = game:GetService("Players")
 
 -- HWIDs configurados directamente en el script
 local permanentHWIDs = {
-    "11",
-    ""
+    -- Puedes agregar HWIDs permanentes aquí
 }
 
 local temporaryHWIDs = {
@@ -18,10 +17,10 @@ local hwidExpirationTime = 604800 -- 604800 segundos = 1 semana
 
 -- Función para obtener el HWID del cliente
 local function getClientHWID()
-    local clientId = RbxAnalyticsService:GetClientId()
-    return clientId
+    return RbxAnalyticsService:GetClientId()
 end
 
+-- Función para verificar el HWID del jugador
 local function checkHWID()
     local playerHWID = getClientHWID() -- Obtener el HWID del jugador
     local currentTime = os.time() -- Obtener el tiempo actual en segundos
