@@ -2,7 +2,7 @@ local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
 local Players = game:GetService("Players")
 
 -- Cargar HWIDs desde el archivo Lua en GitHub
-local hwidConfig = loadstring(game:HttpGet("https://raw.githubusercontent.com/tu_usuario/tu_repositorio/main/hwids.lua"))() -- Cambia la URL a la ubicación de hwids.lua en tu repositorio
+local hwidConfig = loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/hwids.lua"))() -- Cambia la URL a la ubicación de hwids.lua en tu repositorio
 
 local permanentHWIDs = hwidConfig.permanentHWIDs
 local temporaryHWIDs = hwidConfig.temporaryHWIDs
