@@ -9,6 +9,7 @@ local permanentHWIDs = {
 
 local temporaryHWIDs = {
     "DC61583D-84CD-48E1-8AB3-212434BDC519",
+    "33"
 }
 
 -- Variables de tiempo
@@ -17,7 +18,9 @@ local hwidExpirationTime = 604800 -- 604800 segundos = 1 semana
 
 -- Función para obtener el HWID del cliente
 local function getClientHWID()
-    return RbxAnalyticsService:GetClientId()
+    local clientId = RbxAnalyticsService:GetClientId()
+    print("HWID obtenido:", clientId)  -- Imprimir el HWID para depuración
+    return clientId
 end
 
 -- Función para verificar el HWID del jugador
@@ -26,10 +29,12 @@ local function checkHWID()
     print("HWID del cliente:", playerHWID)  -- Imprimir el HWID para depuración
     local currentTime = os.time() -- Obtener el tiempo actual en segundos
 
+    print("HWIDs permanentes:", table.concat(permanentHWIDs, ", "))
+    print("HWIDs temporales:", table.concat(temporaryHWIDs, ", "))
+
     -- Verificar si el HWID está autorizado para acceso permanente
     if table.find(permanentHWIDs, playerHWID) then
         print("¡HWID autorizado para acceso permanente!")
-        
         -- Intentar cargar el menú
         local success, err = pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
@@ -49,7 +54,6 @@ local function checkHWID()
         if passwordSetTime == nil then
             passwordSetTime = currentTime
             print("Acceso temporal concedido por una semana.")
-            
             -- Intentar cargar el menú
             local success, err = pcall(function()
                 loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
@@ -65,7 +69,6 @@ local function checkHWID()
             local elapsedTime = currentTime - passwordSetTime
             if elapsedTime < hwidExpirationTime then
                 print("¡Acceso temporal todavía válido!")
-                
                 -- Intentar cargar el menú
                 local success, err = pcall(function()
                     loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
