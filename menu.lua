@@ -144,26 +144,20 @@ AimbotButton.Name = "AimbotButton"
 AimbotButton.Parent = CombatFrame
 AimbotButton.Text = "Aimbot: Off"
 AimbotButton.Font = Enum.Font.GothamBold
-AimbotButton.TextSize = 18
+AimbotButton.TextSize = 20
 AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- Color blanco para el texto
-AimbotButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255) -- Azul claro
-AimbotButton.Size = UDim2.new(0, 240, 0, 40)
+AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 150, 250) -- Color azul más brillante
+AimbotButton.Size = UDim2.new(0, 240, 0, 50)
 AimbotButton.Position = UDim2.new(0, 10, 0, 10)
-
--- Mejoras en el diseño
 AimbotButton.BorderSizePixel = 0 -- Sin borde
-AimbotButton.BackgroundTransparency = 0.1 -- Ligeramente transparente
-AimbotButton.TextStrokeTransparency = 0.5 -- Contorno de texto para mejor legibilidad
-AimbotButton.TextStrokeColor3 = Color3.fromRGB(0, 0, 0) -- Color del contorno del texto (negro)
+AimbotButton.BackgroundTransparency = 0 -- Opaco
+AimbotButton.AutoButtonColor = false -- Para controlar el color al hacer clic
 
--- Efectos al pasar el mouse
-AimbotButton.MouseEnter:Connect(function()
-    AimbotButton.BackgroundColor3 = Color3.fromRGB(80, 80, 220) -- Color de fondo al pasar el mouse (más oscuro)
-end)
-
-AimbotButton.MouseLeave:Connect(function()
-    AimbotButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255) -- Volver al color original
-end)
+-- Mejora de la forma del botón
+AimbotButton.ClipsDescendants = true
+local corner = Instance.new("UICorner") -- Añadir esquinas redondeadas
+corner.CornerRadius = UDim.new(0, 12) -- Radio de las esquinas
+corner.Parent = AimbotButton)
 
 -- Botón Aimbot NPC
 AimbotNPCButton = Instance.new("TextButton") -- Crea el botón
