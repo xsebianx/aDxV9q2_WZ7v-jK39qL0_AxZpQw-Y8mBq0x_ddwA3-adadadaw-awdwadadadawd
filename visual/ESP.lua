@@ -13,14 +13,13 @@ local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
 local maxDistance = 5000
-local espEnabled = false -- Cambiado a false inicialmente
+local espEnabled = true -- Variable para controlar el estado del ESP
 local espCache = {}
-local connections = {}
+local connections = {} -- Tabla para almacenar las conexiones
 
 -- Funciones
 local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
 local tan, rad = math.tan, math.rad
-
 local round = function(...)
     local a = {}
     for i, v in next, table.pack(...) do
@@ -111,17 +110,6 @@ local function updateEsp(player, esp)
                 local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
-
-                -- Ajustar el tamaño del texto según la distancia
-                if distance > 100 then
-                    esp.name.Size = 15
-                    esp.health.Size = 15
-                    esp.distance.Size = 15
-                else
-                    esp.name.Size = 20
-                    esp.health.Size = 20
-                    esp.distance.Size = 20
-                end
             end
         end
     else
@@ -141,23 +129,6 @@ local function removeEsp(player)
         espCache[player] = nil
     end
 end
-
--- Función para desactivar el ESP
-local function disableESP()
-    espEnabled = false
-    for _, drawings in pairs(espCache) do
-        for _, drawing in pairs(drawings) do
-            drawing.Visible = false
-        end
-    end
-    for _, connection in pairs(connections) do
-        connection:Disconnect()
-    end
-    connections = {}
-end
-
--- Exponer la función de desactivación globalmente
-_G.disableESP = disableESP
 
 -- Principal
 for _, player in next, players:GetPlayers() do
@@ -192,3 +163,20 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
         end
     end
 end))
+
+-- Función para desactivar el ESP
+local function disableESP()
+    espEnabled = false
+    for _, drawings in pairs(espCache) do
+        for _, drawing in pairs(drawings) do
+            drawing.Visible = false
+        end
+    end
+    for _, connection in pairs(connections) do
+        connection:Disconnect()
+    end
+    connections = {}
+end
+
+-- Exponer la función de desactivación globalmente para que pueda ser llamada desde fuera
+_G.disableESP = disableESP
