@@ -143,15 +143,15 @@ for _, player in next, players:GetPlayers() do
     end
 end
 
-table.insert(connections, players.PlayerAdded:Connect(function(player)
+connections[#connections + 1] = players.PlayerAdded:Connect(function(player)
     createEsp(player)
-end))
+end)
 
-table.insert(connections, players.PlayerRemoving:Connect(function(player)
+connections[#connections + 1] = players.PlayerRemoving:Connect(function(player)
     removeEsp(player)
-end))
+end)
 
-table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
+connections[#connections + 1] = runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
     if espEnabled then
         for player, drawings in next, espCache do
             if settings.teamcheck and player.Team == localPlayer.Team then
