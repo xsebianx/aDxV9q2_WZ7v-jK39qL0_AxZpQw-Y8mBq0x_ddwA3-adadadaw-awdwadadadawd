@@ -191,26 +191,3 @@ end))
 
 -- Exponer la función de desactivación globalmente para que pueda ser llamada desde fuera
 _G.disableESP = disableESP
-
--- Conexión del botón para activar/desactivar el ESP
-ESPButton.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    if espEnabled then
-        ESPButton.Text = "ESP: On"
-        print("Activando ESP...") -- Mensaje de depuración
-        local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/DrakHub-V2/refs/heads/main/visual/ESP.lua"))()
-        end)
-        if not success then
-            print("Error al cargar ESP: " .. err) -- Mensaje de error
-        end
-    else
-        ESPButton.Text = "ESP: Off"
-        print("Desactivando ESP...") -- Mensaje de depuración
-        if _G.disableESP then
-            _G.disableESP() -- Desactivar el ESP
-        else
-            print("Function _G.disableESP no está definida") -- Mensaje de error
-        end
-    end
-end)
