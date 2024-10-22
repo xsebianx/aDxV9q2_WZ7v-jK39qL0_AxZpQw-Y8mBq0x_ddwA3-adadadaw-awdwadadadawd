@@ -8,7 +8,7 @@ local permanentHWIDs = {
 }
 
 local temporaryHWIDs = {
-    "22", -- HWID temporal
+    "DC61583D-84CD-48E1-8AB3-212434BDC519", -- HWID temporal
     "33"  -- Otro HWID temporal (puedes agregar más)
 }
 
