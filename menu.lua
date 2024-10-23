@@ -435,6 +435,7 @@ end)
 
 -- Configuraciones del ESP ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+-- Configuraciones
 local settings = {
     defaultcolor = Color3.fromRGB(255, 0, 0),
     teamcheck = false,
@@ -446,7 +447,6 @@ local runService = game:GetService("RunService")
 local players = game:GetService("Players")
 local uis = game:GetService("UserInputService")
 
--- Variables
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
 local maxDistance = 5000
@@ -454,13 +454,10 @@ local espEnabled = false -- ESP desactivado por defecto
 local espCache = {}
 local connections = {}
 
--- Crear el botón ESP
-local ExtraFrame = Instance.new("ExtraFrame")
-ExtraFrame.Parent = localPlayer:WaitForChild("ExtraFrame")
-
+-- Crear el botón ESP y vincularlo a ExtraFrame
 local ESPButton = Instance.new("TextButton")  -- Esto crea el botón
 ESPButton.Name = "ESPButton"
-ESPButton.Parent = ExtraFrame  -- Asegurarte de que esté en ScreenGui
+ESPButton.Parent = ExtraFrame  -- Ahora está vinculado a ExtraFrame
 ESPButton.Text = "ESP: Off"
 ESPButton.Font = Enum.Font.GothamBold
 ESPButton.TextSize = 20
