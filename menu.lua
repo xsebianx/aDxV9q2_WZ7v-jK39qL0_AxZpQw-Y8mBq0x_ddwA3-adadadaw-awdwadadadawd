@@ -545,13 +545,13 @@ local function removeEsp(player)
     end
 end
 
--- Conectar la funcionalidad del botón para activar/desactivar el ESP
-espButton.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled -- Alterna el estado del ESP (on/off)
-    espButton.Text = espEnabled and "ESP ON" or "ESP OFF" -- Actualiza el texto del botón
-    
+ESPButton.MouseButton1Click:Connect(function()
+    print("Botón clickeado") -- Mensaje de prueba
+    espEnabled = not espEnabled -- Alternar estado del ESP
+    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off" -- Actualizar texto del botón
+
     if not espEnabled then
-        -- Cuando ESP se apaga, asegurarse de ocultar todos los dibujos
+        -- Cuando ESP se apaga, ocultar todos los dibujos
         for _, drawings in pairs(espCache) do
             for _, drawing in pairs(drawings) do
                 drawing.Visible = false
@@ -559,21 +559,6 @@ espButton.MouseButton1Click:Connect(function()
         end
     end
 end)
-
--- RenderStep para actualizar el ESP solo cuando está habilitado
-table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
-    if espEnabled then
-        for player, drawings in next, espCache do
-            -- Condición para verificar el equipo si está activada la opción de teamcheck
-            if settings.teamcheck and player.Team == localPlayer.Team then
-                continue
-            end
-            if drawings and player ~= localPlayer then
-                updateEsp(player, drawings)
-            end
-        end
-    end
-end))
 
 -- Variables para el estado del Crosshair ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 local crosshairEnabled = false
