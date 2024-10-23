@@ -20,8 +20,9 @@ local ExtraFrame = Instance.new("ScrollingFrame")
 local AimbotButton = Instance.new("TextButton")
 local AimbotNPCButton = Instance.new("TextButton")
 local ESPButton = Instance.new("TextButton")
-local HackDetectorButton = Instance.new("TextButton")
+local FlyButton = Instance.new("TextButton")
 local VisorButton = Instance.new("TextButton")
+local CrosshairButton = Instance.new("TextButton")
 
 -- Propiedades generales de la GUI
 DrakHub.Name = "DrakHub"
@@ -289,16 +290,36 @@ CrosshairButton.MouseLeave:Connect(function()
     CrosshairButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
 end)
 
--- Funcionalidades de Extra
-HackDetectorButton.Name = "HackDetectorButton"
-HackDetectorButton.Parent = ExtraFrame
-HackDetectorButton.Text = "Hack Detector: Off"
-HackDetectorButton.Font = Enum.Font.GothamBold
-HackDetectorButton.TextSize = 18
-HackDetectorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-HackDetectorButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
-HackDetectorButton.Size = UDim2.new(0, 240, 0, 40)
-HackDetectorButton.Position = UDim2.new(0, 10, 0, 10)
+-- Crear el botón de vuelo
+local FlyButton = Instance.new("TextButton")
+FlyButton.Name = "FlyButton"
+FlyButton.Parent = ExtraFrame
+FlyButton.Text = "Fly: Off"  -- Estado inicial
+FlyButton.Font = Enum.Font.GothamBold
+FlyButton.TextSize = 18
+FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+FlyButton.Size = UDim2.new(0, 240, 0, 40)
+FlyButton.Position = UDim2.new(0, 10, 0, 10) -- Ajustar posición
+FlyButton.BorderSizePixel = 0
+FlyButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
+FlyButton.AutoButtonColor = false
+FlyButton.ClipsDescendants = true
+local cornerFly = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerFly.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerFly.Parent = FlyButton
+
+-- Efecto de hover (opcional)
+FlyButton.MouseEnter:Connect(function()
+    FlyButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)  -- Color verde clarito al pasar el mouse
+end)
+
+FlyButton.MouseLeave:Connect(function()
+    FlyButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
+end)
+
 
 -- Funcionalidades del menú
 CombatButton.MouseButton1Click:Connect(function()
@@ -397,20 +418,21 @@ CrosshairButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Toggle HackDetector
-local hackDetectorEnabled = false
-HackDetectorButton.MouseButton1Click:Connect(function()
-    hackDetectorEnabled = not hackDetectorEnabled
-    if hackDetectorEnabled then
-        HackDetectorButton.Text = "Hack Detector: On"
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/detector.lua"))()
+local flyEnabled = false
+
+FlyButton.MouseButton1Click:Connect(function()
+    flyEnabled = not flyEnabled
+    if flyEnabled then
+        FlyButton.Text = "Fly: On"
+        loadstring(game:HttpGet("https://tu-servidor.com/fly.lua"))()
     else
-        HackDetectorButton.Text = "Hack Detector: Off"
-        if _G.disableHackDetector then
-            _G.disableHackDetector()
+        FlyButton.Text = "Fly: Off"
+        if _G.disableFly then
+            _G.disableFly() -- Desactivar el vuelo
         end
     end
 end)
+
 
 -- Funcionalidad para minimizar el menú con la tecla "P"
 local UserInputService = game:GetService("UserInputService")
