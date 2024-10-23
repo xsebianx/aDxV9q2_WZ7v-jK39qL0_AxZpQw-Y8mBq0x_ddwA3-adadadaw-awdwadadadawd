@@ -414,6 +414,57 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
+-- Variables para el estado del Crosshair ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+local crosshairEnabled = false
+
+-- Función para alternar el Crosshair
+CrosshairButton.MouseButton1Click:Connect(function()
+    crosshairEnabled = not crosshairEnabled
+    CrosshairButton.Text = crosshairEnabled and "Crosshair: On" or "Crosshair: Off"
+    
+    if crosshairEnabled then
+        -- Mostrar el crosshair
+        crosshair.Visible = true
+        crosshairVertical.Visible = true
+    else
+        -- Ocultar el crosshair
+        crosshair.Visible = false
+        crosshairVertical.Visible = false
+    end
+end)
+
+-- Configuración del Crosshair
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local localPlayer = Players.LocalPlayer
+local mouse = localPlayer:GetMouse()
+
+-- Crear Crosshair
+local crosshair = Drawing.new("Line")
+crosshair.Thickness = 2
+crosshair.Color = Color3.fromRGB(255, 255, 255)
+
+local crosshairVertical = Drawing.new("Line")
+crosshairVertical.Thickness = 2
+crosshairVertical.Color = Color3.fromRGB(255, 255, 255)
+
+-- Actualizar la posición del Crosshair
+RunService.RenderStepped:Connect(function()
+    local centerX = workspace.CurrentCamera.ViewportSize.X / 2
+    local centerY = workspace.CurrentCamera.ViewportSize.Y / 2
+    
+    crosshair.From = Vector2.new(centerX - 10, centerY)
+    crosshair.To = Vector2.new(centerX + 10, centerY)
+    
+    crosshairVertical.From = Vector2.new(centerX, centerY - 10)
+    crosshairVertical.To = Vector2.new(centerX, centerY + 10)
+    
+    -- Mantener la visibilidad del crosshair según el estado
+    crosshair.Visible = crosshairEnabled
+    crosshairVertical.Visible = crosshairEnabled
+end)
+
 -- Configuraciones del ESP ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 -- Configuraciones
@@ -431,7 +482,7 @@ local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
 local maxDistance = 5000
-local espEnabled = true -- Variable para controlar el estado del ESP
+local espEnabled = false -- Variable para controlar el estado del ESP, inicia desactivado
 local espCache = {}
 local connections = {} -- Tabla para almacenar las conexiones
 
@@ -536,39 +587,41 @@ local function removeEsp(player)
     end
 end
 
--- Principal
-for _, player in next, players:GetPlayers() do
-    if player ~= localPlayer then
+local function enableESP()
+    espEnabled = true
+    for _, player in next, players:GetPlayers() do
+        if player ~= localPlayer then
+            createEsp(player)
+        end
+    end
+
+    table.insert(connections, players.PlayerAdded:Connect(function(player)
         createEsp(player)
-    end
+    end))
+
+    table.insert(connections, players.PlayerRemoving:Connect(function(player)
+        removeEsp(player)
+    end))
+
+    table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
+        if espEnabled then
+            for player, drawings in next, espCache do
+                if settings.teamcheck and player.Team == localPlayer.Team then
+                    continue
+                end
+                if drawings and player ~= localPlayer then
+                    updateEsp(player, drawings)
+                end
+            end
+        else
+            for _, drawings in pairs(espCache) do
+                for _, drawing in pairs(drawings) do
+                    drawing.Visible = false
+                end
+            end
+        end
+    end))
 end
-
-table.insert(connections, players.PlayerAdded:Connect(function(player)
-    createEsp(player)
-end))
-
-table.insert(connections, players.PlayerRemoving:Connect(function(player)
-    removeEsp(player)
-end))
-
-table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
-    if espEnabled then
-        for player, drawings in next, espCache do
-            if settings.teamcheck and player.Team == localPlayer.Team then
-                continue
-            end
-            if drawings and player ~= localPlayer then
-                updateEsp(player, drawings)
-            end
-        end
-    else
-        for _, drawings in pairs(espCache) do
-            for _, drawing in pairs(drawings) do
-                drawing.Visible = false
-            end
-        end
-    end
-end))
 
 -- Función para desactivar el ESP
 local function disableESP()
@@ -584,70 +637,14 @@ local function disableESP()
     connections = {}
 end
 
--- Función para activar el ESP
-local function enableESP()
-    espEnabled = true
-end
-
 -- Conectar al botón de ESP
 ESPButton.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
     if espEnabled then
-        ESPButton.Text = "ESP: On"
-        enableESP()
-    else
         ESPButton.Text = "ESP: Off"
         disableESP()
-    end
-end)
-
--- Variables para el estado del Crosshair ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-local crosshairEnabled = false
-
--- Función para alternar el Crosshair
-CrosshairButton.MouseButton1Click:Connect(function()
-    crosshairEnabled = not crosshairEnabled
-    CrosshairButton.Text = crosshairEnabled and "Crosshair: On" or "Crosshair: Off"
-    
-    if crosshairEnabled then
-        -- Mostrar el crosshair
-        crosshair.Visible = true
-        crosshairVertical.Visible = true
     else
-        -- Ocultar el crosshair
-        crosshair.Visible = false
-        crosshairVertical.Visible = false
+        ESPButton.Text = "ESP: On"
+        enableESP()
     end
-end)
-
--- Configuración del Crosshair
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local localPlayer = Players.LocalPlayer
-local mouse = localPlayer:GetMouse()
-
--- Crear Crosshair
-local crosshair = Drawing.new("Line")
-crosshair.Thickness = 2
-crosshair.Color = Color3.fromRGB(255, 255, 255)
-
-local crosshairVertical = Drawing.new("Line")
-crosshairVertical.Thickness = 2
-crosshairVertical.Color = Color3.fromRGB(255, 255, 255)
-
--- Actualizar la posición del Crosshair
-RunService.RenderStepped:Connect(function()
-    local centerX = workspace.CurrentCamera.ViewportSize.X / 2
-    local centerY = workspace.CurrentCamera.ViewportSize.Y / 2
-    
-    crosshair.From = Vector2.new(centerX - 10, centerY)
-    crosshair.To = Vector2.new(centerX + 10, centerY)
-    
-    crosshairVertical.From = Vector2.new(centerX, centerY - 10)
-    crosshairVertical.To = Vector2.new(centerX, centerY + 10)
-    
-    -- Mantener la visibilidad del crosshair según el estado
-    crosshair.Visible = crosshairEnabled
-    crosshairVertical.Visible = crosshairEnabled
+    espEnabled = not espEnabled
 end)
