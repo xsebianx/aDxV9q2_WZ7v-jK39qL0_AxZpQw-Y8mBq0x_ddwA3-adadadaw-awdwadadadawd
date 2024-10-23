@@ -424,7 +424,7 @@ FlyButton.MouseButton1Click:Connect(function()
     flyEnabled = not flyEnabled
     if flyEnabled then
         FlyButton.Text = "Fly: On"
-        loadstring(game:HttpGet("https://tu-servidor.com/fly.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/fly.lua"))()
     else
         FlyButton.Text = "Fly: Off"
         if _G.disableFly then
