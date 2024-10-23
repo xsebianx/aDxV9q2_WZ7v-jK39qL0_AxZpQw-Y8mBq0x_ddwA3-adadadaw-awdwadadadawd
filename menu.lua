@@ -202,17 +202,20 @@ AimbotNPCButton.MouseLeave:Connect(function()
 end)
 
 -- Crear el botón ESP
+local ESPButton = Instance.new("TextButton")  -- Esto crea el botón
 ESPButton.Name = "ESPButton"
-ESPButton.Parent = VisualFrame
+ESPButton.Parent = VisualFrame  -- Asegurarte de que esté en VisualFrame
 ESPButton.Text = "ESP: Off"
 ESPButton.Font = Enum.Font.GothamBold
-ESPButton.TextSize = 20  -- Tamaño del texto
+ESPButton.TextSize = 20
 ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color de fondo oscuro
-ESPButton.Size = UDim2.new(0, 240, 0, 40)  -- Mantener el tamaño
-ESPButton.Position = UDim2.new(0, 10, 0, 10)  -- Mantener la posición
-ESPButton.BorderSizePixel = 0  -- Sin borde
-ESPButton.BackgroundTransparency = 0.1  -- Ligera transparencia para un efecto suave
+ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ESPButton.Size = UDim2.new(0, 240, 0, 40)
+ESPButton.Position = UDim2.new(0, 10, 0, 10)
+ESPButton.BorderSizePixel = 0
+ESPButton.BackgroundTransparency = 0.1
+ESPButton.AutoButtonColor = false
+ESPButton.ClipsDescendants = true
 
 -- Redondear esquinas
 ESPButton.AutoButtonColor = false
@@ -413,26 +416,35 @@ end)
 
 -- Configuraciones del ESP ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
--- Configuración del ESP
+-- Configuraciones
 local settings = {
     defaultcolor = Color3.fromRGB(255, 0, 0),
     teamcheck = false,
     teamcolor = true
 }
 
-local maxDistance = 5000
-local espEnabled = false -- Variable para controlar el estado del ESP
-local espCache = {}
-
 -- Servicios
 local runService = game:GetService("RunService")
 local players = game:GetService("Players")
+
+-- Variables
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
+local maxDistance = 5000
+local espEnabled = true -- Variable para controlar el estado del ESP
+local espCache = {}
+local connections = {} -- Tabla para almacenar las conexiones
 
+-- Funciones
 local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
 local tan, rad = math.tan, math.rad
-
+local round = function(...)
+    local a = {}
+    for i, v in next, table.pack(...) do
+        a[i] = math.round(v)
+    end
+    return unpack(a)
+end
 local wtvp = function(...)
     local a, b = camera.WorldToViewportPoint(camera, ...)
     return newVector2(a.X, a.Y), b, a.Z
@@ -446,44 +458,31 @@ local function createEsp(player)
     drawings.box.Color = settings.defaultcolor
     drawings.box.Visible = false
     drawings.box.ZIndex = 2
-
     drawings.boxoutline = newDrawing("Square")
     drawings.boxoutline.Thickness = 3
     drawings.boxoutline.Filled = false
     drawings.boxoutline.Color = newColor3()
     drawings.boxoutline.Visible = false
     drawings.boxoutline.ZIndex = 1
-
     drawings.name = newDrawing("Text")
     drawings.name.Color = newColor3(255, 255, 255)
     drawings.name.Size = 20
     drawings.name.Center = true
     drawings.name.Outline = true
     drawings.name.Visible = false
-
     drawings.health = newDrawing("Text")
     drawings.health.Color = newColor3(0, 255, 0)
     drawings.health.Size = 20
     drawings.health.Center = true
     drawings.health.Outline = true
     drawings.health.Visible = false
-
     drawings.distance = newDrawing("Text")
     drawings.distance.Color = newColor3(255, 0, 0)
     drawings.distance.Size = 20
     drawings.distance.Center = true
     drawings.distance.Outline = true
     drawings.distance.Visible = false
-
     espCache[player] = drawings
-
-    -- Conectar el evento de muerte
-    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.Died:Connect(function()
-            removeEsp(player) -- Eliminar ESP cuando el jugador muere
-        end)
-    end
 end
 
 local function updateEsp(player, esp)
@@ -499,32 +498,24 @@ local function updateEsp(player, esp)
             esp.distance.Visible = visible and depth <= maxDistance
             if visible then
                 local scaleFactor = 1 / (depth * tan(rad(camera.FieldOfView / 2)) * 2) * 1000
-                local width, height = math.round(4 * scaleFactor), math.round(5 * scaleFactor)
-                local x, y = math.round(position.X), math.round(position.Y)
+                local width, height = round(4 * scaleFactor, 5 * scaleFactor)
+                local x, y = round(position.X, position.Y)
                 esp.box.Size = newVector2(width, height)
-                esp.box.Position = newVector2(math.round(x - width / 2), math.round(y - height / 2))
+                esp.box.Position = newVector2(round(x - width / 2, y - height / 2))
                 esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor
                 esp.boxoutline.Size = esp.box.Size
                 esp.boxoutline.Position = esp.box.Position
-
                 -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
                 esp.name.Position = newVector2(x, y - height / 2 - 20)
-
                 local humanoid = character:FindFirstChild("Humanoid")
                 if humanoid then
                     esp.health.Text = string.format("Vida: %.0f%%", humanoid.Health / humanoid.MaxHealth * 100)
                     esp.health.Position = newVector2(x, y - height / 2 - 40)
                 end
-
                 local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
-
-                -- Ajustar el tamaño del texto si la distancia es mayor a 800
-                esp.name.Size = distance > 800 and 14 or 20 -- Ajustar tamaño del texto
-                esp.health.Size = esp.name.Size
-                esp.distance.Size = esp.name.Size
             end
         end
     else
@@ -545,18 +536,68 @@ local function removeEsp(player)
     end
 end
 
-ESPButton.MouseButton1Click:Connect(function()
-    print("Botón clickeado") -- Mensaje de prueba
-    espEnabled = not espEnabled -- Alternar estado del ESP
-    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off" -- Actualizar texto del botón
+-- Principal
+for _, player in next, players:GetPlayers() do
+    if player ~= localPlayer then
+        createEsp(player)
+    end
+end
 
-    if not espEnabled then
-        -- Cuando ESP se apaga, ocultar todos los dibujos
+table.insert(connections, players.PlayerAdded:Connect(function(player)
+    createEsp(player)
+end))
+
+table.insert(connections, players.PlayerRemoving:Connect(function(player)
+    removeEsp(player)
+end))
+
+table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
+    if espEnabled then
+        for player, drawings in next, espCache do
+            if settings.teamcheck and player.Team == localPlayer.Team then
+                continue
+            end
+            if drawings and player ~= localPlayer then
+                updateEsp(player, drawings)
+            end
+        end
+    else
         for _, drawings in pairs(espCache) do
             for _, drawing in pairs(drawings) do
                 drawing.Visible = false
             end
         end
+    end
+end))
+
+-- Función para desactivar el ESP
+local function disableESP()
+    espEnabled = false
+    for _, drawings in pairs(espCache) do
+        for _, drawing in pairs(drawings) do
+            drawing.Visible = false
+        end
+    end
+    for _, connection in pairs(connections) do
+        connection:Disconnect()
+    end
+    connections = {}
+end
+
+-- Función para activar el ESP
+local function enableESP()
+    espEnabled = true
+end
+
+-- Conectar al botón de ESP
+ESPButton.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    if espEnabled then
+        ESPButton.Text = "ESP: On"
+        enableESP()
+    else
+        ESPButton.Text = "ESP: Off"
+        disableESP()
     end
 end)
 
