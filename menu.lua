@@ -388,7 +388,7 @@ CrosshairButton.MouseButton1Click:Connect(function()
     crosshairEnabled = not crosshairEnabled
     if crosshairEnabled then
         CrosshairButton.Text = "Crosshair: On"
-        loadstring(game:HttpGet("https://tu-servidor.com/crosshair.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/Crosshair.lua"))()
     else
         CrosshairButton.Text = "Crosshair: Off"
         if _G.disableCrosshair then
