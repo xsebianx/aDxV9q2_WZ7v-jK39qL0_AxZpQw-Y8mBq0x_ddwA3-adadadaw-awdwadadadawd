@@ -368,23 +368,6 @@ AimbotNPCButton.MouseButton1Click:Connect(function()
     end
 end)
 
-ESPButton.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    if espEnabled then
-        ESPButton.Text = "ESP: On"
-        -- Cargar el script de ESP solo si no está activo
-        if not _G.espLoaded then
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/ESP.lua"))()
-            _G.espLoaded = true -- Marcar que el ESP ha sido cargado
-        end
-    else
-        ESPButton.Text = "ESP: Off"
-        if _G.disableESP then
-            _G.disableESP() -- Desactivar el ESP
-        end
-    end
-end)
-
 -- Conectar el evento del botón
 VisorButton.MouseButton1Click:Connect(function()
     visorEnabled = not visorEnabled
@@ -440,5 +423,157 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.P then
         isMinimized = not isMinimized
         MainFrame.Visible = not isMinimized
+    end
+end)
+
+-- Configuraciones del ESP
+local settings = {
+    defaultcolor = Color3.fromRGB(255, 0, 0),
+    teamcheck = false,
+    teamcolor = true
+}
+
+local maxDistance = 5000
+local espEnabled = false -- Variable para controlar el estado del ESP
+local espCache = {}
+
+-- Servicios
+local runService = game:GetService("RunService")
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
+local tan, rad = math.tan, math.rad
+
+local wtvp = function(...)
+    local a, b = camera.WorldToViewportPoint(camera, ...)
+    return newVector2(a.X, a.Y), b, a.Z
+end
+
+local function createEsp(player)
+    local drawings = {}
+    drawings.box = newDrawing("Square")
+    drawings.box.Thickness = 1
+    drawings.box.Filled = false
+    drawings.box.Color = settings.defaultcolor
+    drawings.box.Visible = false
+    drawings.box.ZIndex = 2
+
+    drawings.boxoutline = newDrawing("Square")
+    drawings.boxoutline.Thickness = 3
+    drawings.boxoutline.Filled = false
+    drawings.boxoutline.Color = newColor3()
+    drawings.boxoutline.Visible = false
+    drawings.boxoutline.ZIndex = 1
+
+    drawings.name = newDrawing("Text")
+    drawings.name.Color = newColor3(255, 255, 255)
+    drawings.name.Size = 20
+    drawings.name.Center = true
+    drawings.name.Outline = true
+    drawings.name.Visible = false
+
+    drawings.health = newDrawing("Text")
+    drawings.health.Color = newColor3(0, 255, 0)
+    drawings.health.Size = 20
+    drawings.health.Center = true
+    drawings.health.Outline = true
+    drawings.health.Visible = false
+
+    drawings.distance = newDrawing("Text")
+    drawings.distance.Color = newColor3(255, 0, 0)
+    drawings.distance.Size = 20
+    drawings.distance.Center = true
+    drawings.distance.Outline = true
+    drawings.distance.Visible = false
+
+    espCache[player] = drawings
+end
+
+local function updateEsp(player, esp)
+    local character = player and player.Character
+    if character then
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            local position, visible, depth = wtvp(humanoidRootPart.Position)
+            esp.box.Visible = visible and depth <= maxDistance
+            esp.boxoutline.Visible = visible and depth <= maxDistance
+            esp.name.Visible = visible and depth <= maxDistance
+            esp.health.Visible = visible and depth <= maxDistance
+            esp.distance.Visible = visible and depth <= maxDistance
+            if visible then
+                local scaleFactor = 1 / (depth * tan(rad(camera.FieldOfView / 2)) * 2) * 1000
+                local width, height = math.round(4 * scaleFactor), math.round(5 * scaleFactor)
+                local x, y = math.round(position.X), math.round(position.Y)
+                esp.box.Size = newVector2(width, height)
+                esp.box.Position = newVector2(math.round(x - width / 2), math.round(y - height / 2))
+                esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor
+                esp.boxoutline.Size = esp.box.Size
+                esp.boxoutline.Position = esp.box.Position
+
+                -- Actualizar etiquetas de nombre, vida y distancia
+                esp.name.Text = player.Name
+                esp.name.Position = newVector2(x, y - height / 2 - 20)
+
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    esp.health.Text = string.format("Vida: %.0f%%", humanoid.Health / humanoid.MaxHealth * 100)
+                    esp.health.Position = newVector2(x, y - height / 2 - 40)
+                end
+
+                local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
+                esp.distance.Text = string.format("Distancia: %.2f", distance)
+                esp.distance.Position = newVector2(x, y + height / 2 + 20)
+
+                -- Ajustar el tamaño del texto si la distancia es mayor a 800
+                esp.name.Size = distance > 800 and 14 or 20 -- Ajustar tamaño del texto
+                esp.health.Size = esp.name.Size
+                esp.distance.Size = esp.name.Size
+            end
+        end
+    else
+        esp.box.Visible = false
+        esp.boxoutline.Visible = false
+        esp.name.Visible = false
+        esp.health.Visible = false
+        esp.distance.Visible = false
+    end
+end
+
+local function removeEsp(player)
+    if espCache[player] then
+        for _, drawing in pairs(espCache[player]) do
+            drawing:Remove()
+        end
+        espCache[player] = nil
+    end
+end
+
+-- Función para alternar el ESP
+ESPButton.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off"
+
+    -- Activar o desactivar el ESP para todos los jugadores
+    if espEnabled then
+        for _, player in ipairs(players:GetPlayers()) do
+            createEsp(player)
+            player.CharacterAdded:Connect(function()
+                createEsp(player)
+            end)
+        end
+
+        runService.RenderStepped:Connect(function()
+            for _, player in ipairs(players:GetPlayers()) do
+                if espCache[player] then
+                    updateEsp(player, espCache[player])
+                end
+            end
+        end)
+    else
+        for _, player in ipairs(players:GetPlayers()) do
+            removeEsp(player)
+        end
     end
 end)
