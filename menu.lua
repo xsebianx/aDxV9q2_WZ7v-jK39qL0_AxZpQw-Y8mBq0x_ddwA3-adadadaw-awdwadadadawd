@@ -455,20 +455,16 @@ local espCache = {}
 local connections = {}
 
 -- Crear el botón ESP y vincularlo a ExtraFrame
-local ESPButton = Instance.new("TextButton")  -- Esto crea el botón
+-- Funcionalidades de Visual
 ESPButton.Name = "ESPButton"
-ESPButton.Parent = VisualButton  -- Ahora está vinculado a ExtraFrame
+ESPButton.Parent = VisualFrame
 ESPButton.Text = "ESP: Off"
 ESPButton.Font = Enum.Font.GothamBold
-ESPButton.TextSize = 20
+ESPButton.TextSize = 18
 ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
 ESPButton.Size = UDim2.new(0, 240, 0, 40)
 ESPButton.Position = UDim2.new(0, 10, 0, 10)
-ESPButton.BorderSizePixel = 0
-ESPButton.BackgroundTransparency = 0.1
-ESPButton.AutoButtonColor = false
-ESPButton.ClipsDescendants = true
 
 -- Añadir esquinas redondeadas
 local corner = Instance.new("UICorner")
