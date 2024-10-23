@@ -535,19 +535,25 @@ local function updateEsp(player, esp)
                 esp.boxoutline.Size = esp.box.Size
                 esp.boxoutline.Position = esp.box.Position
 
+                -- Ajuste del tamaño del texto en función de la distancia
+                local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
+                local textScale = math.clamp(500 / distance, 0.5, 1.5)  -- Escala entre 0.5 y 1.5 según la distancia
+
                 -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
                 esp.name.Position = newVector2(x, y - height / 2 - 20)
+                esp.name.Size = 20 * textScale  -- Ajustar tamaño del texto
 
                 local humanoid = character:FindFirstChild("Humanoid")
                 if humanoid then
                     esp.health.Text = string.format("Vida: %.0f%%", humanoid.Health / humanoid.MaxHealth * 100)
                     esp.health.Position = newVector2(x, y - height / 2 - 40)
+                    esp.health.Size = 20 * textScale  -- Ajustar tamaño del texto
                 end
 
-                local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
+                esp.distance.Size = 20 * textScale  -- Ajustar tamaño del texto
             end
         end
     else
