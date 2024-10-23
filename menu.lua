@@ -201,38 +201,6 @@ AimbotNPCButton.MouseLeave:Connect(function()
     AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original (gris oscuro)
 end)
 
--- Crear el botón ESP
-local ESPButton = Instance.new("TextButton")  -- Esto crea el botón
-ESPButton.Name = "ESPButton"
-ESPButton.Parent = VisualFrame  -- Asegurarte de que esté en VisualFrame
-ESPButton.Text = "ESP: Off"
-ESPButton.Font = Enum.Font.GothamBold
-ESPButton.TextSize = 20
-ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ESPButton.Size = UDim2.new(0, 240, 0, 40)
-ESPButton.Position = UDim2.new(0, 10, 0, 10)
-ESPButton.BorderSizePixel = 0
-ESPButton.BackgroundTransparency = 0.1
-ESPButton.AutoButtonColor = false
-ESPButton.ClipsDescendants = true
-
--- Redondear esquinas
-ESPButton.AutoButtonColor = false
-ESPButton.ClipsDescendants = true
-local corner = Instance.new("UICorner")  -- Añadir esquinas redondeadas
-corner.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
-corner.Parent = ESPButton
-
--- Efecto de hover (opcional)
-ESPButton.MouseEnter:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
-end)
-
-ESPButton.MouseLeave:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
-end)
-
 -- Funcionalidades de Visual
 local VisorButton = Instance.new("TextButton")
 VisorButton.Name = "VisorButton"
@@ -466,3 +434,211 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- Configuraciones del ESP ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+local settings = {
+    defaultcolor = Color3.fromRGB(255, 0, 0),
+    teamcheck = false,
+    teamcolor = true
+}
+
+-- Servicios
+local runService = game:GetService("RunService")
+local players = game:GetService("Players")
+local uis = game:GetService("UserInputService")
+
+-- Variables
+local localPlayer = players.LocalPlayer
+local camera = workspace.CurrentCamera
+local maxDistance = 5000
+local espEnabled = false -- ESP desactivado por defecto
+local espCache = {}
+local connections = {}
+
+-- Crear el botón ESP
+local ExtraFrame = Instance.new("ExtraFrame")
+ExtraFrame.Parent = localPlayer:WaitForChild("ExtraFrame")
+
+local ESPButton = Instance.new("TextButton")  -- Esto crea el botón
+ESPButton.Name = "ESPButton"
+ESPButton.Parent = ExtraFrame  -- Asegurarte de que esté en ScreenGui
+ESPButton.Text = "ESP: Off"
+ESPButton.Font = Enum.Font.GothamBold
+ESPButton.TextSize = 20
+ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ESPButton.Size = UDim2.new(0, 240, 0, 40)
+ESPButton.Position = UDim2.new(0, 10, 0, 10)
+ESPButton.BorderSizePixel = 0
+ESPButton.BackgroundTransparency = 0.1
+ESPButton.AutoButtonColor = false
+ESPButton.ClipsDescendants = true
+
+-- Añadir esquinas redondeadas
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = ESPButton
+
+-- Efecto de hover (opcional)
+ESPButton.MouseEnter:Connect(function()
+    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+end)
+
+ESPButton.MouseLeave:Connect(function()
+    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+-- Función para cambiar el estado del ESP
+local function toggleESP()
+    espEnabled = not espEnabled
+    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off"
+end
+
+-- Conectar el botón a la función de activar/desactivar
+ESPButton.MouseButton1Click:Connect(toggleESP)
+
+-- Funciones para ESP
+local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
+local tan, rad = math.tan, math.rad
+local round = function(...)
+    local a = {}
+    for i, v in next, table.pack(...) do
+        a[i] = math.round(v)
+    end
+    return unpack(a)
+end
+
+local wtvp = function(...)
+    local a, b = camera.WorldToViewportPoint(camera, ...)
+    return newVector2(a.X, a.Y), b, a.Z
+end
+
+local function createEsp(player)
+    local drawings = {}
+    drawings.box = newDrawing("Square")
+    drawings.box.Thickness = 1
+    drawings.box.Filled = false
+    drawings.box.Color = settings.defaultcolor
+    drawings.box.Visible = false
+    drawings.box.ZIndex = 2
+
+    drawings.boxoutline = newDrawing("Square")
+    drawings.boxoutline.Thickness = 3
+    drawings.boxoutline.Filled = false
+    drawings.boxoutline.Color = newColor3()
+    drawings.boxoutline.Visible = false
+    drawings.boxoutline.ZIndex = 1
+
+    drawings.name = newDrawing("Text")
+    drawings.name.Color = newColor3(255, 255, 255)
+    drawings.name.Size = 20
+    drawings.name.Center = true
+    drawings.name.Outline = true
+    drawings.name.Visible = false
+
+    drawings.health = newDrawing("Text")
+    drawings.health.Color = newColor3(0, 255, 0)
+    drawings.health.Size = 20
+    drawings.health.Center = true
+    drawings.health.Outline = true
+    drawings.health.Visible = false
+
+    drawings.distance = newDrawing("Text")
+    drawings.distance.Color = newColor3(255, 0, 0)
+    drawings.distance.Size = 20
+    drawings.distance.Center = true
+    drawings.distance.Outline = true
+    drawings.distance.Visible = false
+
+    espCache[player] = drawings
+end
+
+local function updateEsp(player, esp)
+    local character = player and player.Character
+    if character then
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            local position, visible, depth = wtvp(humanoidRootPart.Position)
+            esp.box.Visible = visible and depth <= maxDistance and espEnabled
+            esp.boxoutline.Visible = visible and depth <= maxDistance and espEnabled
+            esp.name.Visible = visible and depth <= maxDistance and espEnabled
+            esp.health.Visible = visible and depth <= maxDistance and espEnabled
+            esp.distance.Visible = visible and depth <= maxDistance and espEnabled
+
+            if visible then
+                local scaleFactor = 1 / (depth * tan(rad(camera.FieldOfView / 2)) * 2) * 1000
+                local width, height = round(4 * scaleFactor, 5 * scaleFactor)
+                local x, y = round(position.X, position.Y)
+
+                esp.box.Size = newVector2(width, height)
+                esp.box.Position = newVector2(round(x - width / 2, y - height / 2))
+                esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor
+
+                esp.boxoutline.Size = esp.box.Size
+                esp.boxoutline.Position = esp.box.Position
+
+                -- Actualizar etiquetas de nombre, vida y distancia
+                esp.name.Text = player.Name
+                esp.name.Position = newVector2(x, y - height / 2 - 20)
+
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    esp.health.Text = string.format("Vida: %.0f%%", humanoid.Health / humanoid.MaxHealth * 100)
+                    esp.health.Position = newVector2(x, y - height / 2 - 40)
+                end
+
+                local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
+                esp.distance.Text = string.format("Distancia: %.2f", distance)
+                esp.distance.Position = newVector2(x, y + height / 2 + 20)
+            end
+        end
+    else
+        esp.box.Visible = false
+        esp.boxoutline.Visible = false
+        esp.name.Visible = false
+        esp.health.Visible = false
+        esp.distance.Visible = false
+    end
+end
+
+local function removeEsp(player)
+    if espCache[player] then
+        for _, drawing in pairs(espCache[player]) do
+            drawing:Remove()
+        end
+        espCache[player] = nil
+    end
+end
+
+-- Principal
+for _, player in next, players:GetPlayers() do
+    if player ~= localPlayer then
+        createEsp(player)
+    end
+end
+
+table.insert(connections, players.PlayerAdded:Connect(function(player)
+    createEsp(player)
+end))
+
+table.insert(connections, players.PlayerRemoving:Connect(function(player)
+    removeEsp(player)
+end))
+
+table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
+    if espEnabled then
+        for player, drawings in next, espCache do
+            if settings.teamcheck and player.Team == localPlayer.Team then
+                continue
+            end
+            if drawings and player ~= localPlayer then
+                updateEsp(player, drawings)
+            end
+        end
+    else
+        for _, drawings in pairs(espCache) do
+            for _, drawing in pairs(drawings) do
+                drawing.Visible = false
+            end
+        end
+    end
+end))
