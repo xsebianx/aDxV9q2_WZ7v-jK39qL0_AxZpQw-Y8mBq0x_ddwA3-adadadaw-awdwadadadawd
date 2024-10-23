@@ -201,8 +201,7 @@ AimbotNPCButton.MouseLeave:Connect(function()
     AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original (gris oscuro)
 end)
 
---config boton esp
-local ESPButton = Instance.new("TextButton")
+-- Crear el botón ESP
 ESPButton.Name = "ESPButton"
 ESPButton.Parent = VisualFrame
 ESPButton.Text = "ESP: Off"
@@ -586,20 +585,21 @@ ESPButton.MouseButton1Click:Connect(function()
     -- Activar o desactivar el ESP para todos los jugadores
     if espEnabled then
         for _, player in ipairs(players:GetPlayers()) do
-            createEsp(player)
+            createEsp(player)  -- Crear ESP para cada jugador
             player.CharacterAdded:Connect(function()
-                createEsp(player) -- Crear ESP cuando el personaje es añadido
+                createEsp(player)  -- Crear ESP cuando el personaje es añadido
             end)
         end
 
         runService.RenderStepped:Connect(function()
             for _, player in ipairs(players:GetPlayers()) do
                 if espCache[player] then
-                    updateEsp(player, espCache[player])
+                    updateEsp(player, espCache[player])  -- Actualizar ESP si está habilitado
                 end
             end
         end)
     else
+        -- Desactivar ESP y eliminarlo para todos los jugadores
         for _, player in ipairs(players:GetPlayers()) do
             removeEsp(player)
         end
