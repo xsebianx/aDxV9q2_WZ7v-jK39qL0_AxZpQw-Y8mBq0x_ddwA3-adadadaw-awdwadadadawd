@@ -115,90 +115,6 @@ local function aimbot(target)
     end
 end
 
--- Actualizar el objetivo cada ciclo
-local function onRenderStepped()
-    if aimEnabled then
-        local newTarget = getClosestPlayerInFOV() -- Encontrar el jugador más cercano dentro del FOV y radio de detección
-        if newTarget and newTarget ~= closestTarget then
-            closestTarget = newTarget
-            totalTargetsDetected = totalTargetsDetected + 1
-            trackingStartTime = tick()
-            showNotification("Objetivo detectado: " .. closestTarget.Name)
-            sound:Play()
-        end
-        if closestTarget then
-            aimbot(closestTarget) -- Usar Aimbot para asegurar el impacto
-            visibleLabel.Visible = true -- Mostrar el mensaje "Jugador visible"
-            targetIndicator.Visible = true
-            local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(closestTarget.Character.Head.Position)
-            targetIndicator.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
-            totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
-            trackingStartTime = tick()
-        else
-            visibleLabel.Visible = false -- Ocultar el mensaje si no hay objetivo visible
-            targetIndicator.Visible = false
-        end
-    else
-        visibleLabel.Visible = false -- Ocultar el mensaje si el aimbot no está habilitado
-        targetIndicator.Visible = false
-        if trackingStartTime > 0 then
-            totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
-            trackingStartTime = 0
-        end
-    end
-    -- Actualizar la posición del círculo FOV
-    if fovCircle then
-        fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-    end
-    updateStats()
-end
-
--- Conectar la función de actualización al evento RenderStepped
-table.insert(connections, game:GetService("RunService").RenderStepped:Connect(onRenderStepped))
-
--- Controles de teclas para activar el aimbot con clic derecho
-table.insert(connections, game:GetService("UserInputService").InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Clic derecho para activar el aimbot
-        aimEnabled = true
-        fovCircle.Visible = true
-    end
-end))
-
-table.insert(connections, game:GetService("UserInputService").InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Soltar clic derecho para desactivar el aimbot
-        aimEnabled = false
-        closestTarget = nil
-        fovCircle.Visible = false
-        visibleLabel.Visible = false -- Ocultar el mensaje cuando se desactiva el aimbot
-        targetIndicator.Visible = false
-    end
-end))
-
--- Iniciar el círculo de FOV, el mensaje de visibilidad, el indicador de objetivo, el sistema de notificación y el sistema de estadísticas
-createFOVCircle()
-createVisibleLabel()
-createTargetIndicator()
-createNotificationLabel()
-createAlertSound()
-
--- Manejar la reconexión del jugador y la muerte
-local localPlayer = game.Players.LocalPlayer
-local function onCharacterAdded(character)
-    character:WaitForChild("Humanoid").Died:Connect(function()
-        createFOVCircle()
-        createVisibleLabel()
-        createTargetIndicator()
-        createNotificationLabel()
-        createAlertSound()
-    end)
-end
-
-if localPlayer.Character then
-    onCharacterAdded(localPlayer.Character)
-end
-
-localPlayer.CharacterAdded:Connect(onCharacterAdded)
-
 -- Función para desactivar el aimbot
 local function disableAimbot()
     aimEnabled = false
@@ -214,3 +130,69 @@ end
 
 -- Exponer la función de desactivación globalmente para que pueda ser llamada desde fuera
 _G.disableAimbot = disableAimbot
+
+-- Actualizar el objetivo cada ciclo
+local function onRenderStepped()
+    if aimEnabled then
+        local newTarget = getClosestPlayerInFOV() -- Encontrar el jugador más cercano dentro del FOV y radio de detección
+        if newTarget and newTarget ~= closestTarget then
+            closestTarget = newTarget
+            totalTargetsDetected = totalTargetsDetected + 1
+            showNotification("Objetivo detectado: " .. closestTarget.Name)
+            sound:Play()
+        end
+        if closestTarget then
+            aimbot(closestTarget) -- Usar Aimbot para asegurar el impacto
+            visibleLabel.Visible = true -- Mostrar el mensaje "Jugador visible"
+            targetIndicator.Visible = true
+            local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(closestTarget.Character.Head.Position)
+            targetIndicator.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
+        else
+            visibleLabel.Visible = false -- Ocultar el mensaje si no hay objetivo visible
+            targetIndicator.Visible = false
+        end
+    else
+        visibleLabel.Visible = false -- Ocultar el mensaje si el aimbot no está habilitado
+        targetIndicator.Visible = false
+        if closestTarget then
+            closestTarget = nil -- Resetear el objetivo cuando se desactiva el aimbot
+        end
+    end
+    -- Actualizar la posición del círculo FOV
+    if fovCircle then
+        fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+    end
+end
+
+-- Conectar la función de actualización al evento RenderStepped
+table.insert(connections, game:GetService("RunService").RenderStepped:Connect(onRenderStepped))
+
+-- Controles de teclas para activar el aimbot con clic derecho
+table.insert(connections, game:GetService("UserInputService").InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Clic derecho para activar el aimbot
+        aimEnabled = true
+        fovCircle.Visible = true
+    end
+end))
+
+table.insert(connections, game:GetService("UserInputService").InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Clic derecho para desactivar el aimbot
+        disableAimbot() -- Llamar a la función de desactivación
+    end
+end))
+
+-- Limpiar conexiones cuando se cierra el juego
+game.Players.LocalPlayer.AncestryChanged:Connect(function(_, parent)
+    if not parent then
+        for _, connection in pairs(connections) do
+            connection:Disconnect()
+        end
+        connections = {}
+    end
+end)
+
+createFOVCircle()
+createVisibleLabel()
+createTargetIndicator()
+createNotificationLabel()
+createAlertSound()
