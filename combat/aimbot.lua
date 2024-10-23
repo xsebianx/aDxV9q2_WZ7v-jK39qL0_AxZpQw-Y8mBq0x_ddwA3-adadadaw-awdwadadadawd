@@ -179,7 +179,6 @@ createFOVCircle()
 createVisibleLabel()
 createTargetIndicator()
 createNotificationLabel()
-createStatsLabel()
 createAlertSound()
 
 -- Manejar la reconexión del jugador y la muerte
@@ -190,7 +189,6 @@ local function onCharacterAdded(character)
         createVisibleLabel()
         createTargetIndicator()
         createNotificationLabel()
-        createStatsLabel()
         createAlertSound()
     end)
 end
