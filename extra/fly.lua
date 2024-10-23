@@ -72,7 +72,7 @@ _G.disableFly = stopFly
 
 -- Activar el vuelo con la tecla 'F'
 UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.F then
+    if input.KeyCode == Enum.KeyCode.I then
         toggleFly()
     end
 end)
