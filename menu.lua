@@ -445,54 +445,20 @@ local settings = {
 -- Servicios
 local runService = game:GetService("RunService")
 local players = game:GetService("Players")
-local uis = game:GetService("UserInputService")
 
+-- Variables
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
 local maxDistance = 5000
-local espEnabled = false -- ESP desactivado por defecto
+local espEnabled = false -- Cambiado a false por defecto
 local espCache = {}
-local connections = {}
+local connections = {} -- Tabla para almacenar las conexiones
 
--- Crear el botón ESP y vincularlo a ExtraFrame
--- Funcionalidades de Visual
-ESPButton.Name = "ESPButton"
-ESPButton.Parent = VisualFrame
-ESPButton.Text = "ESP: Off"
-ESPButton.Font = Enum.Font.GothamBold
-ESPButton.TextSize = 18
-ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
-ESPButton.Size = UDim2.new(0, 240, 0, 40)
-ESPButton.Position = UDim2.new(0, 10, 0, 10)
-
--- Añadir esquinas redondeadas
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = ESPButton
-
--- Efecto de hover (opcional)
-ESPButton.MouseEnter:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
-end)
-
-ESPButton.MouseLeave:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
-end)
-
--- Función para cambiar el estado del ESP
-local function toggleESP()
-    espEnabled = not espEnabled
-    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off"
-end
-
--- Conectar el botón a la función de activar/desactivar
-ESPButton.MouseButton1Click:Connect(toggleESP)
-
--- Funciones para ESP
+-- Funciones
 local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
 local tan, rad = math.tan, math.rad
 local round = function(...)
+
     local a = {}
     for i, v in next, table.pack(...) do
         a[i] = math.round(v)
@@ -551,11 +517,11 @@ local function updateEsp(player, esp)
         local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
         if humanoidRootPart then
             local position, visible, depth = wtvp(humanoidRootPart.Position)
-            esp.box.Visible = visible and depth <= maxDistance and espEnabled
-            esp.boxoutline.Visible = visible and depth <= maxDistance and espEnabled
-            esp.name.Visible = visible and depth <= maxDistance and espEnabled
-            esp.health.Visible = visible and depth <= maxDistance and espEnabled
-            esp.distance.Visible = visible and depth <= maxDistance and espEnabled
+            esp.box.Visible = visible and depth <= maxDistance
+            esp.boxoutline.Visible = visible and depth <= maxDistance
+            esp.name.Visible = visible and depth <= maxDistance
+            esp.health.Visible = visible and depth <= maxDistance
+            esp.distance.Visible = visible and depth <= maxDistance
 
             if visible then
                 local scaleFactor = 1 / (depth * tan(rad(camera.FieldOfView / 2)) * 2) * 1000
@@ -601,6 +567,38 @@ local function removeEsp(player)
         espCache[player] = nil
     end
 end
+
+-- Botón para activar/desactivar ESP
+local ESPButton = Instance.new("TextButton")
+ESPButton.Name = "ESPButton"
+ESPButton.Parent = VisualFrame
+ESPButton.Text = "ESP: Off"
+ESPButton.Font = Enum.Font.GothamBold
+ESPButton.TextSize = 18
+ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+ESPButton.Size = UDim2.new(0, 240, 0, 40)
+ESPButton.Position = UDim2.new(0, 10, 0, 10)
+
+-- Añadir esquinas redondeadas
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = ESPButton
+
+-- Efecto de hover
+ESPButton.MouseEnter:Connect(function()
+    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+end)
+
+ESPButton.MouseLeave:Connect(function()
+    ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
+end)
+
+-- Función para alternar el estado del ESP
+ESPButton.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled -- Alternar el estado
+    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off" -- Actualizar el texto del botón
+end)
 
 -- Principal
 for _, player in next, players:GetPlayers() do
