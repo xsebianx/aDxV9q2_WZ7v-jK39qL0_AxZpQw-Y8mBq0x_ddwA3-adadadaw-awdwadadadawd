@@ -6,11 +6,8 @@ local fovCircle
 local visibleLabel
 local targetIndicator
 local notificationLabel
-local statsLabel
 local sound
 local totalTargetsDetected = 0
-local totalTrackingTime = 0
-local trackingStartTime = 0
 local connections = {} -- Tabla para almacenar las conexiones
 
 -- Crear un círculo visual para mostrar el FOV del aimbot
@@ -62,18 +59,6 @@ local function createNotificationLabel()
     notificationLabel.Visible = false
 end
 
--- Crear un TextLabel para estadísticas
-local function createStatsLabel()
-    if statsLabel then statsLabel:Remove() end
-    local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-    statsLabel = Instance.new("TextLabel", screenGui)
-    statsLabel.Size = UDim2.new(0, 300, 0, 50)
-    statsLabel.Position = UDim2.new(0.5, -150, 0, 120)
-    statsLabel.Text = "Objetivos detectados: 0\nTiempo de seguimiento: 0s"
-    statsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    statsLabel.TextScaled = true
-    statsLabel.BackgroundTransparency = 1
-    statsLabel.Visible = true
 end
 
 -- Crear un sonido para alertas
@@ -90,15 +75,6 @@ local function showNotification(message)
     notificationLabel.Visible = true
     wait(2)
     notificationLabel.Visible = false
-end
-
--- Actualizar estadísticas
-local function updateStats()
-    local trackingTime = totalTrackingTime
-    if trackingStartTime > 0 then
-        trackingTime = trackingTime + (tick() - trackingStartTime)
-    end
-    statsLabel.Text = string.format("Objetivos detectados: %d\nTiempo de seguimiento: %.1fs", totalTargetsDetected, trackingTime)
 end
 
 -- Verificar si el objetivo es visible, sin obstáculos en el camino
