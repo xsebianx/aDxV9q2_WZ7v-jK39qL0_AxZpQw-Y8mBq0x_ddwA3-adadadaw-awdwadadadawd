@@ -383,7 +383,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- Configuraciones del ESP ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- Crear el botón ESP
 local ESPButton = Instance.new("TextButton")
 ESPButton.Name = "ESPButton"
 ESPButton.Parent = VisualFrame
@@ -494,13 +493,13 @@ local function updateEsp(player, esp)
         local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
         if humanoidRootPart then
             local position, visible, depth = wtvp(humanoidRootPart.Position)
-            esp.box.Visible = visible and depth <= maxDistance
-            esp.boxoutline.Visible = visible and depth <= maxDistance
-            esp.name.Visible = visible and depth <= maxDistance
-            esp.health.Visible = visible and depth <= maxDistance
-            esp.distance.Visible = visible and depth <= maxDistance
+            esp.box.Visible = espEnabled and visible and depth <= maxDistance
+            esp.boxoutline.Visible = espEnabled and visible and depth <= maxDistance
+            esp.name.Visible = espEnabled and visible and depth <= maxDistance
+            esp.health.Visible = espEnabled and visible and depth <= maxDistance
+            esp.distance.Visible = espEnabled and visible and depth <= maxDistance
 
-            if visible then
+            if espEnabled and visible then
                 local scaleFactor = 1 / (depth * tan(rad(camera.FieldOfView / 2)) * 2) * 1000
                 local width, height = round(4 * scaleFactor, 5 * scaleFactor)
                 local x, y = round(position.X, position.Y)
