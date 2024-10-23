@@ -389,7 +389,7 @@ CrosshairButton.MouseButton1Click:Connect(function()
     if crosshairEnabled then
         CrosshairButton.Text = "Crosshair: On"
         -- Cargar el script de Crosshair
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/crosshair.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/Crosshair.lua"))()
     else
         CrosshairButton.Text = "Crosshair: Off"
         -- Desactivar el crosshair
