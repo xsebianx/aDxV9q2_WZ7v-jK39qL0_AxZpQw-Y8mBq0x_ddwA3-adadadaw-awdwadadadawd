@@ -443,7 +443,7 @@ local round = function(...)
 end
 
 local wtvp = function(...)
-    local a, b = camera.WorldToViewportPoint(camera, ...)
+    local a, b = camera:WorldToViewportPoint(...)
     return newVector2(a.X, a.Y), b, a.Z
 end
 
@@ -464,21 +464,21 @@ local function createEsp(player)
     drawings.boxoutline.ZIndex = 1
 
     drawings.name = newDrawing("Text")
-    drawings.name.Color = newColor3(255, 255, 255)
+    drawings.name.Color = newColor3(1, 1, 1) -- Cambiado a valores de 0 a 1
     drawings.name.Size = 20
     drawings.name.Center = true
     drawings.name.Outline = true
     drawings.name.Visible = false
 
     drawings.health = newDrawing("Text")
-    drawings.health.Color = newColor3(0, 255, 0)
+    drawings.health.Color = newColor3(0, 1, 0) -- Cambiado a valores de 0 a 1
     drawings.health.Size = 20
     drawings.health.Center = true
     drawings.health.Outline = true
     drawings.health.Visible = false
 
     drawings.distance = newDrawing("Text")
-    drawings.distance.Color = newColor3(255, 0, 0)
+    drawings.distance.Color = newColor3(1, 0, 0) -- Cambiado a valores de 0 a 1
     drawings.distance.Size = 20
     drawings.distance.Center = true
     drawings.distance.Outline = true
@@ -505,7 +505,7 @@ local function updateEsp(player, esp)
                 local x, y = round(position.X, position.Y)
 
                 esp.box.Size = newVector2(width, height)
-                esp.box.Position = newVector2(round(x - width / 2, y - height / 2))
+                esp.box.Position = newVector2(round(x - width / 2), round(y - height / 2))
                 esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor
 
                 esp.boxoutline.Size = esp.box.Size
@@ -578,20 +578,11 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
     end
 end))
 
-local function removeEsp(player)
-    if espCache[player] then
-        for _, drawing in pairs(espCache[player]) do
-            drawing:Remove()
-        end
-        espCache[player] = nil
-    end
-end
-
 -- Función para alternar el ESP
 ESPButton.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off"
-
+end)
 
 -- Variables para el estado del Crosshair ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 local crosshairEnabled = false
