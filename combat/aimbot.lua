@@ -59,8 +59,6 @@ local function createNotificationLabel()
     notificationLabel.Visible = false
 end
 
-end
-
 -- Crear un sonido para alertas
 local function createAlertSound()
     if sound then sound:Destroy() end
