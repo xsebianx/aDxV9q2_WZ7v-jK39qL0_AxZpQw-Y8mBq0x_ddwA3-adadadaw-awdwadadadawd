@@ -457,7 +457,7 @@ local connections = {}
 -- Crear el botón ESP y vincularlo a ExtraFrame
 local ESPButton = Instance.new("TextButton")  -- Esto crea el botón
 ESPButton.Name = "ESPButton"
-ESPButton.Parent = ExtraFrame  -- Ahora está vinculado a ExtraFrame
+ESPButton.Parent = VisualButton  -- Ahora está vinculado a ExtraFrame
 ESPButton.Text = "ESP: Off"
 ESPButton.Font = Enum.Font.GothamBold
 ESPButton.TextSize = 20
