@@ -426,7 +426,7 @@ local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
 local maxDistance = 5000
-local espEnabled = true -- Variable para controlar el estado del ESP
+local espEnabled = false -- Inicialmente desactivado
 local espCache = {}
 local connections = {} -- Tabla para almacenar las conexiones
 
