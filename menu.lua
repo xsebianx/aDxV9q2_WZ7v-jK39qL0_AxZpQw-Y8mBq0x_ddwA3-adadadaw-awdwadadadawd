@@ -201,35 +201,6 @@ AimbotNPCButton.MouseLeave:Connect(function()
     AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original (gris oscuro)
 end)
 
--- Crear el botón ESP
-ESPButton.Name = "ESPButton"
-ESPButton.Parent = VisualFrame
-ESPButton.Text = "ESP: Off"
-ESPButton.Font = Enum.Font.GothamBold
-ESPButton.TextSize = 20  -- Tamaño del texto
-ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color de fondo oscuro
-ESPButton.Size = UDim2.new(0, 240, 0, 40)  -- Mantener el tamaño
-ESPButton.Position = UDim2.new(0, 10, 0, 10)  -- Mantener la posición
-ESPButton.BorderSizePixel = 0  -- Sin borde
-ESPButton.BackgroundTransparency = 0.1  -- Ligera transparencia para un efecto suave
-
--- Redondear esquinas
-ESPButton.AutoButtonColor = false
-ESPButton.ClipsDescendants = true
-local corner = Instance.new("UICorner")  -- Añadir esquinas redondeadas
-corner.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
-corner.Parent = ESPButton
-
--- Efecto de hover (opcional)
-ESPButton.MouseEnter:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
-end)
-
-ESPButton.MouseLeave:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
-end)
-
 -- Funcionalidades de Visual
 local VisorButton = Instance.new("TextButton")
 VisorButton.Name = "VisorButton"
@@ -412,6 +383,37 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- Configuraciones del ESP ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Crear el botón ESP
+local ESPButton = Instance.new("TextButton")
+ESPButton.Name = "ESPButton"
+ESPButton.Parent = VisualFrame
+ESPButton.Text = "ESP: Off"
+ESPButton.Font = Enum.Font.GothamBold
+ESPButton.TextSize = 20  -- Tamaño del texto
+ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color de fondo oscuro
+ESPButton.Size = UDim2.new(0, 240, 0, 40)  -- Mantener el tamaño
+ESPButton.Position = UDim2.new(0, 10, 0, 10)  -- Mantener la posición
+ESPButton.BorderSizePixel = 0  -- Sin borde
+ESPButton.BackgroundTransparency = 0.1  -- Ligera transparencia para un efecto suave
+
+-- Redondear esquinas
+ESPButton.AutoButtonColor = false
+ESPButton.ClipsDescendants = true
+local corner = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+corner.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+corner.Parent = ESPButton
+
+-- Efecto de hover (opcional)
+ESPButton.MouseEnter:Connect(function()
+    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+end)
+
+ESPButton.MouseLeave:Connect(function()
+    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+-- Configuraciones
 local settings = {
     defaultcolor = Color3.fromRGB(255, 0, 0),
     teamcheck = false,
@@ -562,7 +564,7 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
     if espEnabled then
         for player, drawings in next, espCache do
             if settings.teamcheck and player.Team == localPlayer.Team then
-                continue
+                return
             end
             if drawings and player ~= localPlayer then
                 updateEsp(player, drawings)
