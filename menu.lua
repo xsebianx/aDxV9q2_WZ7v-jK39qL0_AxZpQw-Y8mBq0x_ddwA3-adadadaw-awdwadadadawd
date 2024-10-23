@@ -259,6 +259,36 @@ VisorButton.MouseLeave:Connect(function()
     VisorButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
 end)
 
+-- Funcionalidades de Crosshair
+local CrosshairButton = Instance.new("TextButton")
+CrosshairButton.Name = "CrosshairButton"
+CrosshairButton.Parent = VisualFrame
+CrosshairButton.Text = "Crosshair: Off"
+CrosshairButton.Font = Enum.Font.GothamBold
+CrosshairButton.TextSize = 18
+CrosshairButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+CrosshairButton.Size = UDim2.new(0, 240, 0, 40)
+CrosshairButton.Position = UDim2.new(0, 10, 0, 100) -- Ajustar posición para que esté más abajo
+CrosshairButton.BorderSizePixel = 0
+CrosshairButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
+CrosshairButton.AutoButtonColor = false
+CrosshairButton.ClipsDescendants = true
+local cornerCrosshair = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerCrosshair.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerCrosshair.Parent = CrosshairButton
+
+-- Efecto de hover (opcional)
+CrosshairButton.MouseEnter:Connect(function()
+    CrosshairButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+end)
+
+CrosshairButton.MouseLeave:Connect(function()
+    CrosshairButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
+end)
+
 -- Funcionalidades de Extra
 HackDetectorButton.Name = "HackDetectorButton"
 HackDetectorButton.Parent = ExtraFrame
@@ -348,6 +378,23 @@ VisorButton.MouseButton1Click:Connect(function()
         -- Desactivar el visor
         if _G.disableVisor then
             _G.disableVisor() -- Asegúrate de que esta función esté definida en tu script de visor
+        end
+    end
+end)
+
+-- Lógica para activar y desactivar el Crosshair
+CrosshairButton.MouseButton1Click:Connect(function()
+    crosshairEnabled = not crosshairEnabled
+    _G.toggleCrosshair = crosshairEnabled -- Actualiza el estado en _G.toggleCrosshair
+    if crosshairEnabled then
+        CrosshairButton.Text = "Crosshair: On"
+        -- Cargar el script de Crosshair
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/crosshair.lua"))()
+    else
+        CrosshairButton.Text = "Crosshair: Off"
+        -- Desactivar el crosshair
+        if _G.disableCrosshair then
+            _G.disableCrosshair() -- Asegúrate de que esta función esté definida en tu script de crosshair
         end
     end
 end)
