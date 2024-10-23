@@ -545,49 +545,35 @@ local function removeEsp(player)
     end
 end
 
--- Función para alternar el ESP
-ESPButton.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off"
-
-    -- Activar o desactivar el ESP para todos los jugadores
-    if espEnabled then
-        for _, player in ipairs(players:GetPlayers()) do
-            createEsp(player)
-            player.CharacterAdded:Connect(function()
-                createEsp(player) -- Crear ESP cuando el personaje es añadido
-            end)
-        end
-
-        runService.RenderStepped:Connect(function()
-            for _, player in ipairs(players:GetPlayers()) do
-                if espCache[player] then
-                    updateEsp(player, espCache[player])
-                end
+-- Conectar la funcionalidad del botón para activar/desactivar el ESP
+espButton.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled -- Alterna el estado del ESP (on/off)
+    espButton.Text = espEnabled and "ESP ON" or "ESP OFF" -- Actualiza el texto del botón
+    
+    if not espEnabled then
+        -- Cuando ESP se apaga, asegurarse de ocultar todos los dibujos
+        for _, drawings in pairs(espCache) do
+            for _, drawing in pairs(drawings) do
+                drawing.Visible = false
             end
-        end)
-    else
-        for _, player in ipairs(players:GetPlayers()) do
-            removeEsp(player)
         end
     end
 end)
 
--- Redondear esquinas
-CrosshairButton.AutoButtonColor = false
-CrosshairButton.ClipsDescendants = true
-local cornerCrosshair = Instance.new("UICorner")  -- Añadir esquinas redondeadas
-cornerCrosshair.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
-cornerCrosshair.Parent = CrosshairButton
-
--- Efecto de hover (opcional)
-CrosshairButton.MouseEnter:Connect(function()
-    CrosshairButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
-end)
-
-CrosshairButton.MouseLeave:Connect(function()
-    CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
-end)
+-- RenderStep para actualizar el ESP solo cuando está habilitado
+table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
+    if espEnabled then
+        for player, drawings in next, espCache do
+            -- Condición para verificar el equipo si está activada la opción de teamcheck
+            if settings.teamcheck and player.Team == localPlayer.Team then
+                continue
+            end
+            if drawings and player ~= localPlayer then
+                updateEsp(player, drawings)
+            end
+        end
+    end
+end))
 
 -- Variables para el estado del Crosshair ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 local crosshairEnabled = false
