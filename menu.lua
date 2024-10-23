@@ -411,7 +411,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Configuraciones del ESP
+-- Configuraciones del ESP ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 local settings = {
     defaultcolor = Color3.fromRGB(255, 0, 0),
     teamcheck = false,
@@ -474,6 +474,14 @@ local function createEsp(player)
     drawings.distance.Visible = false
 
     espCache[player] = drawings
+
+    -- Conectar el evento de muerte
+    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.Died:Connect(function()
+            removeEsp(player) -- Eliminar ESP cuando el jugador muere
+        end)
+    end
 end
 
 local function updateEsp(player, esp)
@@ -545,7 +553,7 @@ ESPButton.MouseButton1Click:Connect(function()
         for _, player in ipairs(players:GetPlayers()) do
             createEsp(player)
             player.CharacterAdded:Connect(function()
-                createEsp(player)
+                createEsp(player) -- Crear ESP cuando el personaje es añadido
             end)
         end
 
@@ -579,7 +587,8 @@ CrosshairButton.MouseLeave:Connect(function()
     CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
 end)
 
--- Variables para el estado del Crosshair
+
+-- Variables para el estado del Crosshair ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 local crosshairEnabled = false
 
 -- Función para alternar el Crosshair
