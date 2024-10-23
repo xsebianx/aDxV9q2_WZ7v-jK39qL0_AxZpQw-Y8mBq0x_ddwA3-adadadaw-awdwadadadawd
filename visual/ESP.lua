@@ -40,35 +40,30 @@ local function createEsp(player)
     drawings.box.Color = settings.defaultcolor
     drawings.box.Visible = false
     drawings.box.ZIndex = 2
-
     drawings.boxoutline = newDrawing("Square")
     drawings.boxoutline.Thickness = 3
     drawings.boxoutline.Filled = false
     drawings.boxoutline.Color = newColor3()
     drawings.boxoutline.Visible = false
     drawings.boxoutline.ZIndex = 1
-
     drawings.name = newDrawing("Text")
     drawings.name.Color = newColor3(255, 255, 255)
     drawings.name.Size = 20
     drawings.name.Center = true
     drawings.name.Outline = true
     drawings.name.Visible = false
-
     drawings.health = newDrawing("Text")
     drawings.health.Color = newColor3(0, 255, 0)
     drawings.health.Size = 20
     drawings.health.Center = true
     drawings.health.Outline = true
     drawings.health.Visible = false
-
     drawings.distance = newDrawing("Text")
     drawings.distance.Color = newColor3(255, 0, 0)
     drawings.distance.Size = 20
     drawings.distance.Center = true
     drawings.distance.Outline = true
     drawings.distance.Visible = false
-
     espCache[player] = drawings
 end
 
@@ -95,17 +90,14 @@ local function updateEsp(player, esp)
                 -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
                 esp.name.Position = newVector2(x, y - height / 2 - 20)
-                
                 local humanoid = character:FindFirstChild("Humanoid")
                 if humanoid then
                     esp.health.Text = string.format("Vida: %.0f%%", humanoid.Health / humanoid.MaxHealth * 100)
                     esp.health.Position = newVector2(x, y - height / 2 - 40)
                 end
-                
                 local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
-                
                 -- Ajustar el tamaño del texto si la distancia es mayor a 800
                 local textSize = distance > 800 and 14 or 20 -- Ajustar tamaño del texto
                 esp.name.Size = textSize
@@ -178,3 +170,21 @@ local function disableESP()
     end
     connections = {}
 end
+
+-- Función para activar el ESP
+local function enableESP()
+    espEnabled = true
+end
+
+-- Conectar a las teclas de activación/desactivación
+local userInputService = game:GetService("UserInputService")
+
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed then
+        if input.KeyCode == Enum.KeyCode.E then
+            enableESP()
+        elseif input.KeyCode == Enum.KeyCode.D then
+            disableESP()
+        end
+    end
+end)

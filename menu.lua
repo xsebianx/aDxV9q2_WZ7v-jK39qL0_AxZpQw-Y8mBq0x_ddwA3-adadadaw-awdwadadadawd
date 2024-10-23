@@ -368,7 +368,6 @@ AimbotNPCButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Botón de activación/desactivación del ESP
 ESPButton.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     if espEnabled then
@@ -376,7 +375,7 @@ ESPButton.MouseButton1Click:Connect(function()
         -- Cargar el script de ESP solo si no está activo
         if not _G.espLoaded then
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/ESP.lua"))()
-            _G.espLoaded = true  -- Marcar que el ESP ha sido cargado
+            _G.espLoaded = true -- Marcar que el ESP ha sido cargado
         end
     else
         ESPButton.Text = "ESP: Off"
