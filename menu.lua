@@ -385,21 +385,6 @@ VisorButton.MouseButton1Click:Connect(function()
     end
 end)
 
-local crosshairEnabled = false
-
-CrosshairButton.MouseButton1Click:Connect(function()
-    crosshairEnabled = not crosshairEnabled
-    if crosshairEnabled then
-        CrosshairButton.Text = "Crosshair: On"
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/Crosshair.lua"))()
-    else
-        CrosshairButton.Text = "Crosshair: Off"
-        if _G.disableCrosshair then
-            _G.disableCrosshair() -- Desactivar el crosshair
-        end
-    end
-end)
-
 local flyEnabled = false
 
 FlyButton.MouseButton1Click:Connect(function()
@@ -576,4 +561,71 @@ ESPButton.MouseButton1Click:Connect(function()
             removeEsp(player)
         end
     end
+end)
+
+-- Redondear esquinas
+CrosshairButton.AutoButtonColor = false
+CrosshairButton.ClipsDescendants = true
+local cornerCrosshair = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerCrosshair.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerCrosshair.Parent = CrosshairButton
+
+-- Efecto de hover (opcional)
+CrosshairButton.MouseEnter:Connect(function()
+    CrosshairButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+end)
+
+CrosshairButton.MouseLeave:Connect(function()
+    CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+-- Variables para el estado del Crosshair
+local crosshairEnabled = false
+
+-- Función para alternar el Crosshair
+CrosshairButton.MouseButton1Click:Connect(function()
+    crosshairEnabled = not crosshairEnabled
+    CrosshairButton.Text = crosshairEnabled and "Crosshair: On" or "Crosshair: Off"
+    
+    if crosshairEnabled then
+        -- Mostrar el crosshair
+        crosshair.Visible = true
+        crosshairVertical.Visible = true
+    else
+        -- Ocultar el crosshair
+        crosshair.Visible = false
+        crosshairVertical.Visible = false
+    end
+end)
+
+-- Configuración del Crosshair
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local localPlayer = Players.LocalPlayer
+local mouse = localPlayer:GetMouse()
+
+-- Crear Crosshair
+local crosshair = Drawing.new("Line")
+crosshair.Thickness = 2
+crosshair.Color = Color3.fromRGB(255, 255, 255)
+
+local crosshairVertical = Drawing.new("Line")
+crosshairVertical.Thickness = 2
+crosshairVertical.Color = Color3.fromRGB(255, 255, 255)
+
+-- Actualizar la posición del Crosshair
+RunService.RenderStepped:Connect(function()
+    local centerX = workspace.CurrentCamera.ViewportSize.X / 2
+    local centerY = workspace.CurrentCamera.ViewportSize.Y / 2
+    
+    crosshair.From = Vector2.new(centerX - 10, centerY)
+    crosshair.To = Vector2.new(centerX + 10, centerY)
+    
+    crosshairVertical.From = Vector2.new(centerX, centerY - 10)
+    crosshairVertical.To = Vector2.new(centerX, centerY + 10)
+    
+    -- Mantener la visibilidad del crosshair según el estado
+    crosshair.Visible = crosshairEnabled
+    crosshairVertical.Visible = crosshairEnabled
 end)
