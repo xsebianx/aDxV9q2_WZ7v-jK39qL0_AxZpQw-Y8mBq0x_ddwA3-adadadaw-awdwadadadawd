@@ -412,38 +412,26 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- Configuraciones del ESP ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- Configuraciones
+
+-- Configuración del ESP
 local settings = {
     defaultcolor = Color3.fromRGB(255, 0, 0),
     teamcheck = false,
     teamcolor = true
 }
 
+local maxDistance = 5000
+local espEnabled = false -- Variable para controlar el estado del ESP
+local espCache = {}
+
 -- Servicios
 local runService = game:GetService("RunService")
 local players = game:GetService("Players")
-
--- Variables
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
-local maxDistance = 5000
-local espEnabled = true -- Variable para controlar el estado del ESP
-local espCache = {}
-local connections = {} -- Tabla para almacenar las conexiones
 
--- Obtener el botón ESPButton de tu menú
-local espButton = script.Parent:WaitForChild("ESPButton")
-
--- Funciones
 local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
 local tan, rad = math.tan, math.rad
-local round = function(...)
-    local a = {}
-    for i, v in next, table.pack(...) do
-        a[i] = math.round(v)
-    end
-    return unpack(a)
-end
 
 local wtvp = function(...)
     local a, b = camera.WorldToViewportPoint(camera, ...)
@@ -488,6 +476,14 @@ local function createEsp(player)
     drawings.distance.Visible = false
 
     espCache[player] = drawings
+
+    -- Conectar el evento de muerte
+    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.Died:Connect(function()
+            removeEsp(player) -- Eliminar ESP cuando el jugador muere
+        end)
+    end
 end
 
 local function updateEsp(player, esp)
@@ -501,16 +497,13 @@ local function updateEsp(player, esp)
             esp.name.Visible = visible and depth <= maxDistance
             esp.health.Visible = visible and depth <= maxDistance
             esp.distance.Visible = visible and depth <= maxDistance
-
             if visible then
                 local scaleFactor = 1 / (depth * tan(rad(camera.FieldOfView / 2)) * 2) * 1000
-                local width, height = round(4 * scaleFactor, 5 * scaleFactor)
-                local x, y = round(position.X, position.Y)
-
+                local width, height = math.round(4 * scaleFactor), math.round(5 * scaleFactor)
+                local x, y = math.round(position.X), math.round(position.Y)
                 esp.box.Size = newVector2(width, height)
-                esp.box.Position = newVector2(round(x - width / 2, y - height / 2))
+                esp.box.Position = newVector2(math.round(x - width / 2), math.round(y - height / 2))
                 esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor
-
                 esp.boxoutline.Size = esp.box.Size
                 esp.boxoutline.Position = esp.box.Position
 
@@ -527,6 +520,11 @@ local function updateEsp(player, esp)
                 local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
+
+                -- Ajustar el tamaño del texto si la distancia es mayor a 800
+                esp.name.Size = distance > 800 and 14 or 20 -- Ajustar tamaño del texto
+                esp.health.Size = esp.name.Size
+                esp.distance.Size = esp.name.Size
             end
         end
     else
@@ -547,45 +545,49 @@ local function removeEsp(player)
     end
 end
 
--- Conectar la funcionalidad del botón para activar/desactivar el ESP
-espButton.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled -- Alterna el estado del ESP (on/off)
-    espButton.Text = espEnabled and "ESP ON" or "ESP OFF" -- Actualiza el texto del botón
+-- Función para alternar el ESP
+ESPButton.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off"
+
+    -- Activar o desactivar el ESP para todos los jugadores
+    if espEnabled then
+        for _, player in ipairs(players:GetPlayers()) do
+            createEsp(player)
+            player.CharacterAdded:Connect(function()
+                createEsp(player) -- Crear ESP cuando el personaje es añadido
+            end)
+        end
+
+        runService.RenderStepped:Connect(function()
+            for _, player in ipairs(players:GetPlayers()) do
+                if espCache[player] then
+                    updateEsp(player, espCache[player])
+                end
+            end
+        end)
+    else
+        for _, player in ipairs(players:GetPlayers()) do
+            removeEsp(player)
+        end
+    end
 end)
 
--- Principal
-for _, player in next, players:GetPlayers() do
-    if player ~= localPlayer then
-        createEsp(player)
-    end
-end
+-- Redondear esquinas
+CrosshairButton.AutoButtonColor = false
+CrosshairButton.ClipsDescendants = true
+local cornerCrosshair = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerCrosshair.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerCrosshair.Parent = CrosshairButton
 
-table.insert(connections, players.PlayerAdded:Connect(function(player)
-    createEsp(player)
-end))
+-- Efecto de hover (opcional)
+CrosshairButton.MouseEnter:Connect(function()
+    CrosshairButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+end)
 
-table.insert(connections, players.PlayerRemoving:Connect(function(player)
-    removeEsp(player)
-end))
-
-table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
-    if espEnabled then
-        for player, drawings in next, espCache do
-            if settings.teamcheck and player.Team == localPlayer.Team then
-                continue
-            end
-            if drawings and player ~= localPlayer then
-                updateEsp(player, drawings)
-            end
-        end
-    else
-        for _, drawings in pairs(espCache) do
-            for _, drawing in pairs(drawings) do
-                drawing.Visible = false
-            end
-        end
-    end
-end))
+CrosshairButton.MouseLeave:Connect(function()
+    CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
 
 -- Variables para el estado del Crosshair ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 local crosshairEnabled = false
