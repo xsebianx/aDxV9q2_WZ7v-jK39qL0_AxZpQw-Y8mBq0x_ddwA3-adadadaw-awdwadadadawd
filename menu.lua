@@ -581,18 +581,27 @@ end))
 -- Función para alternar el ESP
 ESPButton.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
-    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off"  -- Cambia el texto del botón
+    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off"
+
+    -- Activar o desactivar el ESP para todos los jugadores
     if espEnabled then
-        -- Si ESP está activado, actualiza el ESP de inmediato
-        for player, drawings in next, espCache do
-            updateEsp(player, drawings)
+        for _, player in ipairs(players:GetPlayers()) do
+            createEsp(player)
+            player.CharacterAdded:Connect(function()
+                createEsp(player) -- Crear ESP cuando el personaje es añadido
+            end)
         end
-    else
-        -- Si ESP está desactivado, oculta todos los ESP
-        for _, drawings in pairs(espCache) do
-            for _, drawing in pairs(drawings) do
-                drawing.Visible = false
+
+        runService.RenderStepped:Connect(function()
+            for _, player in ipairs(players:GetPlayers()) do
+                if espCache[player] then
+                    updateEsp(player, espCache[player])
+                end
             end
+        end)
+    else
+        for _, player in ipairs(players:GetPlayers()) do
+            removeEsp(player)
         end
     end
 end)
