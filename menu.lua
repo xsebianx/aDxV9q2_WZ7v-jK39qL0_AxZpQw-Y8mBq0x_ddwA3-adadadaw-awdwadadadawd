@@ -546,22 +546,23 @@ local function updateEsp(player, esp)
 
                 -- Ajustar el tamaño del texto y cuadros en función de la distancia
                 local textScale = distance <= 800 and 1.25 or 1  -- Hacer un 25% más grandes los que están cerca (<= 800)
+                local nameAndDistanceScale = distance <= 800 and 1.5 or 1 -- Aumentar un 50% más para el nombre y la distancia
 
                 -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
                 esp.name.Position = newVector2(x, y - height / 2 - 20)
-                esp.name.Size = 16 * textScale  -- Ajustar tamaño del texto
+                esp.name.Size = 16 * nameAndDistanceScale  -- Aumentar el tamaño del nombre
 
                 local humanoid = character:FindFirstChild("Humanoid")
                 if humanoid then
                     esp.health.Text = string.format("Vida: %.0f%%", humanoid.Health / humanoid.MaxHealth * 100)
                     esp.health.Position = newVector2(x, y - height / 2 - 40)
-                    esp.health.Size = 16 * textScale  -- Ajustar tamaño del texto
+                    esp.health.Size = 16 * textScale  -- Tamaño normal para la vida
                 end
 
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
-                esp.distance.Size = 16 * textScale  -- Ajustar tamaño del texto
+                esp.distance.Size = 16 * nameAndDistanceScale  -- Aumentar el tamaño de la distancia
             end
         end
     else
@@ -572,6 +573,7 @@ local function updateEsp(player, esp)
         esp.distance.Visible = false
     end
 end
+
 
 
 local function removeEsp(player)
@@ -648,3 +650,79 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
         end
     end
 end))
+
+-- zoom +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+-- Funcionalidades del botón Zoom
+local ZoomButton = Instance.new("TextButton")
+ZoomButton.Name = "ZoomButton"
+ZoomButton.Parent = VisualFrame
+ZoomButton.Text = "Select Zoom Key"
+ZoomButton.Font = Enum.Font.GothamBold
+ZoomButton.TextSize = 18
+ZoomButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ZoomButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ZoomButton.Size = UDim2.new(0, 240, 0, 40)
+ZoomButton.Position = UDim2.new(0, 10, 0, 160) -- Ajustar posición para que esté más abajo
+ZoomButton.BorderSizePixel = 0
+ZoomButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
+ZoomButton.AutoButtonColor = false
+ZoomButton.ClipsDescendants = true
+local cornerZoom = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerZoom.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerZoom.Parent = ZoomButton
+
+-- Efecto de hover (al pasar el mouse)
+ZoomButton.MouseEnter:Connect(function()
+    ZoomButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Cambiar a verde claro
+end)
+
+ZoomButton.MouseLeave:Connect(function()
+    ZoomButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+-- Variable para almacenar la tecla de zoom seleccionada
+local zoomKey = nil
+
+-- Función para seleccionar la tecla de zoom
+local function selectZoomKey()
+    ZoomButton.Text = "Press a Key"
+    local inputConnection
+
+    -- Capturar la tecla presionada
+    inputConnection = game:GetService("UserInputService").InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Keyboard then
+            zoomKey = input.KeyCode
+            ZoomButton.Text = "Zoom Key: " .. tostring(zoomKey):gsub("Enum.KeyCode.", "")
+            inputConnection:Disconnect()  -- Dejar de escuchar después de seleccionar la tecla
+        end
+    end)
+end
+
+-- Asignar la función al clic del botón
+ZoomButton.MouseButton1Click:Connect(selectZoomKey)
+
+-- Función para hacer zoom
+local function enableZoom()
+    workspace.CurrentCamera.FieldOfView = 30 -- Ajusta el valor según el nivel de zoom deseado
+end
+
+-- Función para desactivar el zoom
+local function disableZoom()
+    workspace.CurrentCamera.FieldOfView = 70 -- Valor por defecto de FieldOfView
+end
+
+-- Detectar cuando se presiona y se suelta la tecla de zoom
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+    if zoomKey and input.KeyCode == zoomKey then
+        enableZoom()
+    end
+end)
+
+game:GetService("UserInputService").InputEnded:Connect(function(input)
+    if zoomKey and input.KeyCode == zoomKey then
+        disableZoom()
+    end
+end)

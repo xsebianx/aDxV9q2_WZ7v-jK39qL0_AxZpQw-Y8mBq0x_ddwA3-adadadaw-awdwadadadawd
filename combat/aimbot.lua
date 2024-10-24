@@ -2,7 +2,7 @@ local aimEnabled = false -- El aimbot está desactivado por defecto y se activa 
 local fieldOfView = 30 -- Campo de visión ajustado a 30 grados para un equilibrio
 local detectionRadius = 75 -- Radio de detección ampliado para mayor facilidad de uso
 local closestTarget = nil
-local fovCircle, visibleLabel, targetIndicator, notificationLabel, statsLabel, sound
+local fovCircle, visibleLabel, targetIndicator, notificationLabel, sound
 local totalTargetsDetected = 0
 local totalTrackingTime = 0
 local trackingStartTime = 0
@@ -56,20 +56,6 @@ local function createNotificationLabel()
     notificationLabel.Visible = false
 end
 
--- Crear un TextLabel para estadísticas
-local function createStatsLabel()
-    if statsLabel then statsLabel:Remove() end
-    local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-    statsLabel = Instance.new("TextLabel", screenGui)
-    statsLabel.Size = UDim2.new(0, 300, 0, 50)
-    statsLabel.Position = UDim2.new(0.5, -150, 0, 120)
-    statsLabel.Text = "Objetivos detectados: 0\nTiempo de seguimiento: 0s"
-    statsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    statsLabel.TextScaled = true
-    statsLabel.BackgroundTransparency = 1
-    statsLabel.Visible = true
-end
-
 -- Crear un sonido para alertas
 local function createAlertSound()
     if sound then sound:Destroy() end
@@ -84,15 +70,6 @@ local function showNotification(message)
     notificationLabel.Visible = true
     wait(2)
     notificationLabel.Visible = false
-end
-
--- Actualizar estadísticas
-local function updateStats()
-    local trackingTime = totalTrackingTime
-    if trackingStartTime > 0 then
-        trackingTime = trackingTime + (tick() - trackingStartTime)
-    end
-    statsLabel.Text = string.format("Objetivos detectados: %d\nTiempo de seguimiento: %.1fs", totalTargetsDetected, trackingTime)
 end
 
 -- Verificar si el objetivo es visible, sin obstáculos en el camino
@@ -129,9 +106,12 @@ end
 
 -- Función de Aimbot que apunta instantáneamente a la cabeza
 local function aimbot(target)
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(target.Character.Head.Position)
-        mousemoverel((headScreenPos.X - workspace.CurrentCamera.ViewportSize.X / 2), (headScreenPos.Y - workspace.CurrentCamera.ViewportSize.Y / 2))
+    if target and target.Character then
+        local head = target.Character:FindFirstChild("HeadTop") or target.Character:FindFirstChild("Head")
+        if head then
+            local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(head.Position)
+            mousemoverel((headScreenPos.X - workspace.CurrentCamera.ViewportSize.X / 2), (headScreenPos.Y - workspace.CurrentCamera.ViewportSize.Y / 2))
+        end
     end
 end
 
@@ -146,12 +126,15 @@ game:GetService("RunService").RenderStepped:Connect(function()
             showNotification("Objetivo detectado: " .. closestTarget.Name)
             sound:Play()
         end
-        if closestTarget then
+        if closestTarget and closestTarget.Character and closestTarget.Character:FindFirstChild("Head") then
             aimbot(closestTarget) -- Usar Aimbot para asegurar el impacto
             visibleLabel.Visible = true -- Mostrar el mensaje "Jugador visible"
             targetIndicator.Visible = true
-            local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(closestTarget.Character.Head.Position)
-            targetIndicator.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
+            local head = closestTarget.Character:FindFirstChild("HeadTop") or closestTarget.Character:FindFirstChild("Head")
+            if head then
+                local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(head.Position)
+                targetIndicator.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
+            end
             totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
             trackingStartTime = tick()
         else
@@ -170,26 +153,13 @@ game:GetService("RunService").RenderStepped:Connect(function()
     if fovCircle then
         fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
     end
-    updateStats()
 end)
 
--- Controles de teclas para activar el aimbot con clic derecho
-game:GetService("UserInputService").InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Clic derecho para activar el aimbot
-        aimEnabled = true
-        fovCircle.Visible = true
-    end
-end)
-
-game:GetService("UserInputService").InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Soltar clic derecho para desactivar el aimbot
-        aimEnabled = false
-        closestTarget = nil
-        fovCircle.Visible = false
-        visibleLabel.Visible = false -- Ocultar el mensaje cuando se desactiva el aimbot
-        targetIndicator.Visible = false
-    end
-end)
+-- Función para activar el aimbot
+function _G.enableAimbot()
+    aimEnabled = true
+    if fovCircle then fovCircle.Visible = true end
+end
 
 -- Función para desactivar el aimbot
 function _G.disableAimbot()
@@ -200,12 +170,11 @@ function _G.disableAimbot()
     if targetIndicator then targetIndicator.Visible = false end
 end
 
--- Iniciar el círculo de FOV, el mensaje de visibilidad, el indicador de objetivo, el sistema de notificación y el sistema de estadísticas
+-- Iniciar el círculo de FOV, el mensaje de visibilidad, el indicador de objetivo, el sistema de notificación y el sonido de alerta
 createFOVCircle()
 createVisibleLabel()
 createTargetIndicator()
 createNotificationLabel()
-createStatsLabel()
 createAlertSound()
 
 -- Manejar la reconexión del jugador y la muerte
@@ -216,7 +185,6 @@ local function onCharacterAdded(character)
         createVisibleLabel()
         createTargetIndicator()
         createNotificationLabel()
-        createStatsLabel()
         createAlertSound()
     end)
 end
