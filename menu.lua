@@ -375,11 +375,11 @@ AimbotButton.MouseButton1Click:Connect(function()
     if aimbotEnabled then
         AimbotButton.Text = "Aimbot: On"
         if _G.enableAimbot then
-            _G.enableAimbot()  -- Activa el aimbot directamente si ya está cargado
+            _G.enableAimbot()  -- Llama la función para activar el aimbot
         else
-            -- Carga el script solo si no está cargado
+            -- Cargar el script una sola vez si no está cargado
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbot.lua"))()
-            wait(1)  -- Esperar un poco para que el script se cargue correctamente
+            wait(1)  -- Espera para que el script se cargue
             if _G.enableAimbot then
                 _G.enableAimbot()
             end
@@ -387,7 +387,7 @@ AimbotButton.MouseButton1Click:Connect(function()
     else
         AimbotButton.Text = "Aimbot: Off"
         if _G.disableAimbot then
-            _G.disableAimbot()
+            _G.disableAimbot()  -- Llama la función para desactivar el aimbot
         end
     end
 end)
