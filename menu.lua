@@ -528,16 +528,24 @@ local function updateEsp(player, esp)
                 local width, height = round(4 * scaleFactor, 5 * scaleFactor)
                 local x, y = round(position.X, position.Y)
 
+                -- Obtener la distancia entre el jugador local y el objetivo
+                local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
+
+                -- Cambiar el color si la distancia es mayor a 800
+                if distance > 800 then
+                    esp.box.Color = Color3.fromRGB(0, 0, 255)  -- Azul para jugadores lejanos
+                else
+                    esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor  -- Rojo por defecto o color de equipo
+                end
+
                 esp.box.Size = newVector2(width, height)
                 esp.box.Position = newVector2(round(x - width / 2, y - height / 2))
-                esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor
 
                 esp.boxoutline.Size = esp.box.Size
                 esp.boxoutline.Position = esp.box.Position
 
-                -- Ajuste del tamaño del texto en función de la distancia
-                local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
-                local textScale = math.clamp(300 / distance, 0.75, 1.0)  -- Ajustar entre 0.75 (mínimo) y 1.0 (máximo)
+                -- Ajustar el tamaño del texto y cuadros en función de la distancia
+                local textScale = distance <= 800 and 1.25 or 1  -- Hacer un 25% más grandes los que están cerca (<= 800)
 
                 -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
