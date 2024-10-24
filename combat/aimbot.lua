@@ -1,4 +1,5 @@
-local aimEnabled = false -- El aimbot está desactivado por defecto y se activa con clic derecho
+-- Variables
+local aimEnabled = false -- El aimbot está desactivado por defecto
 local fieldOfView = 30 -- Campo de visión ajustado a 30 grados para un equilibrio
 local detectionRadius = 75 -- Radio de detección ampliado para mayor facilidad de uso
 local closestTarget = nil
@@ -11,6 +12,9 @@ local sound
 local totalTargetsDetected = 0
 local totalTrackingTime = 0
 local trackingStartTime = 0
+
+-- Variable global para desactivar el aimbot
+_G.disableAimbot = false -- Aimbot habilitado por defecto
 
 -- Crear un círculo visual para mostrar el FOV del aimbot
 local function createFOVCircle()
@@ -142,6 +146,22 @@ end
 
 -- Actualizar el objetivo cada ciclo
 game:GetService("RunService").RenderStepped:Connect(function()
+    -- Comprobar si _G.disableAimbot está en true
+    if _G.disableAimbot then
+        -- Si el aimbot está deshabilitado, ocultar todo y resetear variables
+        aimEnabled = false
+        closestTarget = nil
+        fovCircle.Visible = false
+        visibleLabel.Visible = false
+        targetIndicator.Visible = false
+        if trackingStartTime > 0 then
+            totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
+            trackingStartTime = 0
+        end
+        return
+    end
+
+    -- Lógica del aimbot cuando está activado
     if aimEnabled then
         local newTarget = getClosestPlayerInFOV() -- Encontrar el jugador más cercano dentro del FOV y radio de detección
         if newTarget and newTarget ~= closestTarget then
@@ -160,43 +180,34 @@ game:GetService("RunService").RenderStepped:Connect(function()
             totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
             trackingStartTime = tick()
         else
-            visibleLabel.Visible = false -- Ocultar el mensaje si no hay objetivo visible
+            visibleLabel.Visible = false
             targetIndicator.Visible = false
         end
+        updateStats()
     else
-        visibleLabel.Visible = false -- Ocultar el mensaje si el aimbot no está habilitado
+        closestTarget = nil
+        fovCircle.Visible = false
+        visibleLabel.Visible = false
         targetIndicator.Visible = false
-        if trackingStartTime > 0 then
-            totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
-            trackingStartTime = 0
-        end
     end
-    -- Actualizar la posición del círculo FOV
-    if fovCircle then
-        fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-    end
-    updateStats()
 end)
 
--- Controles de teclas para activar el aimbot con clic derecho
+-- Alternar la activación del aimbot cuando se presiona y suelta el botón derecho del mouse
 game:GetService("UserInputService").InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Clic derecho para activar el aimbot
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
         aimEnabled = true
         fovCircle.Visible = true
     end
 end)
 
 game:GetService("UserInputService").InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Soltar clic derecho para desactivar el aimbot
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
         aimEnabled = false
-        closestTarget = nil
         fovCircle.Visible = false
-        visibleLabel.Visible = false -- Ocultar el mensaje cuando se desactiva el aimbot
-        targetIndicator.Visible = false
     end
 end)
 
--- Iniciar el círculo de FOV, el mensaje de visibilidad, el indicador de objetivo, el sistema de notificación y el sistema de estadísticas
+-- Inicializar las GUI y sonidos
 createFOVCircle()
 createVisibleLabel()
 createTargetIndicator()
@@ -204,21 +215,4 @@ createNotificationLabel()
 createStatsLabel()
 createAlertSound()
 
--- Manejar la reconexión del jugador y la muerte
-local localPlayer = game.Players.LocalPlayer
-local function onCharacterAdded(character)
-    character:WaitForChild("Humanoid").Died:Connect(function()
-        createFOVCircle()
-        createVisibleLabel()
-        createTargetIndicator()
-        createNotificationLabel()
-        createStatsLabel()
-        createAlertSound()
-    end)
-end
-
-if localPlayer.Character then
-    onCharacterAdded(localPlayer.Character)
-end
-
-localPlayer.CharacterAdded:Connect(onCharacterAdded)
+showNotification("Aimbot iniciado. Mantén clic derecho para apuntar.")
