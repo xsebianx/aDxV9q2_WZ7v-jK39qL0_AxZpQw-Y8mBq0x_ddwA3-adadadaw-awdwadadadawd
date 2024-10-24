@@ -1,5 +1,4 @@
--- Variables
-local aimEnabled = false -- El aimbot está desactivado por defecto
+local aimEnabled = false -- El aimbot está desactivado por defecto y se activa con clic derecho
 local fieldOfView = 30 -- Campo de visión ajustado a 30 grados para un equilibrio
 local detectionRadius = 75 -- Radio de detección ampliado para mayor facilidad de uso
 local closestTarget = nil
@@ -12,9 +11,6 @@ local sound
 local totalTargetsDetected = 0
 local totalTrackingTime = 0
 local trackingStartTime = 0
-
--- Variable global para desactivar el aimbot
-_G.disableAimbot = false -- Aimbot habilitado por defecto
 
 -- Crear un círculo visual para mostrar el FOV del aimbot
 local function createFOVCircle()
@@ -136,32 +132,17 @@ local function getClosestPlayerInFOV()
     return target
 end
 
--- Función de Aimbot que apunta instantáneamente a la cabeza
+-- Función de Aimbot que apunta instantáneamente a la parte superior de la cabeza (HeadTop)
 local function aimbot(target)
     if target and target.Character and target.Character:FindFirstChild("Head") then
-        local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(target.Character.Head.Position)
+        local headTop = target.Character.Head.Position + Vector3.new(0, target.Character.Head.Size.Y / 2, 0) -- Ajuste para apuntar a la parte superior de la cabeza
+        local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(headTop)
         mousemoverel((headScreenPos.X - workspace.CurrentCamera.ViewportSize.X / 2), (headScreenPos.Y - workspace.CurrentCamera.ViewportSize.Y / 2))
     end
 end
 
 -- Actualizar el objetivo cada ciclo
 game:GetService("RunService").RenderStepped:Connect(function()
-    -- Comprobar si _G.disableAimbot está en true
-    if _G.disableAimbot then
-        -- Si el aimbot está deshabilitado, ocultar todo y resetear variables
-        aimEnabled = false
-        closestTarget = nil
-        fovCircle.Visible = false
-        visibleLabel.Visible = false
-        targetIndicator.Visible = false
-        if trackingStartTime > 0 then
-            totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
-            trackingStartTime = 0
-        end
-        return
-    end
-
-    -- Lógica del aimbot cuando está activado
     if aimEnabled then
         local newTarget = getClosestPlayerInFOV() -- Encontrar el jugador más cercano dentro del FOV y radio de detección
         if newTarget and newTarget ~= closestTarget then
@@ -175,44 +156,54 @@ game:GetService("RunService").RenderStepped:Connect(function()
             aimbot(closestTarget) -- Usar Aimbot para asegurar el impacto
             visibleLabel.Visible = true -- Mostrar el mensaje "Jugador visible"
             targetIndicator.Visible = true
-            local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(closestTarget.Character.Head.Position)
+            local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(closestTarget.Character.Head.Position + Vector3.new(0, closestTarget.Character.Head.Size.Y / 2, 0))
             targetIndicator.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
             totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
             trackingStartTime = tick()
         else
-            visibleLabel.Visible = false
+            visibleLabel.Visible = false -- Ocultar el mensaje si no hay objetivo visible
             targetIndicator.Visible = false
         end
-        updateStats()
     else
-        closestTarget = nil
-        fovCircle.Visible = false
-        visibleLabel.Visible = false
+        visibleLabel.Visible = false -- Ocultar el mensaje si el aimbot no está habilitado
         targetIndicator.Visible = false
+        if trackingStartTime > 0 then
+            totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
+            trackingStartTime = 0
+        end
     end
+    -- Actualizar la posición del círculo FOV
+    if fovCircle then
+        fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+    end
+    updateStats()
 end)
 
--- Alternar la activación del aimbot cuando se presiona y suelta el botón derecho del mouse
+-- Controles de teclas para activar el aimbot con clic derecho
 game:GetService("UserInputService").InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         aimEnabled = true
-        fovCircle.Visible = true
+        createFOVCircle()
+        createVisibleLabel()
+        createTargetIndicator()
+        createNotificationLabel()
+        createStatsLabel()
+        createAlertSound()
     end
 end)
 
 game:GetService("UserInputService").InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         aimEnabled = false
-        fovCircle.Visible = false
+        closestTarget = nil
+        totalTrackingTime = 0
     end
 end)
 
--- Inicializar las GUI y sonidos
+-- Inicialización
 createFOVCircle()
 createVisibleLabel()
 createTargetIndicator()
 createNotificationLabel()
 createStatsLabel()
 createAlertSound()
-
-showNotification("Aimbot iniciado. Mantén clic derecho para apuntar.")
