@@ -449,7 +449,7 @@ local players = game:GetService("Players")
 -- Variables
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
-local maxDistance = 5000
+local maxDistance = 2000
 local espEnabled = false -- Cambiado a false por defecto
 local espCache = {}
 local connections = {} -- Tabla para almacenar las conexiones
