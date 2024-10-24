@@ -321,6 +321,35 @@ FlyButton.MouseLeave:Connect(function()
     FlyButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
 end)
 
+-- Crear el botón de caminar sobre agua
+local JesusButton = Instance.new("TextButton")
+JesusButton.Name = "JesusButton"
+JesusButton.Parent = ExtraFrame
+JesusButton.Text = "Jesus: Off"  -- Estado inicial
+JesusButton.Font = Enum.Font.GothamBold
+JesusButton.TextSize = 18
+JesusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+JesusButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+JesusButton.Size = UDim2.new(0, 240, 0, 40)
+JesusButton.Position = UDim2.new(0, 10, 0, 60) -- Ajustar posición
+JesusButton.BorderSizePixel = 0
+JesusButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
+JesusButton.AutoButtonColor = false
+JesusButton.ClipsDescendants = true
+local cornerJesus = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerJesus.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerJesus.Parent = JesusButton
+
+-- Efecto de hover (opcional)
+JesusButton.MouseEnter:Connect(function()
+    JesusButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)  -- Color naranja al pasar el mouse
+end)
+
+JesusButton.MouseLeave:Connect(function()
+    JesusButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
+end)
 
 -- Funcionalidades del menú
 CombatButton.MouseButton1Click:Connect(function()
@@ -746,36 +775,6 @@ local function onJesusToggle(enabled)
         end
     end
 end
-
--- Crear el botón de caminar sobre agua
-local JesusButton = Instance.new("TextButton")
-JesusButton.Name = "JesusButton"
-JesusButton.Parent = ExtraFrame
-JesusButton.Text = "Jesus: Off"  -- Estado inicial
-JesusButton.Font = Enum.Font.GothamBold
-JesusButton.TextSize = 18
-JesusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-JesusButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-JesusButton.Size = UDim2.new(0, 240, 0, 40)
-JesusButton.Position = UDim2.new(0, 10, 0, 60) -- Ajustar posición
-JesusButton.BorderSizePixel = 0
-JesusButton.BackgroundTransparency = 0.1
-
--- Redondear esquinas
-JesusButton.AutoButtonColor = false
-JesusButton.ClipsDescendants = true
-local cornerJesus = Instance.new("UICorner")  -- Añadir esquinas redondeadas
-cornerJesus.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
-cornerJesus.Parent = JesusButton
-
--- Efecto de hover (opcional)
-JesusButton.MouseEnter:Connect(function()
-    JesusButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)  -- Color naranja al pasar el mouse
-end)
-
-JesusButton.MouseLeave:Connect(function()
-    JesusButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
-end)
 
 -- Lógica para alternar la función de caminar sobre agua
 JesusButton.MouseButton1Click:Connect(function()
