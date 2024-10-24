@@ -444,6 +444,21 @@ FlyButton.MouseButton1Click:Connect(function()
     end
 end)
 
+JesusButton.MouseButton1Click:Connect(function()
+    jesusEnabled = not jesusEnabled
+    if jesusEnabled then
+        JesusButton.Text = "Jesus: On"
+        
+        -- Cargar el script de caminar sobre el agua
+        loadstring(game:HttpGet("URL_DE_TU_SCRIPT_JESUS.lua"))() -- Cambia esta URL por la de tu script de caminar sobre el agua
+        _G.activateJesus() -- Activa la funcionalidad de caminar sobre el agua
+    else
+        JesusButton.Text = "Jesus: Off"
+        if _G.disableJesus then
+            _G.disableJesus() -- Desactivar la capacidad de caminar sobre el agua
+        end
+    end
+end)
 
 -- Funcionalidad para minimizar el menú con la tecla "P"
 local UserInputService = game:GetService("UserInputService")
@@ -725,80 +740,3 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
 end))
 
 -- jesus +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
--- Configuración inicial de Jesús
-local jesusEnabled = false
-local jesusFolder = workspace:FindFirstChild("JesusFolder") or Instance.new("Folder", workspace)
-jesusFolder.Name = "JesusFolder"
-
-local function onJesusToggle(enabled)
-    jesusEnabled = enabled
-
-    -- Si se desactiva, limpiar las plataformas y detener la función
-    if not jesusEnabled then
-        for _, v in pairs(jesusFolder:GetChildren()) do
-            v:Destroy()
-        end
-        return
-    end
-
-    -- Verificar continuamente y crear plataformas si está habilitado
-    while jesusEnabled do
-        task.wait(0.1)
-
-        local player = game.Players.LocalPlayer
-        local character = player.Character
-
-        if not character then
-            continue
-        end
-
-        local head = character:FindFirstChild("Head")
-        if not head then continue end
-
-        local rayOrigin = head.Position + Vector3.new(0, 150, 0) + workspace.CurrentCamera.CFrame.LookVector * 5
-        local rayDirection = Vector3.new(0, -300, 0)
-        local rayParams = RaycastParams.new()
-        rayParams.FilterType = Enum.RaycastFilterType.Exclude
-        rayParams.FilterDescendantsInstances = {character}
-
-        local rayResult = workspace:Raycast(rayOrigin, rayDirection, rayParams)
-
-        if rayResult and rayResult.Material == Enum.Material.Water then
-            local platform = Instance.new("Part")
-            platform.Size = Vector3.new(500, 1, 500)
-            platform.Anchored = true
-            platform.CanCollide = true
-            platform.Position = rayResult.Position + Vector3.new(0, 0.3, 0) -- Ligeramente por encima de la superficie del agua
-            platform.Material = Enum.Material.ForceField
-            platform.Parent = jesusFolder
-        end
-    end
-end
-
--- Lógica para alternar la función de caminar sobre agua
-JesusButton.MouseButton1Click:Connect(function()
-    -- Alternar estado
-    local currentState = JesusButton.Text:match("On") -- Verifica si el texto contiene "On"
-
-    if currentState then
-        -- Si está "On", cambiar a "Off"
-        onJesusToggle(false)  -- Desactivar la función
-        JesusButton.Text = "Jesus: Off"  -- Actualizar el texto
-    else
-        -- Si está "Off", cambiar a "On"
-        onJesusToggle(true)  -- Activar la función
-        JesusButton.Text = "Jesus: On"  -- Actualizar el texto
-    end
-end)
-
--- Implementación del toggle (opcional, ya que ya se maneja con el botón)
-aimtab:AddToggle('jesus', {
-    Text = 'caminar sobre el agua',
-    Tooltip = 'Te permite caminar sobre el agua',
-    Default = false,
-
-    Callback = function(value)
-        onJesusToggle(value)
-    end
-})
