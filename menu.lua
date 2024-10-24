@@ -450,7 +450,7 @@ JesusButton.MouseButton1Click:Connect(function()
         JesusButton.Text = "Jesus: On"
         
         -- Cargar el script de caminar sobre el agua
-        loadstring(game:HttpGet("URL_DE_TU_SCRIPT_JESUS.lua"))() -- Cambia esta URL por la de tu script de caminar sobre el agua
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/jesus.lua"))() -- Cambia esta URL por la de tu script de caminar sobre el agua
         _G.activateJesus() -- Activa la funcionalidad de caminar sobre el agua
     else
         JesusButton.Text = "Jesus: Off"
