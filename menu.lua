@@ -205,7 +205,7 @@ end)
 local SilenAimButton = Instance.new("TextButton")
 SilenAimButton.Name = "SilenAimButton"
 SilenAimButton.Parent = CombatFrame
-SilenAimButton.Text = "Silaimb: Off"
+SilenAimButton.Text = "Silent Aim: Off"
 SilenAimButton.Font = Enum.Font.GothamBold
 SilenAimButton.TextSize = 20
 SilenAimButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
@@ -370,10 +370,11 @@ AimbotNPCButton.MouseButton1Click:Connect(function()
 end)
 
 SilenAimButton.MouseButton1Click:Connect(function()
-    isSilentAimEnabled = not isSilentAimEnabled
+    isSilentAimEnabled = not isSilentAimEnabled -- Cambiar el estado de Silent Aim
     if isSilentAimEnabled then
         SilenAimButton.Text = "Silent Aim: On"
-        loadstring(game:HttpGet(""))() -- Reemplaza con la URL correcta del script de Silent Aim
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/silentaimb.lua"))() -- Cargar el script de Silent Aim
+        activateSilentAim() -- Activar Silent Aim
     else
         SilenAimButton.Text = "Silent Aim: Off"
         if _G.disableSilentAim then
