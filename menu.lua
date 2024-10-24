@@ -23,6 +23,7 @@ local ESPButton = Instance.new("TextButton")
 local FlyButton = Instance.new("TextButton")
 local VisorButton = Instance.new("TextButton")
 local CrosshairButton = Instance.new("TextButton")
+local ZoomButton = Instance.new("TextButton")
 
 -- Propiedades generales de la GUI
 DrakHub.Name = "DrakHub"
@@ -653,11 +654,9 @@ end))
 
 -- zoom +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
--- Funcionalidades del botón Zoom
-local ZoomButton = Instance.new("TextButton")
 ZoomButton.Name = "ZoomButton"
 ZoomButton.Parent = VisualFrame
-ZoomButton.Text = "Select Zoom Key"
+ZoomButton.Text = "Zoom Tecla"
 ZoomButton.Font = Enum.Font.GothamBold
 ZoomButton.TextSize = 18
 ZoomButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -688,7 +687,7 @@ local zoomKey = nil
 
 -- Función para seleccionar la tecla de zoom
 local function selectZoomKey()
-    ZoomButton.Text = "Press a Key"
+    ZoomButton.Text = "Presiona Tecla"
     local inputConnection
 
     -- Capturar la tecla presionada
