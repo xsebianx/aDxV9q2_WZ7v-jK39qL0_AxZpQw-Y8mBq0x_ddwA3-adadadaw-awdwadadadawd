@@ -369,6 +369,19 @@ AimbotNPCButton.MouseButton1Click:Connect(function()
     end
 end)
 
+SilenAimButton.MouseButton1Click:Connect(function()
+    isSilentAimEnabled = not isSilentAimEnabled
+    if isSilentAimEnabled then
+        SilenAimButton.Text = "Silent Aim: On"
+        loadstring(game:HttpGet(""))() -- Reemplaza con la URL correcta del script de Silent Aim
+    else
+        SilenAimButton.Text = "Silent Aim: Off"
+        if _G.disableSilentAim then
+            _G.disableSilentAim() -- Desactivar Silent Aim
+        end
+    end
+end)
+
 -- Conectar el evento del botón
 VisorButton.MouseButton1Click:Connect(function()
     visorEnabled = not visorEnabled
@@ -789,162 +802,3 @@ aimtab:AddToggle('jesus', {
         onJesusToggle(value)
     end
 })
-
--- silentaimb ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-local UserInputService = game:GetService("UserInputService")
-local camera = workspace.CurrentCamera
-local isSilentAimEnabled = false
-local fovRadius = 100
-local fovCircleee93s3
-local targetCharacteree93s3
-local fakeCameraee93s3
-local predictionvaluesr33 = 0.125  -- Prediction value (deltaTime) for future position
-
--- Function to create the FOV circle UI element
-local function createFovCircleee93s3()
-    local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    local screenGui = Instance.new("ScreenGui", playerGui)
-    screenGui.Name = "FovGui"
-
-    fovCircleee93s3 = Instance.new("Frame", screenGui)
-    fovCircleee93s3.Name = "FovCircleee93s3"
-    fovCircleee93s3.Size = UDim2.new(0, fovRadius * 2, 0, fovRadius * 2)
-    fovCircleee93s3.Position = UDim2.new(0.5, -fovRadius, 0.5, -fovRadius)
-    fovCircleee93s3.BackgroundTransparency = 1
-    fovCircleee93s3.AnchorPoint = Vector2.new(0.5, 0.5)
-
-    local outline = Instance.new("ImageLabel", fovCircleee93s3)
-    outline.Size = UDim2.new(1, 0, 1, 0)
-    outline.BackgroundTransparency = 1
-    outline.Image = "rbxassetid://7075853722"
-    outline.ImageTransparency = 0.5
-    outline.AnchorPoint = Vector2.new(0.5, 0.5)
-    outline.Position = UDim2.new(0.5, 0, 0.5, 0)
-
-    fovCircleee93s3.Visible = false
-end
-
--- Function to create the Fake Camera part
-local function createFakeCameraee93s3()
-    fakeCameraee93s3 = Instance.new("Part")
-    fakeCameraee93s3.Name = "FakeCameraee93s3"
-    fakeCameraee93s3.Size = Vector3.new(1, 1, 1)
-    fakeCameraee93s3.Anchored = true
-    fakeCameraee93s3.CanCollide = false
-    fakeCameraee93s3.Transparency = 1
-    fakeCameraee93s3.Parent = workspace
-end
-
--- Function to predict target position based on velocity
-local function predictTargetPosition(target, deltaTime)
-    local head = target:FindFirstChild("Head")
-    if head and target:FindFirstChild("HumanoidRootPart") then
-        local humanoidRootPart = target.HumanoidRootPart
-        local velocity = humanoidRootPart.AssemblyLinearVelocity
-        local currentPosition = head.Position
-        return currentPosition + velocity * deltaTime
-    end
-    return nil
-end
-
--- Function to find the enemy within the FOV circle
-local function findTargetWithinFovCircle()
-    local player = game.Players.LocalPlayer
-    local mouse = player:GetMouse()
-    local unitRay = camera:ScreenPointToRay(mouse.X, mouse.Y)
-    local ray = Ray.new(unitRay.Origin, unitRay.Direction * 5000)
-    local hit, position = workspace:FindPartOnRay(ray, player.Character)
-
-    if hit and hit.Parent then
-        local character = hit.Parent
-        if character:FindFirstChild("Head") and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0 then
-            -- Check if the target is within the FOV circle
-            local screenPoint = camera:WorldToScreenPoint(character.Head.Position)
-            local distanceFromCenter = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
-            if distanceFromCenter <= fovRadius then
-                return character
-            end
-        end
-    end
-
-    return nil
-end
-
--- Function to handle silent aim with prediction
-local function handleSilentAimee93s3()
-    if not isSilentAimEnabled or not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-        return
-    end
-
-    if not targetCharacteree93s3 then
-        targetCharacteree93s3 = findTargetWithinFovCircle()
-    end
-
-    if targetCharacteree93s3 then
-        local head = targetCharacteree93s3:FindFirstChild("Head")
-        if head then
-            -- Predict target's future position using predictionvaluesr33
-            local predictedPosition = predictTargetPosition(targetCharacteree93s3, predictionvaluesr33)
-
-            -- Update Fake Camera to point at the predicted position or head
-            if fakeCameraee93s3 then
-                fakeCameraee93s3.CFrame = CFrame.new(camera.CFrame.Position, predictedPosition or head.Position)
-            end
-
-            -- Simulate the camera aiming towards the target
-            if camera:FindFirstChild("ViewModel") then
-                local vm = camera.ViewModel
-                local ap = vm:FindFirstChild("AimPart")
-                local apc = vm:FindFirstChild("AimPartCanted")
-
-                if ap and apc then
-                    -- Aim towards the predicted position or head
-                    local aimPosition = predictedPosition or head.Position
-                    ap.CFrame = CFrame.new(camera.CFrame.Position, aimPosition)
-                    apc.CFrame = CFrame.new(camera.CFrame.Position, aimPosition)
-                end
-            end
-        end
-    end
-end
-
--- Function to update FOV circle visibility and position
-local function updateFovCircleee93s3()
-    local mouse = game.Players.LocalPlayer:GetMouse()
-    if fovCircleee93s3 then
-        fovCircleee93s3.Position = UDim2.new(0, mouse.X - fovRadius, 0, mouse.Y - fovRadius)
-        fovCircleee93s3.Visible = isSilentAimEnabled
-    end
-end
-
--- Button click event
-SilenAimButton.MouseButton1Click:Connect(function()
-    isSilentAimEnabled = not isSilentAimEnabled  -- Toggle Silent Aim state
-    targetCharacteree93s3 = nil  -- Reset locked character when toggling
-    updateFovCircleee93s3()
-
-    -- Update button text based on the state
-    if isSilentAimEnabled then
-        SilenAimButton.Text = "Silaimb: On"
-    else
-        SilenAimButton.Text = "Silaimb: Off"
-    end
-end)
-
--- Initialize the FOV circle and fake camera
-createFovCircleee93s3()
-createFakeCameraee93s3()
-
--- Example loop to continuously check and update
-game:GetService("RunService").RenderStepped:Connect(function()
-    updateFovCircleee93s3()
-    handleSilentAimee93s3()
-end)
-
--- Listen for mouse input to unlock aim
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        targetCharacteree93s3 = nil  -- Unlock aim when releasing right mouse button
-    end
-end)
