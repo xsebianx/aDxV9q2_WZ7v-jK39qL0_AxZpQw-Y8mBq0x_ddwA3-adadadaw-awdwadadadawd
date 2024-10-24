@@ -654,6 +654,7 @@ end))
 
 -- zoom +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+local ZoomButton = Instance.new("TextButton")
 ZoomButton.Name = "ZoomButton"
 ZoomButton.Parent = VisualFrame
 ZoomButton.Text = "Zoom Tecla"
