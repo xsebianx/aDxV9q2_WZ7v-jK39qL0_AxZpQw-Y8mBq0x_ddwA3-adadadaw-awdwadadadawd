@@ -368,44 +368,32 @@ ExtraButton.MouseButton1Click:Connect(function()
     VisualFrame.Visible = false
 end)
 
+
+
 local aimbotEnabled = false
 
 AimbotButton.MouseButton1Click:Connect(function()
     aimbotEnabled = not aimbotEnabled
     if aimbotEnabled then
-        AimbotButton.Text = "Aimbot: On"
-        if _G.enableAimbot then
-            _G.enableAimbot()  -- Llama la función para activar el aimbot
-        else
-            -- Cargar el script una sola vez si no está cargado
+        AimbotButton.Text = "Aimbot: Off"
+        -- Cargamos el script del aimbot cuando se activa por primera vez
+        if not _G.aimbotLoaded then
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbot.lua"))()
-            wait(1)  -- Espera para que el script se cargue
-            if _G.enableAimbot then
-                _G.enableAimbot()
-            end
+            _G.aimbotLoaded = true  -- Marcamos que el aimbot ya ha sido cargado
+        end
+        -- Activamos el aimbot
+        if _G.enableAimbot then
+            _G.enableAimbot()
         end
     else
-        AimbotButton.Text = "Aimbot: Off"
+        AimbotButton.Text = "Aimbot: On"
+        -- Desactivamos el aimbot
         if _G.disableAimbot then
-            _G.disableAimbot()  -- Llama la función para desactivar el aimbot
+            _G.disableAimbot()
         end
     end
 end)
 
--- Toggle Aimbot NPC
-local npcAimbotEnabled = false
-AimbotNPCButton.MouseButton1Click:Connect(function()
-    npcAimbotEnabled = not npcAimbotEnabled
-    if npcAimbotEnabled then
-        AimbotNPCButton.Text = "Aimbot NPC: On"
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbotnpc.lua"))()
-    else
-        AimbotNPCButton.Text = "Aimbot NPC: Off"
-        if _G.disableAimbotNPC then
-            _G.disableAimbotNPC()
-        end
-    end
-end)
 
 SilenAimButton.MouseButton1Click:Connect(function()
     isSilentAimEnabled = not isSilentAimEnabled -- Cambiar el estado de Silent Aim
