@@ -202,6 +202,35 @@ AimbotNPCButton.MouseLeave:Connect(function()
     AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original (gris oscuro)
 end)
 
+local SilenAimButton = Instance.new("TextButton")
+SilenAimButton.Name = "SilenAimButton"
+SilenAimButton.Parent = CombatFrame
+SilenAimButton.Text = "Silaimb: Off"
+SilenAimButton.Font = Enum.Font.GothamBold
+SilenAimButton.TextSize = 20
+SilenAimButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
+SilenAimButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color gris oscuro (igual que ESP)
+SilenAimButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual al botón ESP
+SilenAimButton.Position = UDim2.new(0, 10, 0, 110)
+SilenAimButton.BorderSizePixel = 0  -- Sin borde
+SilenAimButton.BackgroundTransparency = 0.1  -- Ligera transparencia
+
+-- Redondear esquinas
+SilenAimButton.AutoButtonColor = false
+SilenAimButton.ClipsDescendants = true
+local cornerAimbot = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerAimbot.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas (igual que ESP)
+cornerAimbot.Parent = SilenAimButton
+
+-- Efecto de hover (opcional)
+SilenAimButton.MouseEnter:Connect(function()
+    SilenAimButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Azul claro al pasar el mouse
+end)
+
+SilenAimButton.MouseLeave:Connect(function()
+    SilenAimButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al gris oscuro original
+end)
+
 -- Funcionalidades de Visual
 local VisorButton = Instance.new("TextButton")
 VisorButton.Name = "VisorButton"
@@ -761,6 +790,8 @@ aimtab:AddToggle('jesus', {
     end
 })
 
+-- silentaimb ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 local UserInputService = game:GetService("UserInputService")
 local camera = workspace.CurrentCamera
 local isSilentAimEnabled = false
@@ -887,48 +918,17 @@ local function updateFovCircleee93s3()
     end
 end
 
--- Crear el botón Aimbot
-local CombatFrame = Instance.new("Frame")  -- Este es un ejemplo, asegúrate de que el CombatFrame ya esté definido en tu GUI
-local SilenAimbotButton = Instance.new("TextButton")
-SilenAimbotButton.Name = "SilenAimbotButton"
-SilenAimbotButton.Parent = CombatFrame
-SilenAimbotButton.Text = "SilenAimb: Off"
-SilenAimbotButton.Font = Enum.Font.GothamBold
-SilenAimbotButton.TextSize = 20
-SilenAimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
-SilenAimbotButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color gris oscuro (igual que ESP)
-SilenAimbotButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual al botón ESP
-SilenAimbotButton.Position = UDim2.new(0, 10, 0, 110)
-SilenAimbotButton.BorderSizePixel = 0  -- Sin borde
-SilenAimbotButton.BackgroundTransparency = 0.1  -- Ligera transparencia
-
--- Redondear esquinas
-SilenAimbotButton.AutoButtonColor = false
-SilenAimbotButton.ClipsDescendants = true
-local cornerAimbot = Instance.new("UICorner")  -- Añadir esquinas redondeadas
-cornerAimbot.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas (igual que ESP)
-cornerAimbot.Parent = SilenAimbotButton
-
--- Efecto de hover (opcional)
-SilenAimbotButton.MouseEnter:Connect(function()
-    SilenAimbotButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Azul claro al pasar el mouse
-end)
-
-SilenAimbotButton.MouseLeave:Connect(function()
-    SilenAimbotButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al gris oscuro original
-end)
-
 -- Button click event
-SilenAimbotButton.MouseButton1Click:Connect(function()
+SilenAimButton.MouseButton1Click:Connect(function()
     isSilentAimEnabled = not isSilentAimEnabled  -- Toggle Silent Aim state
     targetCharacteree93s3 = nil  -- Reset locked character when toggling
     updateFovCircleee93s3()
 
     -- Update button text based on the state
     if isSilentAimEnabled then
-        SilenAimbotButton.Text = "SilenAimb: On"
+        SilenAimButton.Text = "Silaimb: On"
     else
-        SilenAimbotButton.Text = "SilenAimb: Off"
+        SilenAimButton.Text = "Silaimb: Off"
     end
 end)
 
