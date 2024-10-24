@@ -652,32 +652,111 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
     end
 end))
 
--- zoom +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- jesus +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
--- Crear el botón Zoom
-ZoomButton = Instance.new("TextButton")  -- Asegúrate de que se esté creando correctamente
-ZoomButton.Name = "ZoomButton"
-ZoomButton.Parent = VisualFrame  -- Verifica que esté asignado al frame correcto
-ZoomButton.Text = "Zoom: Off"
-ZoomButton.Font = Enum.Font.GothamBold
-ZoomButton.TextSize = 20  -- Ajusta el tamaño del texto según sea necesario
-ZoomButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ZoomButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color gris oscuro
-ZoomButton.Size = UDim2.new(0, 240, 0, 40)  -- Asegúrate de que el tamaño sea visible
-ZoomButton.Position = UDim2.new(0, 10, 0, 160)  -- Ajusta la posición según sea necesario
-ZoomButton.BorderSizePixel = 0  -- Sin borde
-ZoomButton.BackgroundTransparency = 0.1  -- Ligera transparencia para suavidad
+-- Configuración inicial de Jesús
+local jesusEnabled = false
+local jesusFolder = workspace:FindFirstChild("JesusFolder") or Instance.new("Folder", workspace)
+jesusFolder.Name = "JesusFolder"
 
--- Añadir esquinas redondeadas
-local cornerZoom = Instance.new("UICorner")
-cornerZoom.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
-cornerZoom.Parent = ZoomButton
+local function onJesusToggle(enabled)
+    jesusEnabled = enabled
+
+    -- Si se desactiva, limpiar las plataformas y detener la función
+    if not jesusEnabled then
+        for _, v in pairs(jesusFolder:GetChildren()) do
+            v:Destroy()
+        end
+        return
+    end
+
+    -- Verificar continuamente y crear plataformas si está habilitado
+    while jesusEnabled do
+        task.wait(0.1)
+
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+
+        if not character then
+            continue
+        end
+
+        local head = character:FindFirstChild("Head")
+        if not head then continue end
+
+        local rayOrigin = head.Position + Vector3.new(0, 150, 0) + workspace.CurrentCamera.CFrame.LookVector * 5
+        local rayDirection = Vector3.new(0, -300, 0)
+        local rayParams = RaycastParams.new()
+        rayParams.FilterType = Enum.RaycastFilterType.Exclude
+        rayParams.FilterDescendantsInstances = {character}
+
+        local rayResult = workspace:Raycast(rayOrigin, rayDirection, rayParams)
+
+        if rayResult and rayResult.Material == Enum.Material.Water then
+            local platform = Instance.new("Part")
+            platform.Size = Vector3.new(500, 1, 500)
+            platform.Anchored = true
+            platform.CanCollide = true
+            platform.Position = rayResult.Position + Vector3.new(0, 0.3, 0) -- Ligeramente por encima de la superficie del agua
+            platform.Material = Enum.Material.ForceField
+            platform.Parent = jesusFolder
+        end
+    end
+end
+
+-- Crear el botón de caminar sobre agua
+local JesusButton = Instance.new("TextButton")
+JesusButton.Name = "JesusButton"
+JesusButton.Parent = ExtraFrame
+JesusButton.Text = "Jesus: Off"  -- Estado inicial
+JesusButton.Font = Enum.Font.GothamBold
+JesusButton.TextSize = 18
+JesusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+JesusButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+JesusButton.Size = UDim2.new(0, 240, 0, 40)
+JesusButton.Position = UDim2.new(0, 10, 0, 60) -- Ajustar posición
+JesusButton.BorderSizePixel = 0
+JesusButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
+JesusButton.AutoButtonColor = false
+JesusButton.ClipsDescendants = true
+local cornerJesus = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerJesus.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerJesus.Parent = JesusButton
 
 -- Efecto de hover (opcional)
-ZoomButton.MouseEnter:Connect(function()
-    ZoomButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Color azul claro al pasar el mouse
+JesusButton.MouseEnter:Connect(function()
+    JesusButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)  -- Color naranja al pasar el mouse
 end)
 
-ZoomButton.MouseLeave:Connect(function()
-    ZoomButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al gris oscuro original
+JesusButton.MouseLeave:Connect(function()
+    JesusButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
 end)
+
+-- Lógica para alternar la función de caminar sobre agua
+JesusButton.MouseButton1Click:Connect(function()
+    -- Alternar estado
+    local currentState = JesusButton.Text:match("On") -- Verifica si el texto contiene "On"
+
+    if currentState then
+        -- Si está "On", cambiar a "Off"
+        onJesusToggle(false)  -- Desactivar la función
+        JesusButton.Text = "Jesus: Off"  -- Actualizar el texto
+    else
+        -- Si está "Off", cambiar a "On"
+        onJesusToggle(true)  -- Activar la función
+        JesusButton.Text = "Jesus: On"  -- Actualizar el texto
+    end
+end)
+
+-- Implementación del toggle (opcional, ya que ya se maneja con el botón)
+aimtab:AddToggle('jesus', {
+    Text = 'caminar sobre el agua',
+    Tooltip = 'Te permite caminar sobre el agua',
+    Default = false,
+
+    Callback = function(value)
+        onJesusToggle(value)
+    end
+})
