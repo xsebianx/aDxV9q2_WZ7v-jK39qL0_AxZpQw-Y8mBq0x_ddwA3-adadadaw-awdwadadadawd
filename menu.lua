@@ -368,28 +368,17 @@ ExtraButton.MouseButton1Click:Connect(function()
     VisualFrame.Visible = false
 end)
 
-
-
-local aimbotEnabled = false
-
 AimbotButton.MouseButton1Click:Connect(function()
-    aimbotEnabled = not aimbotEnabled
-    if aimbotEnabled then
-        AimbotButton.Text = "Aimbot: Off"
-        -- Cargamos el script del aimbot cuando se activa por primera vez
-        if not _G.aimbotLoaded then
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbot.lua"))()
-            _G.aimbotLoaded = true  -- Marcamos que el aimbot ya ha sido cargado
-        end
-        -- Activamos el aimbot
-        if _G.enableAimbot then
-            _G.enableAimbot()
-        end
-    else
+    aimEnabled = not aimEnabled -- Cambiar el estado del aimbot
+    if aimEnabled then
         AimbotButton.Text = "Aimbot: On"
-        -- Desactivamos el aimbot
+        -- Cargar el script del aimbot usando loadstring
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbot.lua"))() -- Reemplaza con tu URL
+        _G.enableAimbot() -- Activar el Aimbot
+    else
+        AimbotButton.Text = "Aimbot: Off"
         if _G.disableAimbot then
-            _G.disableAimbot()
+            _G.disableAimbot() -- Desactivar el Aimbot
         end
     end
 end)

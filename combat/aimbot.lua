@@ -2,7 +2,12 @@ local aimEnabled = false -- El aimbot está desactivado por defecto y se activa 
 local fieldOfView = 30 -- Campo de visión ajustado a 30 grados para un equilibrio
 local detectionRadius = 75 -- Radio de detección ampliado para mayor facilidad de uso
 local closestTarget = nil
-local fovCircle, visibleLabel, targetIndicator, notificationLabel, sound
+local fovCircle
+local visibleLabel
+local targetIndicator
+local notificationLabel
+local statsLabel
+local sound
 local totalTargetsDetected = 0
 local totalTrackingTime = 0
 local trackingStartTime = 0
@@ -56,6 +61,20 @@ local function createNotificationLabel()
     notificationLabel.Visible = false
 end
 
+-- Crear un TextLabel para estadísticas
+local function createStatsLabel()
+    if statsLabel then statsLabel:Remove() end
+    local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+    statsLabel = Instance.new("TextLabel", screenGui)
+    statsLabel.Size = UDim2.new(0, 300, 0, 50)
+    statsLabel.Position = UDim2.new(0.5, -150, 0, 120)
+    statsLabel.Text = "Objetivos detectados: 0\nTiempo de seguimiento: 0s"
+    statsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    statsLabel.TextScaled = true
+    statsLabel.BackgroundTransparency = 1
+    statsLabel.Visible = true
+end
+
 -- Crear un sonido para alertas
 local function createAlertSound()
     if sound then sound:Destroy() end
@@ -70,6 +89,15 @@ local function showNotification(message)
     notificationLabel.Visible = true
     wait(2)
     notificationLabel.Visible = false
+end
+
+-- Actualizar estadísticas
+local function updateStats()
+    local trackingTime = totalTrackingTime
+    if trackingStartTime > 0 then
+        trackingTime = trackingTime + (tick() - trackingStartTime)
+    end
+    statsLabel.Text = string.format("Objetivos detectados: %d\nTiempo de seguimiento: %.1fs", totalTargetsDetected, trackingTime)
 end
 
 -- Verificar si el objetivo es visible, sin obstáculos en el camino
@@ -88,12 +116,12 @@ local function getClosestPlayerInFOV()
     local camera = workspace.CurrentCamera
     local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
     for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            local headScreenPos = camera:WorldToViewportPoint(player.Character.Head.Position)
-            local distanceFromCenter = (screenCenter - Vector2.new(headScreenPos.X, headScreenPos.Y)).magnitude
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HeadTop") then
+            local headTopScreenPos = camera:WorldToViewportPoint(player.Character.HeadTop.Position)
+            local distanceFromCenter = (screenCenter - Vector2.new(headTopScreenPos.X, headTopScreenPos.Y)).magnitude
             -- Si el jugador está dentro del campo de visión y está visible
-            if distanceFromCenter < detectionRadius and isVisible(player.Character.Head) then
-                local distance = (camera.CFrame.Position - player.Character.Head.Position).magnitude
+            if distanceFromCenter < detectionRadius and isVisible(player.Character.HeadTop) then
+                local distance = (camera.CFrame.Position - player.Character.HeadTop.Position).magnitude
                 if distance < closestDistance then
                     closestDistance = distance
                     target = player
@@ -104,20 +132,32 @@ local function getClosestPlayerInFOV()
     return target
 end
 
--- Función de Aimbot que apunta instantáneamente a la cabeza
+-- Función de Aimbot que apunta instantáneamente a HeadTop
 local function aimbot(target)
-    if target and target.Character then
-        local head = target.Character:FindFirstChild("HeadTop") or target.Character:FindFirstChild("Head")
-        if head then
-            local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(head.Position)
-            mousemoverel((headScreenPos.X - workspace.CurrentCamera.ViewportSize.X / 2), (headScreenPos.Y - workspace.CurrentCamera.ViewportSize.Y / 2))
-        end
+    if target and target.Character and target.Character:FindFirstChild("HeadTop") then
+        local headTopScreenPos = workspace.CurrentCamera:WorldToViewportPoint(target.Character.HeadTop.Position)
+        mousemoverel((headTopScreenPos.X - workspace.CurrentCamera.ViewportSize.X / 2), (headTopScreenPos.Y - workspace.CurrentCamera.ViewportSize.Y / 2))
     end
 end
 
--- Actualizar el objetivo cada ciclo
+-- Variable global para el estado del aimbot
+_G.aimEnabled = false
+
+-- Función para activar el aimbot
+_G.enableAimbot = function()
+    _G.aimEnabled = true
+    print("Aimbot activado")
+end
+
+-- Función para desactivar el aimbot
+_G.disableAimbot = function()
+    _G.aimEnabled = false
+    print("Aimbot desactivado")
+end
+
+-- Actualización del ciclo del aimbot
 game:GetService("RunService").RenderStepped:Connect(function()
-    if aimEnabled then
+    if _G.aimEnabled then
         local newTarget = getClosestPlayerInFOV() -- Encontrar el jugador más cercano dentro del FOV y radio de detección
         if newTarget and newTarget ~= closestTarget then
             closestTarget = newTarget
@@ -126,15 +166,12 @@ game:GetService("RunService").RenderStepped:Connect(function()
             showNotification("Objetivo detectado: " .. closestTarget.Name)
             sound:Play()
         end
-        if closestTarget and closestTarget.Character and closestTarget.Character:FindFirstChild("Head") then
+        if closestTarget then
             aimbot(closestTarget) -- Usar Aimbot para asegurar el impacto
             visibleLabel.Visible = true -- Mostrar el mensaje "Jugador visible"
             targetIndicator.Visible = true
-            local head = closestTarget.Character:FindFirstChild("HeadTop") or closestTarget.Character:FindFirstChild("Head")
-            if head then
-                local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(head.Position)
-                targetIndicator.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
-            end
+            local headTopScreenPos = workspace.CurrentCamera:WorldToViewportPoint(closestTarget.Character.HeadTop.Position)
+            targetIndicator.Position = Vector2.new(headTopScreenPos.X, headTopScreenPos.Y)
             totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
             trackingStartTime = tick()
         else
@@ -153,44 +190,30 @@ game:GetService("RunService").RenderStepped:Connect(function()
     if fovCircle then
         fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
     end
+    updateStats()
 end)
 
--- Función para activar el aimbot
-function _G.enableAimbot()
-    aimEnabled = true
-    if fovCircle then fovCircle.Visible = true end
-end
+-- Controles de teclas para activar el aimbot con clic derecho
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Clic derecho para activar el aimbot
+        aimEnabled = true
+    end
+end)
 
--- Función para desactivar el aimbot
-function _G.disableAimbot()
-    aimEnabled = false
-    closestTarget = nil
-    if fovCircle then fovCircle.Visible = false end
-    if visibleLabel then visibleLabel.Visible = false end
-    if targetIndicator then targetIndicator.Visible = false end
-end
+game:GetService("UserInputService").InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Soltar clic derecho para desactivar el aimbot
+        aimEnabled = false
+        closestTarget = nil
+    end
+end)
 
--- Iniciar el círculo de FOV, el mensaje de visibilidad, el indicador de objetivo, el sistema de notificación y el sonido de alerta
+-- Inicializar las visualizaciones y el sonido
 createFOVCircle()
 createVisibleLabel()
 createTargetIndicator()
 createNotificationLabel()
+createStatsLabel()
 createAlertSound()
 
--- Manejar la reconexión del jugador y la muerte
-local localPlayer = game.Players.LocalPlayer
-local function onCharacterAdded(character)
-    character:WaitForChild("Humanoid").Died:Connect(function()
-        createFOVCircle()
-        createVisibleLabel()
-        createTargetIndicator()
-        createNotificationLabel()
-        createAlertSound()
-    end)
-end
-
-if localPlayer.Character then
-    onCharacterAdded(localPlayer.Character)
-end
-
-localPlayer.CharacterAdded:Connect(onCharacterAdded)
+-- Mostrar una notificación al inicio
+showNotification("Aimbot con FOV habilitado. Presiona clic derecho para activar.")
