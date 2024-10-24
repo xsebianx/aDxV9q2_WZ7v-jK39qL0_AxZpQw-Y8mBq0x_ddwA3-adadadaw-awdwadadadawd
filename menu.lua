@@ -654,75 +654,30 @@ end))
 
 -- zoom +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-local ZoomButton = Instance.new("TextButton")
+-- Crear el botón Zoom
+ZoomButton = Instance.new("TextButton")  -- Asegúrate de que se esté creando correctamente
 ZoomButton.Name = "ZoomButton"
-ZoomButton.Parent = VisualFrame
-ZoomButton.Text = "Zoom Tecla"
+ZoomButton.Parent = VisualFrame  -- Verifica que esté asignado al frame correcto
+ZoomButton.Text = "Zoom: Off"
 ZoomButton.Font = Enum.Font.GothamBold
-ZoomButton.TextSize = 18
+ZoomButton.TextSize = 20  -- Ajusta el tamaño del texto según sea necesario
 ZoomButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ZoomButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ZoomButton.Size = UDim2.new(0, 240, 0, 40)
-ZoomButton.Position = UDim2.new(0, 10, 0, 160) -- Ajustar posición para que esté más abajo
-ZoomButton.BorderSizePixel = 0
-ZoomButton.BackgroundTransparency = 0.1
+ZoomButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color gris oscuro
+ZoomButton.Size = UDim2.new(0, 240, 0, 40)  -- Asegúrate de que el tamaño sea visible
+ZoomButton.Position = UDim2.new(0, 10, 0, 160)  -- Ajusta la posición según sea necesario
+ZoomButton.BorderSizePixel = 0  -- Sin borde
+ZoomButton.BackgroundTransparency = 0.1  -- Ligera transparencia para suavidad
 
--- Redondear esquinas
-ZoomButton.AutoButtonColor = false
-ZoomButton.ClipsDescendants = true
-local cornerZoom = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+-- Añadir esquinas redondeadas
+local cornerZoom = Instance.new("UICorner")
 cornerZoom.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
 cornerZoom.Parent = ZoomButton
 
--- Efecto de hover (al pasar el mouse)
+-- Efecto de hover (opcional)
 ZoomButton.MouseEnter:Connect(function()
-    ZoomButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Cambiar a verde claro
+    ZoomButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Color azul claro al pasar el mouse
 end)
 
 ZoomButton.MouseLeave:Connect(function()
-    ZoomButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
-end)
-
--- Variable para almacenar la tecla de zoom seleccionada
-local zoomKey = nil
-
--- Función para seleccionar la tecla de zoom
-local function selectZoomKey()
-    ZoomButton.Text = "Presiona Tecla"
-    local inputConnection
-
-    -- Capturar la tecla presionada
-    inputConnection = game:GetService("UserInputService").InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Keyboard then
-            zoomKey = input.KeyCode
-            ZoomButton.Text = "Zoom Key: " .. tostring(zoomKey):gsub("Enum.KeyCode.", "")
-            inputConnection:Disconnect()  -- Dejar de escuchar después de seleccionar la tecla
-        end
-    end)
-end
-
--- Asignar la función al clic del botón
-ZoomButton.MouseButton1Click:Connect(selectZoomKey)
-
--- Función para hacer zoom
-local function enableZoom()
-    workspace.CurrentCamera.FieldOfView = 30 -- Ajusta el valor según el nivel de zoom deseado
-end
-
--- Función para desactivar el zoom
-local function disableZoom()
-    workspace.CurrentCamera.FieldOfView = 70 -- Valor por defecto de FieldOfView
-end
-
--- Detectar cuando se presiona y se suelta la tecla de zoom
-game:GetService("UserInputService").InputBegan:Connect(function(input)
-    if zoomKey and input.KeyCode == zoomKey then
-        enableZoom()
-    end
-end)
-
-game:GetService("UserInputService").InputEnded:Connect(function(input)
-    if zoomKey and input.KeyCode == zoomKey then
-        disableZoom()
-    end
+    ZoomButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al gris oscuro original
 end)
