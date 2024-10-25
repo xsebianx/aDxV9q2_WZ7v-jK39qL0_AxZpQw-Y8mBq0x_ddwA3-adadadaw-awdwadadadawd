@@ -444,18 +444,23 @@ VisorButton.MouseButton1Click:Connect(function()
     end
 end)
 
-local flyEnabled = false
-
 -- Variables iniciales
 local flyEnabled = false -- Estado inicial del vuelo
 
+-- Asumiendo que ya tienes el botón definido como 'FlyButton'
 FlyButton.MouseButton1Click:Connect(function()
     flyEnabled = not flyEnabled -- Alterna el estado de vuelo
+
     if flyEnabled then
         FlyButton.Text = "Fly: On"
-        -- Asegúrate de que _G.disableFly se use correctamente para habilitar el vuelo
         _G.disableFly = false -- Permitir el vuelo
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/fly.lua"))()
+
+        -- Asegúrate de que el script de vuelo se cargue correctamente
+        if not _G.flyScriptLoaded then
+            -- Cargar el script de vuelo solo una vez
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/fly.lua"))()
+            _G.flyScriptLoaded = true -- Marcamos que el script de vuelo se ha cargado
+        end
     else
         FlyButton.Text = "Fly: Off"
         _G.disableFly = true -- Desactivar el vuelo

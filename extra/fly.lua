@@ -2,9 +2,9 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local plr = game.Players.LocalPlayer
 
--- Configuraciones iniciales
+-- Variables iniciales
+local flyEnabled = false -- Estado inicial del vuelo
 local gamesetting = {
-    flight = true, -- Habilitar el vuelo por defecto
     flightspeed = 5 -- Velocidad de vuelo por defecto
 }
 
@@ -19,18 +19,20 @@ local flycontrol = {
 
 -- Captura de entradas del teclado
 UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.W then
-        flycontrol.w = true
-    elseif input.KeyCode == Enum.KeyCode.A then
-        flycontrol.a = true
-    elseif input.KeyCode == Enum.KeyCode.S then
-        flycontrol.s = true
-    elseif input.KeyCode == Enum.KeyCode.D then
-        flycontrol.d = true
-    elseif input.KeyCode == Enum.KeyCode.Space then
-        flycontrol.space = true
-    elseif input.KeyCode == Enum.KeyCode.LeftShift then
-        flycontrol.shift = true
+    if flyEnabled then
+        if input.KeyCode == Enum.KeyCode.W then
+            flycontrol.w = true
+        elseif input.KeyCode == Enum.KeyCode.A then
+            flycontrol.a = true
+        elseif input.KeyCode == Enum.KeyCode.S then
+            flycontrol.s = true
+        elseif input.KeyCode == Enum.KeyCode.D then
+            flycontrol.d = true
+        elseif input.KeyCode == Enum.KeyCode.Space then
+            flycontrol.space = true
+        elseif input.KeyCode == Enum.KeyCode.LeftShift then
+            flycontrol.shift = true
+        end
     end
 end)
 
@@ -52,7 +54,7 @@ end)
 
 -- Conexión al ciclo de actualización del juego
 RunService.Heartbeat:Connect(function(delta)
-    if gamesetting.flight and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+    if flyEnabled and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
         local s = gamesetting.flightspeed * 10 * delta
         local hrp = plr.Character.HumanoidRootPart
         local cf = hrp.CFrame
@@ -72,3 +74,13 @@ RunService.Heartbeat:Connect(function(delta)
         end
     end
 end)
+
+-- Conexión con el menú externo para habilitar/deshabilitar el vuelo
+_G.disableFly = function()
+    flyEnabled = false -- Desactivar el vuelo
+end
+
+-- Esta función puede ser llamada desde tu menú externo para habilitar el vuelo
+function enableFly()
+    flyEnabled = true -- Activar el vuelo
+end
