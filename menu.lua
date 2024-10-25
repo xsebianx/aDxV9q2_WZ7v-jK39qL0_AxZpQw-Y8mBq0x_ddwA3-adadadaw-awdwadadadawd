@@ -412,24 +412,26 @@ AimbotButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Suponiendo que ya tienes el botón definido como 'AimbotNPCButton'
-local aimbotEnabled = false -- Estado inicial del aimbot
-
 AimbotNPCButton.MouseButton1Click:Connect(function()
     aimbotEnabled = not aimbotEnabled -- Alterna el estado del aimbot
     if aimbotEnabled then
         AimbotNPCButton.Text = "Delta Aimb: On"        
         -- Aquí puedes cargar el script del aimbot para NPCs
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/deltaaimb.lua"))() -- Cambia esta URL por la de tu script de aimbot
-        _G.activateAimbot() -- Asegúrate de que esta función activa la funcionalidad del aimbot
+        
+        -- Activa el aimbot usando la función global
+        if _G.enableAimbot then
+            _G.enableAimbot() -- Activa la funcionalidad del aimbot
+        end
     else
         AimbotNPCButton.Text = "Delta Aimb: Off"
+        
+        -- Desactiva el aimbot usando la función global
         if _G.disableAimbot then
-            _G.disableAimbot() -- Desactivar la funcionalidad del aimbot
+            _G.disableAimbot() -- Desactiva la funcionalidad del aimbot
         end
     end
 end)
-
 
 SilenAimButton.MouseButton1Click:Connect(function()
     isSilentAimEnabled = not isSilentAimEnabled -- Cambiar el estado de Silent Aim

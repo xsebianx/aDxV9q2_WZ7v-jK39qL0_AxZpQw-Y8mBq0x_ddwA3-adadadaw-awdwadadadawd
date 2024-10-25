@@ -11,14 +11,23 @@ local predictionFactor = 0.118 -- Ajustar este valor según la predicción desea
 local headSizeMultiplier = 5 -- Multiplicador para el tamaño de la cabeza
 local transparencyValue = 0.3 -- Transparencia para la cabeza
 
--- Función para alternar el aimbot
-function toggleAimbot()
-    aimbotEnabled = not aimbotEnabled
-    if not aimbotEnabled then
-        isAiming = false
-        targetHead = nil
-    end
+-- Función para activar el aimbot
+function enableAimbot()
+    aimbotEnabled = true
+    print("Aimbot activado")
 end
+
+-- Función para desactivar el aimbot
+function disableAimbot()
+    aimbotEnabled = false
+    isAiming = false
+    targetHead = nil
+    print("Aimbot desactivado")
+end
+
+-- Asignar las funciones a las variables globales
+_G.enableAimbot = enableAimbot
+_G.disableAimbot = disableAimbot
 
 -- Función para alternar la predicción
 function togglePrediction()
@@ -112,4 +121,4 @@ end)
 game:GetService("RunService").Heartbeat:Connect(updateAimbot)
 
 -- Para activar el aimbot al inicio (puedes comentar esto si no lo deseas)
-toggleAimbot()
+enableAimbot()
