@@ -3,12 +3,10 @@ local UserInputService = game:GetService("UserInputService")
 local plr = game.Players.LocalPlayer
 
 -- Variables iniciales
-local flyEnabled = false -- Estado inicial del vuelo
-local gamesetting = {
-    flightspeed = 5 -- Velocidad de vuelo por defecto
-}
+local flyEnabled = false
+local flightSpeed = 5 -- Velocidad de vuelo por defecto
 
-local flycontrol = {
+local flyControl = {
     space = false,
     shift = false,
     w = false,
@@ -21,55 +19,56 @@ local flycontrol = {
 UserInputService.InputBegan:Connect(function(input)
     if flyEnabled then
         if input.KeyCode == Enum.KeyCode.W then
-            flycontrol.w = true
+            flyControl.w = true
         elseif input.KeyCode == Enum.KeyCode.A then
-            flycontrol.a = true
+            flyControl.a = true
         elseif input.KeyCode == Enum.KeyCode.S then
-            flycontrol.s = true
+            flyControl.s = true
         elseif input.KeyCode == Enum.KeyCode.D then
-            flycontrol.d = true
+            flyControl.d = true
         elseif input.KeyCode == Enum.KeyCode.Space then
-            flycontrol.space = true
+            flyControl.space = true
         elseif input.KeyCode == Enum.KeyCode.LeftShift then
-            flycontrol.shift = true
+            flyControl.shift = true
         end
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.W then
-        flycontrol.w = false
+        flyControl.w = false
     elseif input.KeyCode == Enum.KeyCode.A then
-        flycontrol.a = false
+        flyControl.a = false
     elseif input.KeyCode == Enum.KeyCode.S then
-        flycontrol.s = false
+        flyControl.s = false
     elseif input.KeyCode == Enum.KeyCode.D then
-        flycontrol.d = false
+        flyControl.d = false
     elseif input.KeyCode == Enum.KeyCode.Space then
-        flycontrol.space = false
+        flyControl.space = false
     elseif input.KeyCode == Enum.KeyCode.LeftShift then
-        flycontrol.shift = false
+        flyControl.shift = false
     end
 end)
 
 -- Conexión al ciclo de actualización del juego
 RunService.Heartbeat:Connect(function(delta)
     if flyEnabled and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-        local s = gamesetting.flightspeed * 10 * delta
+        local speed = flightSpeed * 10 * delta
         local hrp = plr.Character.HumanoidRootPart
         local cf = hrp.CFrame
 
         -- Actualiza la posición del jugador según las teclas presionadas
         hrp.CFrame = cf * CFrame.new(
-            (flycontrol.d and s or 0) - (flycontrol.a and s or 0),
-            (flycontrol.space and s or 0) - (flycontrol.shift and s or 0),
-            (flycontrol.s and s or 0) - (flycontrol.w and s or 0)
+            (flyControl.d and speed or 0) - (flyControl.a and speed or 0),
+            (flyControl.space and speed or 0) - (flyControl.shift and speed or 0),
+            (flyControl.s and speed or 0) - (flyControl.w and speed or 0)
         )
 
         -- Detener la física de las partes del personaje
-        for _, v in pairs(plr.Character:GetDescendants()) do
-            if v:IsA("BasePart") then
-                v.Velocity, v.RotVelocity = Vector3.new(0, 0, 0), Vector3.new(0, 0, 0)
+        for _, part in pairs(plr.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Velocity = Vector3.new(0, 0, 0)
+                part.RotVelocity = Vector3.new(0, 0, 0)
             end
         end
     end
