@@ -8,8 +8,8 @@ local permanentHWIDs = {
 }
 
 local temporaryHWIDs = {
-    "DC61583D-84CD-48E1-8AB3-212434BDC519", --Nomi
-    "33"
+    "DC61583D-84CD-48E1-8AB3-212434BDC519", -- Nomi
+    "3D413373-88F3-4D54-8A83-14E71290BF55" -- Carlos
 }
 
 -- Variables de tiempo
