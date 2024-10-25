@@ -475,6 +475,22 @@ JesusButton.MouseButton1Click:Connect(function()
     end
 end)
 
+InstantHitButton.MouseButton1Click:Connect(function()
+    instantHitEnabled = not instantHitEnabled
+    if instantHitEnabled then
+        InstantHitButton.Text = "Instant Hit: On"
+        
+        -- Cargar el script de Instant Hit desde GitHub
+        loadstring(game:HttpGet(""))() 
+        _G.activateInstantHit() -- Activa la funcionalidad de Instant Hit
+    else
+        InstantHitButton.Text = "Instant Hit: Off"
+        if _G.disableInstantHit then
+            _G.disableInstantHit() -- Desactiva la funcionalidad de Instant Hit
+        end
+    end
+end)
+
 -- Funcionalidad para minimizar el menú con la tecla "P"
 local UserInputService = game:GetService("UserInputService")
 
@@ -755,29 +771,3 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
 end))
 
 -- Insta hit +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-local instantHitEnabled = false
-InstantHitButton.MouseButton1Click:Connect(function()
-    instantHitEnabled = not instantHitEnabled
-    InstantHitButton.Text = instantHitEnabled and "Instant Hit: On" or "Instant Hit: Off"
-
-    -- Lógica para activar o desactivar "Instant Hit"
-    -- Copiando el código que tenías para la funcionalidad de "Instant Hit"
-    local ammo = game.ReplicatedStorage:FindFirstChild("AmmoTypes")
-    if ammo then
-        for _, v in pairs(ammo:GetChildren()) do
-            if v:IsA("Folder") then
-                local currentVelocity = v:GetAttribute("MuzzleVelocity") or 3100
-                if instantHitEnabled then
-                    v:SetAttribute("MuzzleVelocity", 3200)
-                    print("MuzzleVelocity establecido en 3200 para:", v.Name)
-                else
-                    v:SetAttribute("MuzzleVelocity", currentVelocity)
-                    print("MuzzleVelocity restablecido a", currentVelocity, "para:", v.Name)
-                end
-            end
-        end
-    else
-        print("No se encontró la carpeta AmmoTypes en ReplicatedStorage.")
-    end
-end)
