@@ -176,7 +176,7 @@ end)
 AimbotNPCButton = Instance.new("TextButton")  -- Crea el botón
 AimbotNPCButton.Name = "AimbotNPCButton"
 AimbotNPCButton.Parent = CombatFrame
-AimbotNPCButton.Text = "Delta aimbot: Off"
+AimbotNPCButton.Text = "Delta aim: Off"
 AimbotNPCButton.Font = Enum.Font.GothamBold
 AimbotNPCButton.TextSize = 20  -- Tamaño del texto ajustado
 AimbotNPCButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -420,7 +420,7 @@ AimbotNPCButton.MouseButton1Click:Connect(function()
     if aimbotEnabled then
         AimbotNPCButton.Text = "Delta Aimb: On"        
         -- Aquí puedes cargar el script del aimbot para NPCs
-        loadstring(game:HttpGet("URL_DEL_SCRIPT_DE_AIMBOT"))() -- Cambia esta URL por la de tu script de aimbot
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/deltaaimb.lua"))() -- Cambia esta URL por la de tu script de aimbot
         _G.activateAimbot() -- Asegúrate de que esta función activa la funcionalidad del aimbot
     else
         AimbotNPCButton.Text = "Delta Aimb: Off"
