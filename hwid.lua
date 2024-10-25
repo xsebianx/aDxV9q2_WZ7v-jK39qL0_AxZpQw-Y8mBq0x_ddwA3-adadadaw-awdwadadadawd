@@ -5,12 +5,13 @@ local TeleportService = game:GetService("TeleportService")
 -- HWIDs configurados directamente en el script
 local permanentHWIDs = {
     "9005F968-46DF-44FC-9C68-B173D505FF37", -- Ragnarok
-    "NUEVO-HWID-AQUI" -- Reemplaza con el nuevo HWID que deseas agregar
+    "3D413373-88F3-4D54-8A83-14E71290BF55"´, -- Carlos
+    "whid",
+    "whid"
 }
 
 local temporaryHWIDs = {
     "DC61583D-84CD-48E1-8AB3-212434BDC519", -- Nomi
-    "3D413373-88F3-4D54-8A83-14E71290BF55" -- Carlos
 }
 
 -- Variables de tiempo
