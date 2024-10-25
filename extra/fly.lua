@@ -1,89 +1,74 @@
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local rootPart = character:WaitForChild("HumanoidRootPart")
-local flyEnabled = false
-local flySpeed = 2 -- Aumentar la velocidad horizontal
-local liftSpeed = 0.5 -- Velocidad de elevación
-local fallSpeed = 0.5 -- Velocidad de caída
-local isFlying = false
+local UserInputService = game:GetService("UserInputService")
+local plr = game.Players.LocalPlayer
 
--- Guardar gravedad original para restaurarla después del vuelo
-local originalGravity = workspace.Gravity
+-- Configuraciones iniciales
+local gamesetting = {
+    flight = true, -- Habilitar el vuelo por defecto
+    flightspeed = 5 -- Velocidad de vuelo por defecto
+}
 
--- Función para iniciar el vuelo
-local function startFly()
-    isFlying = true
-    humanoid:ChangeState(Enum.HumanoidStateType.Physics) -- Cambiar el estado del personaje
-    workspace.Gravity = 0 -- Eliminar la gravedad al volar
+local flycontrol = {
+    space = false,
+    shift = false,
+    w = false,
+    a = false,
+    s = false,
+    d = false,
+}
 
-    -- Conectar el ciclo de vuelo
-    RunService.RenderStepped:Connect(function()
-        if not isFlying then return end
-        -- Vector de movimiento
-        local moveDirection = Vector3.new(0, 0, 0)
-        -- Subir cuando se presiona la barra espaciadora
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            moveDirection = moveDirection + Vector3.new(0, liftSpeed, 0) -- Subir lentamente
-        else
-            moveDirection = moveDirection + Vector3.new(0, -fallSpeed, 0) -- Caer lentamente
-        end
-        -- Movimiento horizontal (W, A, S, D)
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-            moveDirection = moveDirection + (character.PrimaryPart.CFrame.LookVector * flySpeed) -- Avanzar
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-            moveDirection = moveDirection - (character.PrimaryPart.CFrame.LookVector * flySpeed) -- Retroceder
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-            moveDirection = moveDirection - (character.PrimaryPart.CFrame.RightVector * flySpeed) -- Izquierda
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-            moveDirection = moveDirection + (character.PrimaryPart.CFrame.RightVector * flySpeed) -- Derecha
-        end
-        -- Aplicar movimiento al `HumanoidRootPart`
-        rootPart.Velocity = Vector3.new(moveDirection.X * 10, moveDirection.Y * 10, moveDirection.Z * 10) -- Aumentar la velocidad para un movimiento más fluido
-    end)
-end
-
--- Función para detener el vuelo y restaurar la gravedad
-local function stopFly()
-    isFlying = false
-    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp) -- Restaurar estado normal del humanoide
-    workspace.Gravity = originalGravity -- Restaurar la gravedad original
-    rootPart.Velocity = Vector3.new(0, 0, 0) -- Detener cualquier movimiento al dejar de volar
-end
-
--- Función para alternar entre vuelo activado/desactivado
-local function toggleFly()
-    flyEnabled = not flyEnabled
-    if flyEnabled then
-        startFly()
-    else
-        stopFly()
-    end
-end
-
--- Hacer la función accesible globalmente
-_G.disableFly = stopFly
-
--- Activar el vuelo con la tecla 'F'
+-- Captura de entradas del teclado
 UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.I then
-        toggleFly()
+    if input.KeyCode == Enum.KeyCode.W then
+        flycontrol.w = true
+    elseif input.KeyCode == Enum.KeyCode.A then
+        flycontrol.a = true
+    elseif input.KeyCode == Enum.KeyCode.S then
+        flycontrol.s = true
+    elseif input.KeyCode == Enum.KeyCode.D then
+        flycontrol.d = true
+    elseif input.KeyCode == Enum.KeyCode.Space then
+        flycontrol.space = true
+    elseif input.KeyCode == Enum.KeyCode.LeftShift then
+        flycontrol.shift = true
     end
 end)
 
--- Reiniciar si el personaje muere o se respawnea
-player.CharacterAdded:Connect(function(newCharacter)
-    character = newCharacter
-    humanoid = newCharacter:WaitForChild("Humanoid")
-    rootPart = newCharacter:WaitForChild("HumanoidRootPart")
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.W then
+        flycontrol.w = false
+    elseif input.KeyCode == Enum.KeyCode.A then
+        flycontrol.a = false
+    elseif input.KeyCode == Enum.KeyCode.S then
+        flycontrol.s = false
+    elseif input.KeyCode == Enum.KeyCode.D then
+        flycontrol.d = false
+    elseif input.KeyCode == Enum.KeyCode.Space then
+        flycontrol.space = false
+    elseif input.KeyCode == Enum.KeyCode.LeftShift then
+        flycontrol.shift = false
+    end
+end)
 
-    if isFlying then
-        stopFly() -- Detener vuelo si el personaje es nuevo
+-- Conexión al ciclo de actualización del juego
+RunService.Heartbeat:Connect(function(delta)
+    if gamesetting.flight and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+        local s = gamesetting.flightspeed * 10 * delta
+        local hrp = plr.Character.HumanoidRootPart
+        local cf = hrp.CFrame
+
+        -- Actualiza la posición del jugador según las teclas presionadas
+        hrp.CFrame = cf * CFrame.new(
+            (flycontrol.d and s or 0) - (flycontrol.a and s or 0),
+            (flycontrol.space and s or 0) - (flycontrol.shift and s or 0),
+            (flycontrol.s and s or 0) - (flycontrol.w and s or 0)
+        )
+
+        -- Detener la física de las partes del personaje
+        for _, v in pairs(plr.Character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.Velocity, v.RotVelocity = Vector3.new(0, 0, 0), Vector3.new(0, 0, 0)
+            end
+        end
     end
 end)

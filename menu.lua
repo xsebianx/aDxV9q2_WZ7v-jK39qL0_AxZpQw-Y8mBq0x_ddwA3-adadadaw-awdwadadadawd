@@ -446,16 +446,19 @@ end)
 
 local flyEnabled = false
 
+-- Variables iniciales
+local flyEnabled = false -- Estado inicial del vuelo
+
 FlyButton.MouseButton1Click:Connect(function()
-    flyEnabled = not flyEnabled
+    flyEnabled = not flyEnabled -- Alterna el estado de vuelo
     if flyEnabled then
         FlyButton.Text = "Fly: On"
+        -- Asegúrate de que _G.disableFly se use correctamente para habilitar el vuelo
+        _G.disableFly = false -- Permitir el vuelo
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/fly.lua"))()
     else
         FlyButton.Text = "Fly: Off"
-        if _G.disableFly then
-            _G.disableFly() -- Desactivar el vuelo
-        end
+        _G.disableFly = true -- Desactivar el vuelo
     end
 end)
 
