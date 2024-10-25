@@ -481,7 +481,7 @@ InstantHitButton.MouseButton1Click:Connect(function()
         InstantHitButton.Text = "Instant Hit: On"
         
         -- Cargar el script de Instant Hit desde GitHub
-        loadstring(game:HttpGet(""))() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/instanthit.lua"))() 
         _G.activateInstantHit() -- Activa la funcionalidad de Instant Hit
     else
         InstantHitButton.Text = "Instant Hit: Off"
