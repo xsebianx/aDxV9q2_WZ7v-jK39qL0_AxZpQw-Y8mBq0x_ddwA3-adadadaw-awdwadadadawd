@@ -6,6 +6,7 @@ local plr = game.Players.LocalPlayer
 local flyEnabled = false
 local flightSpeed = 5 -- Velocidad de vuelo por defecto
 
+-- Controles de vuelo
 local flyControl = {
     space = false,
     shift = false,
@@ -14,6 +15,20 @@ local flyControl = {
     s = false,
     d = false,
 }
+
+-- Función para activar el vuelo
+function activateFly()
+    flyEnabled = true -- Activar el vuelo
+end
+
+-- Función para desactivar el vuelo
+function disableFly()
+    flyEnabled = false -- Desactivar el vuelo
+end
+
+-- Asignar las funciones a las variables globales
+_G.activateFly = activateFly
+_G.disableFly = disableFly
 
 -- Captura de entradas del teclado
 UserInputService.InputBegan:Connect(function(input)
@@ -73,13 +88,3 @@ RunService.Heartbeat:Connect(function(delta)
         end
     end
 end)
-
--- Conexión con el menú externo para habilitar/deshabilitar el vuelo
-_G.disableFly = function()
-    flyEnabled = false -- Desactivar el vuelo
-end
-
--- Esta función puede ser llamada desde tu menú externo para habilitar el vuelo
-function enableFly()
-    flyEnabled = true -- Activar el vuelo
-end
