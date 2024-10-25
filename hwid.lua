@@ -5,6 +5,7 @@ local TeleportService = game:GetService("TeleportService")
 -- HWIDs configurados directamente en el script
 local permanentHWIDs = {
     "9005F968-46DF-44FC-9C68-B173D505FF37", -- Ragnarok
+    "NUEVO-HWID-AQUI" -- Reemplaza con el nuevo HWID que deseas agregar
 }
 
 local temporaryHWIDs = {
@@ -25,6 +26,9 @@ end
 local function checkHWID()
     local playerHWID = getClientHWID() -- Obtener el HWID del jugador
     local currentTime = os.time() -- Obtener el tiempo actual en segundos
+
+    -- Debug: imprimir el HWID del jugador
+    print("HWID del jugador:", playerHWID)
 
     -- Verificar si el HWID está autorizado para acceso permanente
     if table.find(permanentHWIDs, playerHWID) then
