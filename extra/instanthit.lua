@@ -3,6 +3,9 @@ local ammo = game.ReplicatedStorage:FindFirstChild("AmmoTypes")
 local originalVelocities = {}
 local originalRecoilValues = {}
 
+-- Asegúrate de que la biblioteca de UI esté correctamente inicializada
+local aimtab = YourUILibrary:CreateTab("Aiming") -- Cambia 'YourUILibrary' al nombre de tu biblioteca
+
 -- Función para guardar las velocidades y valores de retroceso originales
 local function storeOriginalValues()
     if ammo then
@@ -12,6 +15,8 @@ local function storeOriginalValues()
                 originalRecoilValues[v.Name] = v:GetAttribute("RecoilStrength") or 230 -- Valor por defecto para RecoilStrength
             end
         end
+    else
+        print("No se encontró la carpeta AmmoTypes en ReplicatedStorage.")
     end
 end
 
@@ -108,3 +113,8 @@ aimtab:AddToggle('NoRecoil', {
         end
     end
 })
+
+-- Exponer las funciones si es necesario
+_G.activateInstantHit = activateInstantHit
+_G.disableInstantHit = disableInstantHit
+_G.norecoil = norecoil
