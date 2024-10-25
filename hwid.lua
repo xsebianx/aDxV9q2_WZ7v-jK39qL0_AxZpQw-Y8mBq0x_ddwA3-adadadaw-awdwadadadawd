@@ -5,13 +5,13 @@ local TeleportService = game:GetService("TeleportService")
 -- HWIDs configurados directamente en el script
 local permanentHWIDs = {
     "9005F968-46DF-44FC-9C68-B173D505FF37", -- Ragnarok
-    "3D413373-88F3-4D54-8A83-14E71290BF55"´, -- Carlos
-    "whid",
-    "whid"
+    "AQUI_VA_EL_HWID_DE_TU_COMPA", -- Reemplaza esto con el HWID de tu amigo
 }
 
 local temporaryHWIDs = {
     "DC61583D-84CD-48E1-8AB3-212434BDC519", -- Nomi
+    "3D413373-88F3-4D54-8A83-14E71290BF55", -- Carlos
+    "AQUI_VA_EL_HWID_DE_TU_COMPA_TEMPORAL", -- Reemplaza esto con el HWID de tu amigo si es acceso temporal
 }
 
 -- Variables de tiempo
@@ -27,22 +27,18 @@ end
 local function checkHWID()
     local playerHWID = getClientHWID() -- Obtener el HWID del jugador
     local currentTime = os.time() -- Obtener el tiempo actual en segundos
-
-    -- Debug: imprimir el HWID del jugador
-    print("HWID del jugador:", playerHWID)
+    print("Comprobando acceso para HWID:", playerHWID)
 
     -- Verificar si el HWID está autorizado para acceso permanente
     if table.find(permanentHWIDs, playerHWID) then
-        -- Intentar cargar el menú
+        print("Acceso permanente concedido.")
         local success, err = pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
         end)
 
         if not success then
-            -- Si hay un error al cargar el menú, imprimir en la consola
             warn("Error al cargar el menú:", err)
         else
-            -- Notificar que el acceso fue concedido
             game:GetService("StarterGui"):SetCore("SendNotification", {
                 Title = "Acceso concedido";
                 Text = "¡HWID autorizado para acceso permanente!";
@@ -52,10 +48,9 @@ local function checkHWID()
 
     -- Verificar si el HWID está autorizado para acceso temporal
     elseif table.find(temporaryHWIDs, playerHWID) then
-        -- Comprobar el tiempo de acceso
+        print("Acceso temporal concedido.")
         if passwordSetTime == nil then
             passwordSetTime = currentTime
-            -- Intentar cargar el menú
             local success, err = pcall(function()
                 loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
             end)
@@ -73,7 +68,6 @@ local function checkHWID()
         else
             local elapsedTime = currentTime - passwordSetTime
             if elapsedTime < hwidExpirationTime then
-                -- Intentar cargar el menú
                 local success, err = pcall(function()
                     loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
                 end)
