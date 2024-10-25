@@ -176,7 +176,7 @@ end)
 AimbotNPCButton = Instance.new("TextButton")  -- Crea el botón
 AimbotNPCButton.Name = "AimbotNPCButton"
 AimbotNPCButton.Parent = CombatFrame
-AimbotNPCButton.Text = "Aimbot NPC: Off"
+AimbotNPCButton.Text = "Delta aimbot: Off"
 AimbotNPCButton.Font = Enum.Font.GothamBold
 AimbotNPCButton.TextSize = 20  -- Tamaño del texto ajustado
 AimbotNPCButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -412,10 +412,28 @@ AimbotButton.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Suponiendo que ya tienes el botón definido como 'AimbotNPCButton'
+local aimbotEnabled = false -- Estado inicial del aimbot
+
+AimbotNPCButton.MouseButton1Click:Connect(function()
+    aimbotEnabled = not aimbotEnabled -- Alterna el estado del aimbot
+    if aimbotEnabled then
+        AimbotNPCButton.Text = "Delta Aimb: On"        
+        -- Aquí puedes cargar el script del aimbot para NPCs
+        loadstring(game:HttpGet("URL_DEL_SCRIPT_DE_AIMBOT"))() -- Cambia esta URL por la de tu script de aimbot
+        _G.activateAimbot() -- Asegúrate de que esta función activa la funcionalidad del aimbot
+    else
+        AimbotNPCButton.Text = "Delta Aimb: Off"
+        if _G.disableAimbot then
+            _G.disableAimbot() -- Desactivar la funcionalidad del aimbot
+        end
+    end
+end)
+
 
 SilenAimButton.MouseButton1Click:Connect(function()
     isSilentAimEnabled = not isSilentAimEnabled -- Cambiar el estado de Silent Aim
-    if isSilentAimEnabled then
+    if isSilentAimEnabled then        
         SilenAimButton.Text = "Silent Aim: On"
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/silentaimb.lua"))() -- Cargar el script de Silent Aim
         activateSilentAim() -- Activar Silent Aim
@@ -448,26 +466,6 @@ end)
 local flyEnabled = false -- Estado inicial del vuelo
 
 -- Asumiendo que ya tienes el botón definido como 'FlyButton'
--- Asumiendo que ya tienes el botón definido como 'FlyButton'
-FlyButton.MouseButton1Click:Connect(function()
-    flyEnabled = not flyEnabled -- Alterna el estado de vuelo
-
-    if flyEnabled then
-        FlyButton.Text = "Fly: On"
-        
-        -- Cargar el script de vuelo
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/fly.lua"))()
-        _G.disableFly = false -- Permitir el vuelo
-    else
-        FlyButton.Text = "Fly: Off"
-        if _G.disableFly then
-            _G.disableFly() -- Desactivar el vuelo
-        end
-    end
-end)
-
-
--- Asumiendo que ya tienes el botón definido como 'FlyButton'
 FlyButton.MouseButton1Click:Connect(function()
     flyEnabled = not flyEnabled -- Alterna el estado de vuelo
 
@@ -481,6 +479,22 @@ FlyButton.MouseButton1Click:Connect(function()
         FlyButton.Text = "Fly: Off"
         if _G.disableFly then
             _G.disableFly() -- Desactivar el vuelo
+        end
+    end
+end)
+
+JesusButton.MouseButton1Click:Connect(function()
+    jesusEnabled = not jesusEnabled
+    if jesusEnabled then
+        JesusButton.Text = "Jesus: On"
+        
+        -- Cargar el script de caminar sobre el agua
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/jesus.lua"))() -- Cambia esta URL por la de tu script de caminar sobre el agua
+        _G.activateJesus() -- Activa la funcionalidad de caminar sobre el agua
+    else
+        JesusButton.Text = "Jesus: Off"
+        if _G.disableJesus then
+            _G.disableJesus() -- Desactivar la capacidad de caminar sobre el agua
         end
     end
 end)
