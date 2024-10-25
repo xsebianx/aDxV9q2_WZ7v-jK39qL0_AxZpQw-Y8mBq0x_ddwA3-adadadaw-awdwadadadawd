@@ -725,4 +725,60 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
     end
 end))
 
--- jesus +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Insta hit +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+local InstantHitButton = Instance.new("TextButton")
+InstantHitButton.Name = "InstantHitButton"
+InstantHitButton.Parent = ExtraFrame
+InstantHitButton.Text = "Instant Hit: Off"  -- Estado inicial
+InstantHitButton.Font = Enum.Font.GothamBold
+InstantHitButton.TextSize = 18
+InstantHitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+InstantHitButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+InstantHitButton.Size = UDim2.new(0, 240, 0, 40)
+InstantHitButton.Position = UDim2.new(0, 10, 0, 110) -- Ajustar posición debajo del botón Jesus
+InstantHitButton.BorderSizePixel = 0
+InstantHitButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas para el botón de "Instant Hit"
+InstantHitButton.AutoButtonColor = false
+InstantHitButton.ClipsDescendants = true
+local cornerInstantHit = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerInstantHit.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerInstantHit.Parent = InstantHitButton
+
+-- Efecto de hover (opcional) para "Instant Hit"
+InstantHitButton.MouseEnter:Connect(function()
+    InstantHitButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)  -- Color naranja al pasar el mouse
+end)
+
+InstantHitButton.MouseLeave:Connect(function()
+    InstantHitButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+-- Agregar funcionalidad al botón de "Instant Hit"
+local instantHitEnabled = false
+InstantHitButton.MouseButton1Click:Connect(function()
+    instantHitEnabled = not instantHitEnabled
+    InstantHitButton.Text = instantHitEnabled and "Instant Hit: On" or "Instant Hit: Off"
+
+    -- Lógica para activar o desactivar "Instant Hit"
+    -- Copiando el código que tenías para la funcionalidad de "Instant Hit"
+    local ammo = game.ReplicatedStorage:FindFirstChild("AmmoTypes")
+    if ammo then
+        for _, v in pairs(ammo:GetChildren()) do
+            if v:IsA("Folder") then
+                local currentVelocity = v:GetAttribute("MuzzleVelocity") or 3100
+                if instantHitEnabled then
+                    v:SetAttribute("MuzzleVelocity", 3200)
+                    print("MuzzleVelocity establecido en 3200 para:", v.Name)
+                else
+                    v:SetAttribute("MuzzleVelocity", currentVelocity)
+                    print("MuzzleVelocity restablecido a", currentVelocity, "para:", v.Name)
+                end
+            end
+        end
+    else
+        print("No se encontró la carpeta AmmoTypes en ReplicatedStorage.")
+    end
+end)

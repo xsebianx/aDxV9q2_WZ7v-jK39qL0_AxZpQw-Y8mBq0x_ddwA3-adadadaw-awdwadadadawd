@@ -134,10 +134,10 @@ end
 
 -- Función de Aimbot que apunta instantáneamente a la parte superior de la cabeza (HeadTop)
 local function aimbot(target)
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local headTop = target.Character.Head.Position + Vector3.new(0, target.Character.Head.Size.Y / 2, 0) -- Ajuste para apuntar a la parte superior de la cabeza
-        local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(headTop)
-        mousemoverel((headScreenPos.X - workspace.CurrentCamera.ViewportSize.X / 2), (headScreenPos.Y - workspace.CurrentCamera.ViewportSize.Y / 2))
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local humanoidRootPartPosition = target.Character.HumanoidRootPart.Position
+        local rootScreenPos = workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPartPosition)
+        mousemoverel((rootScreenPos.X - workspace.CurrentCamera.ViewportSize.X / 2), (rootScreenPos.Y - workspace.CurrentCamera.ViewportSize.Y / 2))
     end
 end
 
