@@ -146,7 +146,7 @@ ExtraFrameUICorner.Parent = ExtraFrame
 local AimbotButton = Instance.new("TextButton")
 AimbotButton.Name = "AimbotButton"
 AimbotButton.Parent = CombatFrame
-AimbotButton.Text = "Aimbot: Off"
+AimbotButton.Text = "Anarchy aimb: Off"
 AimbotButton.Font = Enum.Font.GothamBold
 AimbotButton.TextSize = 20
 AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
@@ -430,12 +430,12 @@ end)
 AimbotButton.MouseButton1Click:Connect(function()
     aimEnabled = not aimEnabled -- Cambiar el estado del aimbot
     if aimEnabled then
-        AimbotButton.Text = "Aimbot: On"
+        AimbotButton.Text = "Anarchy aimb: On"
         -- Cargar el script del aimbot usando loadstring
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbot.lua"))() -- Reemplaza con tu URL
         _G.enableAimbot() -- Activar el Aimbot
     else
-        AimbotButton.Text = "Aimbot: Off"
+        AimbotButton.Text = "Anarchy aimb: Off"
         if _G.disableAimbot then
             _G.disableAimbot() -- Desactivar el Aimbot
         end
