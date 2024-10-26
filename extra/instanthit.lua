@@ -3,6 +3,7 @@ local defaultRecoil = 230
 local instantHitVelocity = 3200
 local defaultVelocity = 1000  -- Velocidad por defecto cuando Instant Hit está desactivado
 local noRecoilEnabled = false  -- Estado inicial del no recoil
+local instantHitEnabled = false  -- Estado inicial de Instant Hit
 
 -- Función para establecer la fuerza de retroceso en todos los tipos de munición
 local function setRecoilStrength(strength)
