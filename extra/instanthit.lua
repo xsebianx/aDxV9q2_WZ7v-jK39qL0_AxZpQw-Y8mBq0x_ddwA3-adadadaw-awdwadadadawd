@@ -1,9 +1,22 @@
+-- Valores para el retroceso
+local Default = 230
+local Min = 0
+local Max = 300
+local Rounding = 0  -- Ajusta si necesitas redondeo
+
 -- Definimos el valor predeterminado de retroceso y la velocidad de salida
-local defaultRecoil = 230
 local instantHitVelocity = 3200
 local defaultVelocity = 1000  -- Velocidad por defecto cuando Instant Hit está desactivado
 local noRecoilEnabled = false  -- Estado inicial del no recoil
-local instantHitEnabled = false  -- Estado inicial de Instant Hit
+
+-- Función para generar un valor aleatorio de retroceso
+local function generateRecoil()
+    -- Asegúrate de que Max sea mayor que Min
+    if Max <= Min then
+        error("Max debe ser mayor que Min para generar un valor aleatorio.")
+    end
+    return math.random(Min, Max)
+end
 
 -- Función para establecer la fuerza de retroceso en todos los tipos de munición
 local function setRecoilStrength(strength)
@@ -31,19 +44,19 @@ end
 
 -- Inicializar valores
 setMuzzleVelocity(defaultVelocity)
-setRecoilStrength(defaultRecoil)
+setRecoilStrength(Default)
 
 -- Función para activar el "Instant Hit"
 function activateInstantHit()
     setMuzzleVelocity(instantHitVelocity)
-    setRecoilStrength(noRecoilEnabled and 0 or defaultRecoil)  -- Si noRecoil está activado, establece el retroceso a 0
+    setRecoilStrength(noRecoilEnabled and 0 or Default)  -- Si noRecoil está activado, establece el retroceso a 0
     print("Instant Hit activado")
 end
 
 -- Función para desactivar el "Instant Hit"
 function disableInstantHit()
     setMuzzleVelocity(defaultVelocity)
-    setRecoilStrength(defaultRecoil)  -- Restablece el retroceso a su valor predeterminado
+    setRecoilStrength(Default)  -- Restablece el retroceso a su valor predeterminado
     print("Instant Hit desactivado")
 end
 
@@ -57,7 +70,7 @@ end
 -- Función para desactivar el "No Recoil"
 function disableNoRecoil()
     noRecoilEnabled = false
-    setRecoilStrength(defaultRecoil)  -- Restablece el retroceso a su valor predeterminado
+    setRecoilStrength(Default)  -- Restablece el retroceso a su valor predeterminado
     print("No Recoil desactivado")
 end
 
@@ -66,3 +79,7 @@ _G.activateInstantHit = activateInstantHit
 _G.disableInstantHit = disableInstantHit
 _G.activateNoRecoil = activateNoRecoil
 _G.disableNoRecoil = disableNoRecoil
+
+-- Ejemplo de uso: Cambia el retroceso usando la función generateRecoil
+local recoilValue = generateRecoil()
+print("Valor de retroceso generado: " .. recoilValue)

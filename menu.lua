@@ -150,7 +150,7 @@ AimbotButton.Text = "Aimbot: Off"
 AimbotButton.Font = Enum.Font.GothamBold
 AimbotButton.TextSize = 20
 AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
-AimbotButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color gris oscuro (igual que ESP)
+AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color gris oscuro (igual que ESP)
 AimbotButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual al botón ESP
 AimbotButton.Position = UDim2.new(0, 10, 0, 10)
 AimbotButton.BorderSizePixel = 0  -- Sin borde
@@ -169,7 +169,7 @@ AimbotButton.MouseEnter:Connect(function()
 end)
 
 AimbotButton.MouseLeave:Connect(function()
-    AimbotButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al gris oscuro original
+    AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al gris oscuro original
 end)
 
 -- Botón Aimbot NPC
@@ -180,7 +180,7 @@ AimbotNPCButton.Text = "Delta aim: Off"
 AimbotNPCButton.Font = Enum.Font.GothamBold
 AimbotNPCButton.TextSize = 20  -- Tamaño del texto ajustado
 AimbotNPCButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color inicial (igual al ESP y Aimbot)
+AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color inicial (igual al ESP y Aimbot)
 AimbotNPCButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual que el botón ESP
 AimbotNPCButton.Position = UDim2.new(0, 10, 0, 60)  -- Posición bajo el botón Aimbot
 AimbotNPCButton.BorderSizePixel = 0  -- Sin borde
@@ -199,7 +199,7 @@ AimbotNPCButton.MouseEnter:Connect(function()
 end)
 
 AimbotNPCButton.MouseLeave:Connect(function()
-    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original (gris oscuro)
+    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original (gris oscuro)
 end)
 
 local SilenAimButton = Instance.new("TextButton")
@@ -209,7 +209,7 @@ SilenAimButton.Text = "Silent Aim: Off"
 SilenAimButton.Font = Enum.Font.GothamBold
 SilenAimButton.TextSize = 20
 SilenAimButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
-SilenAimButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Color gris oscuro (igual que ESP)
+SilenAimButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color gris oscuro (igual que ESP)
 SilenAimButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual al botón ESP
 SilenAimButton.Position = UDim2.new(0, 10, 0, 110)
 SilenAimButton.BorderSizePixel = 0  -- Sin borde
@@ -228,7 +228,7 @@ SilenAimButton.MouseEnter:Connect(function()
 end)
 
 SilenAimButton.MouseLeave:Connect(function()
-    SilenAimButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al gris oscuro original
+    SilenAimButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al gris oscuro original
 end)
 
 -- Funcionalidades de Visual
@@ -258,7 +258,7 @@ VisorButton.MouseEnter:Connect(function()
 end)
 
 VisorButton.MouseLeave:Connect(function()
-    VisorButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
+    VisorButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
 end)
 
 -- Funcionalidades de Crosshair
@@ -288,7 +288,7 @@ CrosshairButton.MouseEnter:Connect(function()
 end)
 
 CrosshairButton.MouseLeave:Connect(function()
-    CrosshairButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
+    CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
 end)
 
 -- Crear el botón de vuelo
@@ -318,7 +318,7 @@ FlyButton.MouseEnter:Connect(function()
 end)
 
 FlyButton.MouseLeave:Connect(function()
-    FlyButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
+    FlyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
 end)
 
 -- Crear el botón de caminar sobre agua
@@ -348,7 +348,7 @@ JesusButton.MouseEnter:Connect(function()
 end)
 
 JesusButton.MouseLeave:Connect(function()
-    JesusButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
+    JesusButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
 end)
 
 local InstantHitButton = Instance.new("TextButton")
@@ -783,7 +783,7 @@ ESPButton.Text = "ESP: Off"
 ESPButton.Font = Enum.Font.GothamBold
 ESPButton.TextSize = 18
 ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 ESPButton.Size = UDim2.new(0, 240, 0, 40)
 ESPButton.Position = UDim2.new(0, 10, 0, 10)
 
@@ -798,7 +798,7 @@ ESPButton.MouseEnter:Connect(function()
 end)
 
 ESPButton.MouseLeave:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(75, 75, 75)  -- Volver al color original
+    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
 end)
 
 -- Función para alternar el estado del ESP
