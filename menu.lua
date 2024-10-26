@@ -380,6 +380,36 @@ InstantHitButton.MouseLeave:Connect(function()
     InstantHitButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
 end)
 
+-- Crear el botón de "No Recoil"
+local NoRecoilButton = Instance.new("TextButton")
+NoRecoilButton.Name = "NoRecoilButton"
+NoRecoilButton.Parent = ExtraFrame
+NoRecoilButton.Text = "No Recoil: Off"  -- Estado inicial
+NoRecoilButton.Font = Enum.Font.GothamBold
+NoRecoilButton.TextSize = 18
+NoRecoilButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoRecoilButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+NoRecoilButton.Size = UDim2.new(0, 240, 0, 40)
+NoRecoilButton.Position = UDim2.new(0, 10, 0, 160)
+NoRecoilButton.BorderSizePixel = 0
+NoRecoilButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas para el botón de "No Recoil"
+NoRecoilButton.AutoButtonColor = false
+NoRecoilButton.ClipsDescendants = true
+local cornerNoRecoil = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerNoRecoil.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerNoRecoil.Parent = NoRecoilButton
+
+-- Efecto de hover (opcional) para "No Recoil"
+NoRecoilButton.MouseEnter:Connect(function()
+    NoRecoilButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)  -- Color naranja al pasar el mouse
+end)
+
+NoRecoilButton.MouseLeave:Connect(function()
+    NoRecoilButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
 -- Funcionalidades del menú
 CombatButton.MouseButton1Click:Connect(function()
     CombatFrame.Visible = not CombatFrame.Visible
@@ -500,38 +530,35 @@ JesusButton.MouseButton1Click:Connect(function()
     end
 end)
 
-local instantHitEnabled = false  -- Estado inicial de Instant Hit
-local recoilEnabled = true  -- Estado inicial de No Recoil
-
 InstantHitButton.MouseButton1Click:Connect(function()
-    instantHitEnabled = not instantHitEnabled  -- Cambia el estado de Instant Hit
+    instantHitEnabled = not instantHitEnabled
     if instantHitEnabled then
         InstantHitButton.Text = "Instant Hit: On"
         
         -- Cargar el script de Instant Hit desde GitHub
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/instanthit.lua"))() 
-        
-        if _G.activateInstantHit then
-            _G.activateInstantHit()  -- Activa la funcionalidad de Instant Hit
-        else
-            warn("activateInstantHit no está definido")
-        end
-
-        -- Activar No Recoil
-        recoilEnabled = false
-        setRecoilStrength(0)  -- Ajusta la fuerza de retroceso a 0
+        _G.activateInstantHit() -- Activa la funcionalidad de Instant Hit
     else
         InstantHitButton.Text = "Instant Hit: Off"
-        
         if _G.disableInstantHit then
-            _G.disableInstantHit()  -- Desactiva la funcionalidad de Instant Hit
-        else
-            warn("disableInstantHit no está definido")
+            _G.disableInstantHit() -- Desactiva la funcionalidad de Instant Hit
         end
+    end
+end)
 
-        -- Rehabilitar No Recoil
-        recoilEnabled = true
-        setRecoilStrength(defaultRecoil)  -- Ajusta la fuerza de retroceso al valor predeterminado
+NoRecoilButton.MouseButton1Click:Connect(function()
+    recoilEnabled = not recoilEnabled
+    if recoilEnabled then
+        NoRecoilButton.Text = "No Recoil: On"
+
+        -- Cargar el script de No Recoil desde GitHub
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/instanthit.lua"))()  -- Reemplaza con la URL correcta del script de No Recoil
+        _G.activateNoRecoil() -- Activa la funcionalidad de No Recoil
+    else
+        NoRecoilButton.Text = "No Recoil: Off"
+        if _G.disableNoRecoil then
+            _G.disableNoRecoil() -- Desactiva la funcionalidad de No Recoil
+        end
     end
 end)
 
