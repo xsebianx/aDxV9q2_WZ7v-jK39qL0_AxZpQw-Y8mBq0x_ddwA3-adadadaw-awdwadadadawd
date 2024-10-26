@@ -500,19 +500,38 @@ JesusButton.MouseButton1Click:Connect(function()
     end
 end)
 
+local instantHitEnabled = false  -- Estado inicial de Instant Hit
+local recoilEnabled = true  -- Estado inicial de No Recoil
+
 InstantHitButton.MouseButton1Click:Connect(function()
-    instantHitEnabled = not instantHitEnabled
+    instantHitEnabled = not instantHitEnabled  -- Cambia el estado de Instant Hit
     if instantHitEnabled then
         InstantHitButton.Text = "Instant Hit: On"
         
         -- Cargar el script de Instant Hit desde GitHub
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/instanthit.lua"))() 
-        _G.activateInstantHit() -- Activa la funcionalidad de Instant Hit
+        
+        if _G.activateInstantHit then
+            _G.activateInstantHit()  -- Activa la funcionalidad de Instant Hit
+        else
+            warn("activateInstantHit no está definido")
+        end
+
+        -- Activar No Recoil
+        recoilEnabled = false
+        setRecoilStrength(0)  -- Ajusta la fuerza de retroceso a 0
     else
         InstantHitButton.Text = "Instant Hit: Off"
+        
         if _G.disableInstantHit then
-            _G.disableInstantHit() -- Desactiva la funcionalidad de Instant Hit
+            _G.disableInstantHit()  -- Desactiva la funcionalidad de Instant Hit
+        else
+            warn("disableInstantHit no está definido")
         end
+
+        -- Rehabilitar No Recoil
+        recoilEnabled = true
+        setRecoilStrength(defaultRecoil)  -- Ajusta la fuerza de retroceso al valor predeterminado
     end
 end)
 
