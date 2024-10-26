@@ -65,6 +65,3 @@ _G.activateInstantHit = activateInstantHit
 _G.disableInstantHit = disableInstantHit
 _G.activateNoRecoil = activateNoRecoil
 _G.disableNoRecoil = disableNoRecoil
-
--- Ejemplo de uso: Cambia el retroceso usando la función updateRecoilStrength
-updateRecoilStrength(150)  -- Cambia 150 al valor deseado para el retroceso
