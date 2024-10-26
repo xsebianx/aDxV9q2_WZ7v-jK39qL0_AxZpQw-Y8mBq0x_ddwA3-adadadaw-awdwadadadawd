@@ -1,16 +1,13 @@
-local aimEnabled = false -- El aimbot está desactivado por defecto y se activa con clic derecho
+local aimEnabled = false -- El aimbot está desactivado por defecto
 local fieldOfView = 30 -- Campo de visión ajustado a 30 grados para un equilibrio
 local detectionRadius = 75 -- Radio de detección ampliado para mayor facilidad de uso
 local closestTarget = nil
 local fovCircle
 local visibleLabel
 local targetIndicator
-local notificationLabel
-local statsLabel
 local sound
-local totalTargetsDetected = 0
-local totalTrackingTime = 0
-local trackingStartTime = 0
+local adjustPredictionEnabled = false
+local predictionFactor = 0.118
 
 -- Crear un círculo visual para mostrar el FOV del aimbot
 local function createFOVCircle()
@@ -47,57 +44,12 @@ local function createTargetIndicator()
     targetIndicator.Color = Color3.fromRGB(0, 255, 0)
 end
 
--- Crear un TextLabel para notificaciones
-local function createNotificationLabel()
-    if notificationLabel then notificationLabel:Remove() end
-    local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-    notificationLabel = Instance.new("TextLabel", screenGui)
-    notificationLabel.Size = UDim2.new(0, 300, 0, 50)
-    notificationLabel.Position = UDim2.new(0.5, -150, 0, 60)
-    notificationLabel.Text = ""
-    notificationLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-    notificationLabel.TextScaled = true
-    notificationLabel.BackgroundTransparency = 1
-    notificationLabel.Visible = false
-end
-
--- Crear un TextLabel para estadísticas
-local function createStatsLabel()
-    if statsLabel then statsLabel:Remove() end
-    local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-    statsLabel = Instance.new("TextLabel", screenGui)
-    statsLabel.Size = UDim2.new(0, 300, 0, 50)
-    statsLabel.Position = UDim2.new(0.5, -150, 0, 120)
-    statsLabel.Text = "Objetivos detectados: 0\nTiempo de seguimiento: 0s"
-    statsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    statsLabel.TextScaled = true
-    statsLabel.BackgroundTransparency = 1
-    statsLabel.Visible = true
-end
-
 -- Crear un sonido para alertas
 local function createAlertSound()
     if sound then sound:Destroy() end
     sound = Instance.new("Sound", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
     sound.SoundId = "rbxassetid://12222242" -- ID del sonido de alerta
     sound.Volume = 1
-end
-
--- Mostrar una notificación
-local function showNotification(message)
-    notificationLabel.Text = message
-    notificationLabel.Visible = true
-    wait(2)
-    notificationLabel.Visible = false
-end
-
--- Actualizar estadísticas
-local function updateStats()
-    local trackingTime = totalTrackingTime
-    if trackingStartTime > 0 then
-        trackingTime = trackingTime + (tick() - trackingStartTime)
-    end
-    statsLabel.Text = string.format("Objetivos detectados: %d\nTiempo de seguimiento: %.1fs", totalTargetsDetected, trackingTime)
 end
 
 -- Verificar si el objetivo es visible, sin obstáculos en el camino
@@ -129,14 +81,69 @@ local function getClosestPlayerInFOV()
             end
         end
     end
-    return target
+    return target, closestDistance
+end
+
+-- Función para activar el aimbot al presionar el clic derecho
+local function onRightClick()
+    aimEnabled = true
+    visibleLabel.Visible = true
+    print("Aimbot Activado")
+end
+
+-- Función para desactivar el aimbot al soltar el clic derecho
+local function onRightRelease()
+    aimEnabled = false
+    visibleLabel.Visible = false
+    print("Aimbot Desactivado")
+end
+
+-- Función para alternar el ajuste de predicción
+function toggleAdjustPrediction()
+    adjustPredictionEnabled = not adjustPredictionEnabled
+    if not adjustPredictionEnabled then
+        predictionFactor = 0.118 -- Restablecer al valor predeterminado
+    end
+    print("Ajustar Predicción Activado: ", adjustPredictionEnabled)
+    print("Factor de Predicción Actual: ", predictionFactor)
+end
+
+-- Función para ajustar el factor de predicción basado en la distancia
+local function adjustPredictionFactor(distance)
+    if adjustPredictionEnabled then
+        if distance >= 1000 then
+            predictionFactor = 0.200
+        elseif distance >= 800 then
+            predictionFactor = 0.180
+        elseif distance >= 600 then
+            predictionFactor = 0.160
+        elseif distance >= 400 then
+            predictionFactor = 0.140
+        elseif distance >= 300 then
+            predictionFactor = 0.130
+        elseif distance >= 230 then
+            predictionFactor = 0.120
+        elseif distance >= 100 then
+            predictionFactor = 0.115 -- Predeterminado si está por debajo de 100 metros
+        else
+            predictionFactor = 0.115 -- Predeterminado si está por debajo de 100 metros
+        end
+        print("Factor de Predicción Actual: ", predictionFactor)
+    end
 end
 
 -- Función de Aimbot que apunta instantáneamente a la parte superior de la cabeza (HeadTop)
 local function aimbot(target)
     if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
         local humanoidRootPartPosition = target.Character.HumanoidRootPart.Position
-        local rootScreenPos = workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPartPosition)
+        local distance = (workspace.CurrentCamera.CFrame.Position - humanoidRootPartPosition).magnitude
+        adjustPredictionFactor(distance) -- Ajustar el factor de predicción basado en la distancia
+
+        -- Calcular la posición del objetivo con predicción
+        local predictedPosition = humanoidRootPartPosition + (target.Character.HumanoidRootPart.Velocity * predictionFactor)
+
+        -- Mover el mouse hacia la posición predicha
+        local rootScreenPos = workspace.CurrentCamera:WorldToViewportPoint(predictedPosition)
         mousemoverel((rootScreenPos.X - workspace.CurrentCamera.ViewportSize.X / 2), (rootScreenPos.Y - workspace.CurrentCamera.ViewportSize.Y / 2))
     end
 end
@@ -144,66 +151,27 @@ end
 -- Actualizar el objetivo cada ciclo
 game:GetService("RunService").RenderStepped:Connect(function()
     if aimEnabled then
-        local newTarget = getClosestPlayerInFOV() -- Encontrar el jugador más cercano dentro del FOV y radio de detección
-        if newTarget and newTarget ~= closestTarget then
+        local newTarget, _ = getClosestPlayerInFOV() -- Encontrar el jugador más cercano dentro del FOV y radio de detección
+        if newTarget then
             closestTarget = newTarget
-            totalTargetsDetected = totalTargetsDetected + 1
-            trackingStartTime = tick()
-            showNotification("Objetivo detectado: " .. closestTarget.Name)
-            sound:Play()
-        end
-        if closestTarget then
             aimbot(closestTarget) -- Usar Aimbot para asegurar el impacto
-            visibleLabel.Visible = true -- Mostrar el mensaje "Jugador visible"
             targetIndicator.Visible = true
             local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(closestTarget.Character.Head.Position + Vector3.new(0, closestTarget.Character.Head.Size.Y / 2, 0))
             targetIndicator.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
-            totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
-            trackingStartTime = tick()
         else
-            visibleLabel.Visible = false -- Ocultar el mensaje si no hay objetivo visible
             targetIndicator.Visible = false
         end
     else
-        visibleLabel.Visible = false -- Ocultar el mensaje si el aimbot no está habilitado
-        targetIndicator.Visible = false
-        if trackingStartTime > 0 then
-            totalTrackingTime = totalTrackingTime + (tick() - trackingStartTime)
-            trackingStartTime = 0
-        end
-    end
-    -- Actualizar la posición del círculo FOV
-    if fovCircle then
-        fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-    end
-    updateStats()
-end)
-
--- Controles de teclas para activar el aimbot con clic derecho
-game:GetService("UserInputService").InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        aimEnabled = true
-        createFOVCircle()
-        createVisibleLabel()
-        createTargetIndicator()
-        createNotificationLabel()
-        createStatsLabel()
-        createAlertSound()
+        targetIndicator.Visible = false -- Ocultar el indicador si el aimbot no está habilitado
     end
 end)
 
-game:GetService("UserInputService").InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        aimEnabled = false
-        closestTarget = nil
-        totalTrackingTime = 0
-    end
-end)
-
--- Inicialización
+-- Crear los elementos de UI
 createFOVCircle()
 createVisibleLabel()
 createTargetIndicator()
-createNotificationLabel()
-createStatsLabel()
 createAlertSound()
+
+-- Conectar los eventos de clic derecho
+game.Players.LocalPlayer:GetMouse().Button2Down:Connect(onRightClick)
+game.Players.LocalPlayer:GetMouse().Button2Up:Connect(onRightRelease) -- Desactivar el aimbot al soltar el clic derecho
