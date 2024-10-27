@@ -431,14 +431,11 @@ AimbotButton.MouseButton1Click:Connect(function()
     aimEnabled = not aimEnabled -- Cambiar el estado del aimbot
     if aimEnabled then
         AimbotButton.Text = "Anarchy aimb: On"
-        -- Cargar el script del aimbot usando loadstring
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbot.lua"))() -- Reemplaza con tu URL
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbot.lua"))()
         _G.enableAimbot() -- Activar el Aimbot
     else
         AimbotButton.Text = "Anarchy aimb: Off"
-        if _G.disableAimbot then
-            _G.disableAimbot() -- Desactivar el Aimbot
-        end
+        _G.disableAimbot() -- Desactivar el Aimbot
     end
 end)
 
