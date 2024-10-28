@@ -4,7 +4,8 @@ local plr = game.Players.LocalPlayer
 
 -- Variables iniciales
 local flyEnabled = false
-local flightSpeed = 50 -- Velocidad de vuelo por defecto
+local flightSpeed = 30 -- Ajustar la velocidad de vuelo a un valor más bajo
+local gravityStrength = -10 -- Fuerza de gravedad personalizada para una caída suave
 
 -- Controles de vuelo
 local flyControl = {
@@ -18,14 +19,14 @@ local flyControl = {
 
 -- Función para activar el vuelo
 function activateFly()
-    flyEnabled = true -- Activar el vuelo
-    plr.Character.Humanoid.PlatformStand = true -- Desactivar la física del personaje
+    flyEnabled = true
+    plr.Character.Humanoid.PlatformStand = true
 end
 
 -- Función para desactivar el vuelo
 function disableFly()
-    flyEnabled = false -- Desactivar el vuelo
-    plr.Character.Humanoid.PlatformStand = false -- Activar la física del personaje
+    flyEnabled = false
+    plr.Character.Humanoid.PlatformStand = false
 end
 
 -- Asignar las funciones a las variables globales
@@ -75,12 +76,17 @@ RunService.Heartbeat:Connect(function(delta)
             (flyControl.s and 1 or 0) - (flyControl.w and 1 or 0)
         )
 
-        -- Normalizar la dirección de movimiento para evitar movimientos más rápidos en diagonal
+        -- Normalizar la dirección de movimiento
         if moveDirection.Magnitude > 0 then
             moveDirection = moveDirection.Unit
         end
 
-        -- Actualiza la posición del jugador según las teclas presionadas
-        hrp.Velocity = moveDirection * flightSpeed
+        -- Aplicar velocidad para movimiento horizontal y vertical
+        hrp.Velocity = Vector3.new(moveDirection.X * flightSpeed, moveDirection.Y * flightSpeed, moveDirection.Z * flightSpeed)
+        
+        -- Aplicar una caída suave cuando no hay movimiento vertical
+        if not flyControl.space and not flyControl.shift then
+            hrp.Velocity = Vector3.new(hrp.Velocity.X, gravityStrength, hrp.Velocity.Z)
+        end
     end
 end)
