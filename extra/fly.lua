@@ -4,8 +4,8 @@ local plr = game.Players.LocalPlayer
 
 -- Variables iniciales
 local flyEnabled = false
-local flightSpeed = 30 -- Ajustar la velocidad de vuelo a un valor más bajo
-local gravityStrength = -10 -- Fuerza de gravedad personalizada para una caída suave
+local flightSpeed = 1 -- Velocidad de vuelo ajustada
+local gravityStrength = -0.1 -- Gravedad personalizada para una caída natural
 
 -- Controles de vuelo
 local flyControl = {
@@ -81,12 +81,13 @@ RunService.Heartbeat:Connect(function(delta)
             moveDirection = moveDirection.Unit
         end
 
-        -- Aplicar velocidad para movimiento horizontal y vertical
-        hrp.Velocity = Vector3.new(moveDirection.X * flightSpeed, moveDirection.Y * flightSpeed, moveDirection.Z * flightSpeed)
+        -- Ajustar la posición del jugador
+        local moveCFrame = CFrame.new(moveDirection * flightSpeed)
+        hrp.CFrame = hrp.CFrame * moveCFrame
         
-        -- Aplicar una caída suave cuando no hay movimiento vertical
+        -- Gravedad suave cuando no hay movimiento vertical
         if not flyControl.space and not flyControl.shift then
-            hrp.Velocity = Vector3.new(hrp.Velocity.X, gravityStrength, hrp.Velocity.Z)
+            hrp.CFrame = hrp.CFrame * CFrame.new(0, gravityStrength, 0)
         end
     end
 end)
