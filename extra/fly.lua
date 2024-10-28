@@ -4,7 +4,7 @@ local plr = game.Players.LocalPlayer
 
 -- Variables iniciales
 local flyEnabled = false
-local flightSpeed = 5 -- Velocidad de vuelo por defecto
+local flightSpeed = 50 -- Velocidad de vuelo por defecto
 
 -- Controles de vuelo
 local flyControl = {
@@ -19,11 +19,13 @@ local flyControl = {
 -- Función para activar el vuelo
 function activateFly()
     flyEnabled = true -- Activar el vuelo
+    plr.Character.Humanoid.PlatformStand = true -- Desactivar la física del personaje
 end
 
 -- Función para desactivar el vuelo
 function disableFly()
     flyEnabled = false -- Desactivar el vuelo
+    plr.Character.Humanoid.PlatformStand = false -- Activar la física del personaje
 end
 
 -- Asignar las funciones a las variables globales
@@ -32,20 +34,18 @@ _G.disableFly = disableFly
 
 -- Captura de entradas del teclado
 UserInputService.InputBegan:Connect(function(input)
-    if flyEnabled then
-        if input.KeyCode == Enum.KeyCode.W then
-            flyControl.w = true
-        elseif input.KeyCode == Enum.KeyCode.A then
-            flyControl.a = true
-        elseif input.KeyCode == Enum.KeyCode.S then
-            flyControl.s = true
-        elseif input.KeyCode == Enum.KeyCode.D then
-            flyControl.d = true
-        elseif input.KeyCode == Enum.KeyCode.Space then
-            flyControl.space = true
-        elseif input.KeyCode == Enum.KeyCode.LeftShift then
-            flyControl.shift = true
-        end
+    if input.KeyCode == Enum.KeyCode.W then
+        flyControl.w = true
+    elseif input.KeyCode == Enum.KeyCode.A then
+        flyControl.a = true
+    elseif input.KeyCode == Enum.KeyCode.S then
+        flyControl.s = true
+    elseif input.KeyCode == Enum.KeyCode.D then
+        flyControl.d = true
+    elseif input.KeyCode == Enum.KeyCode.Space then
+        flyControl.space = true
+    elseif input.KeyCode == Enum.KeyCode.LeftShift then
+        flyControl.shift = true
     end
 end)
 
@@ -68,7 +68,6 @@ end)
 -- Conexión al ciclo de actualización del juego
 RunService.Heartbeat:Connect(function(delta)
     if flyEnabled and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-        local speed = flightSpeed * delta
         local hrp = plr.Character.HumanoidRootPart
         local moveDirection = Vector3.new(
             (flyControl.d and 1 or 0) - (flyControl.a and 1 or 0),
@@ -82,14 +81,6 @@ RunService.Heartbeat:Connect(function(delta)
         end
 
         -- Actualiza la posición del jugador según las teclas presionadas
-        hrp.CFrame = hrp.CFrame * CFrame.new(moveDirection * speed)
-
-        -- Detener la física de las partes del personaje
-        for _, part in pairs(plr.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Velocity = Vector3.new(0, 0, 0)
-                part.RotVelocity = Vector3.new(0, 0, 0)
-            end
-        end
+        hrp.Velocity = moveDirection * flightSpeed
     end
 end)
