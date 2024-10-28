@@ -7,8 +7,6 @@ local visibleLabel
 local targetIndicator
 local notificationLabel
 local sound
-local baseSmoothingFactor = 0.1 -- Factor de suavizado base para el movimiento del aimbot
-local maxSmoothingFactor = 0.5 -- Factor de suavizado máximo para el movimiento del aimbot
 local predictionFactor = 0.1 -- Factor de predicción para el movimiento del objetivo
 
 -- Crear un círculo visual para mostrar el FOV del aimbot
@@ -119,7 +117,7 @@ local function predictPosition(target)
     return nil
 end
 
--- Función de Aimbot que apunta suavemente a la cabeza con predicción de movimiento
+-- Función de Aimbot que apunta instantáneamente a la cabeza con predicción de movimiento
 local function aimbot(target)
     if target and target.Character and target.Character:FindFirstChild("Head") then
         local predictedPosition = predictPosition(target)
@@ -127,10 +125,7 @@ local function aimbot(target)
             local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(predictedPosition)
             local mousePos = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
             local targetPos = Vector2.new(headScreenPos.X, headScreenPos.Y)
-            local distance = (workspace.CurrentCamera.CFrame.Position - target.Character.Head.Position).magnitude
-            local smoothingFactor = baseSmoothingFactor + (distance / 1000) * (maxSmoothingFactor - baseSmoothingFactor)
-            local newPos = mousePos:Lerp(targetPos, smoothingFactor)
-            mousemoverel(newPos.X - mousePos.X, newPos.Y - mousePos.Y)
+            mousemoverel(targetPos.X - mousePos.X, targetPos.Y - mousePos.Y)
         end
     end
 end
