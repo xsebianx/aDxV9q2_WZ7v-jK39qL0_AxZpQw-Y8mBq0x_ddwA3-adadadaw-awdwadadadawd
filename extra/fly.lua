@@ -68,16 +68,21 @@ end)
 -- Conexión al ciclo de actualización del juego
 RunService.Heartbeat:Connect(function(delta)
     if flyEnabled and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-        local speed = flightSpeed * 10 * delta
+        local speed = flightSpeed * delta
         local hrp = plr.Character.HumanoidRootPart
-        local cf = hrp.CFrame
+        local moveDirection = Vector3.new(
+            (flyControl.d and 1 or 0) - (flyControl.a and 1 or 0),
+            (flyControl.space and 1 or 0) - (flyControl.shift and 1 or 0),
+            (flyControl.s and 1 or 0) - (flyControl.w and 1 or 0)
+        )
+
+        -- Normalizar la dirección de movimiento para evitar movimientos más rápidos en diagonal
+        if moveDirection.Magnitude > 0 then
+            moveDirection = moveDirection.Unit
+        end
 
         -- Actualiza la posición del jugador según las teclas presionadas
-        hrp.CFrame = cf * CFrame.new(
-            (flyControl.d and speed or 0) - (flyControl.a and speed or 0),
-            (flyControl.space and speed or 0) - (flyControl.shift and speed or 0),
-            (flyControl.s and speed or 0) - (flyControl.w and speed or 0)
-        )
+        hrp.CFrame = hrp.CFrame * CFrame.new(moveDirection * speed)
 
         -- Detener la física de las partes del personaje
         for _, part in pairs(plr.Character:GetDescendants()) do
