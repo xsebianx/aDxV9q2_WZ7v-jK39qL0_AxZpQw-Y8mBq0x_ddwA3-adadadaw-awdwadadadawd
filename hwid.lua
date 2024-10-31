@@ -34,20 +34,22 @@ local function cargarMenu()
     local success, err = pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
     end)
-    if not success then
+    
+    if success then
+        notificarJugador("Acceso concedido", "¡HWID autorizado!", 5)
+    else
         warn("Error al cargar el menú:", err)
         notificarJugador("Error", "No se pudo cargar el menú.", 5)
-    else
-        notificarJugador("Acceso concedido", "¡HWID autorizado!", 5)
     end
+    return success
 end
 
 -- Función para verificar el HWID del jugador
 local function autorizarHWID(playerHWID, currentTime)
-    if authorizedHWIDs.permanent[playerHWID] then
+    if authorizedHWIDs.permanent[playerHWID] == true then
         print("Acceso permanente concedido.")
         cargarMenu()
-    elseif authorizedHWIDs.temporary[playerHWID] then
+    elseif authorizedHWIDs.temporary[playerHWID] == true then
         print("Acceso temporal concedido.")
         if passwordSetTime == nil then
             passwordSetTime = currentTime
