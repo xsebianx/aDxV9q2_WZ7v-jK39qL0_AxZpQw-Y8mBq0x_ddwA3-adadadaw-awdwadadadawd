@@ -1,111 +1,82 @@
 local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
+local StarterGui = game:GetService("StarterGui")
 
 -- HWIDs configurados directamente en el script
-local permanentHWIDs = {
-    "9005F968-46DF-44FC-9C68-B173D505FF37", -- Ragnarok
-    "AQUI_VA_EL_HWID_DE_TU_COMPA", -- Reemplaza esto con el HWID de tu amigo
-}
-
-local temporaryHWIDs = {
-    "DC61583D-84CD-48E1-8AB3-212434BDC519", -- Nomi
-    "3D413373-88F3-4D54-8A83-14E71290BF55", -- Carlos
-    "AQUI_VA_EL_HWID_DE_TU_COMPA_TEMPORAL", -- Reemplaza esto con el HWID de tu amigo si es acceso temporal
+local authorizedHWIDs = {
+    permanent = {
+        ["9005F968-46DF-44FC-9C68-B173D505FF37"] = true, -- Ragnarok
+        ["AQUI_VA_EL_HWID_DE_TU_COMPA"] = true, -- Reemplaza esto con el HWID de tu amigo
+    },
+    temporary = {
+        ["DC61583D-84CD-48E1-8AB3-212434BDC519"] = true, -- Nomi
+        ["3D413373-88F3-4D54-8A83-14E71290BF55"] = true, -- Carlos
+        ["AQUI_VA_EL_HWID_DE_TU_COMPA_TEMPORAL"] = true, -- HWID temporal
+    }
 }
 
 -- Variables de tiempo
 local passwordSetTime = nil
-local hwidExpirationTime = 604800 -- 604800 segundos = 1 semana
+local hwidExpirationTime = 604800 -- 1 semana en segundos
 
--- Función para obtener el HWID del cliente
-local function getClientHWID()
-    return RbxAnalyticsService:GetClientId()
+-- Función para notificaciones de usuarios
+local function notificarJugador(titulo, mensaje, duracion)
+    StarterGui:SetCore("SendNotification", {
+        Title = titulo;
+        Text = mensaje;
+        Duration = duracion;
+    })
+end
+
+-- Función para cargar el menú remoto
+local function cargarMenu()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
+    end)
+    if not success then
+        warn("Error al cargar el menú:", err)
+        notificarJugador("Error", "No se pudo cargar el menú.", 5)
+    else
+        notificarJugador("Acceso concedido", "¡HWID autorizado!", 5)
+    end
 end
 
 -- Función para verificar el HWID del jugador
-local function checkHWID()
-    local playerHWID = getClientHWID() -- Obtener el HWID del jugador
-    local currentTime = os.time() -- Obtener el tiempo actual en segundos
-    print("Comprobando acceso para HWID:", playerHWID)
-
-    -- Verificar si el HWID está autorizado para acceso permanente
-    if table.find(permanentHWIDs, playerHWID) then
+local function autorizarHWID(playerHWID, currentTime)
+    if authorizedHWIDs.permanent[playerHWID] then
         print("Acceso permanente concedido.")
-        local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
-        end)
-
-        if not success then
-            warn("Error al cargar el menú:", err)
-        else
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Acceso concedido";
-                Text = "¡HWID autorizado para acceso permanente!";
-                Duration = 5;
-            })
-        end
-
-    -- Verificar si el HWID está autorizado para acceso temporal
-    elseif table.find(temporaryHWIDs, playerHWID) then
+        cargarMenu()
+    elseif authorizedHWIDs.temporary[playerHWID] then
         print("Acceso temporal concedido.")
         if passwordSetTime == nil then
             passwordSetTime = currentTime
-            local success, err = pcall(function()
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
-            end)
-
-            if not success then
-                warn("Error al cargar el menú:", err)
-            else
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "Acceso concedido";
-                    Text = "¡HWID autorizado para acceso temporal!";
-                    Duration = 5;
-                })
-            end
-
+            cargarMenu()
         else
             local elapsedTime = currentTime - passwordSetTime
             if elapsedTime < hwidExpirationTime then
-                local success, err = pcall(function()
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
-                end)
-
-                if not success then
-                    warn("Error al cargar el menú:", err)
-                else
-                    game:GetService("StarterGui"):SetCore("SendNotification", {
-                        Title = "Acceso concedido";
-                        Text = "¡Acceso temporal todavía válido!";
-                        Duration = 5;
-                    })
-                end
+                cargarMenu()
+                notificarJugador("Acceso temporal", "¡Acceso temporal todavía válido!", 5)
             else
                 -- Expiración del acceso temporal
                 passwordSetTime = nil
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "Acceso expirado";
-                    Text = "Tu acceso temporal ha expirado.";
-                    Duration = 5;
-                })
+                notificarJugador("Acceso expirado", "Tu acceso temporal ha expirado.", 5)
             end
-
         end
-
     else
-        -- Notificar al jugador que su HWID no está autorizado
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Acceso denegado";
-            Text = "Tu HWID no está autorizado para jugar.";
-            Duration = 5;
-        })
-
-        -- Esperar un momento para que el jugador vea el mensaje antes de expulsarlo
+        notificarJugador("Acceso denegado", "Tu HWID no está autorizado para jugar.", 5)
         wait(3)
         Players.LocalPlayer:Kick("Acceso denegado. Tu HWID no está autorizado.")
     end
 end
 
+-- Función principal para obtener y verificar el HWID del cliente
+local function verificarHWID()
+    local playerHWID = RbxAnalyticsService:GetClientId() -- Obtener el HWID del jugador
+    local currentTime = os.time() -- Obtener el tiempo actual en segundos
+    print("Comprobando acceso para HWID:", playerHWID)
+    autorizarHWID(playerHWID, currentTime)
+end
+
 -- Ejecutar la verificación de HWID
-checkHWID()
+verificarHWID()
