@@ -16,6 +16,9 @@ local authorizedHWIDs = {
     }
 }
 
+-- Variable para permitir acceso a todos los HWIDs
+local allowAllHWIDs = true
+
 -- Variables de tiempo
 local passwordSetTime = nil
 local hwidExpirationTime = 604800 -- 1 semana en segundos
@@ -34,7 +37,7 @@ local function cargarMenu()
     local success, err = pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
     end)
-   
+    
     if success then
         notificarJugador("Acceso concedido", "¡HWID autorizado!", 5)
     else
@@ -46,7 +49,10 @@ end
 
 -- Función para verificar el HWID del jugador
 local function autorizarHWID(playerHWID, currentTime)
-    if authorizedHWIDs.permanent[playerHWID] == true then
+    if allowAllHWIDs then
+        print("Acceso permitido para todos los HWIDs.")
+        cargarMenu()
+    elseif authorizedHWIDs.permanent[playerHWID] == true then
         print("Acceso permanente concedido.")
         passwordSetTime = nil -- Reiniciar el tiempo de la contraseña para acceso permanente
         cargarMenu()
