@@ -34,7 +34,7 @@ local function cargarMenu()
     local success, err = pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
     end)
-    
+   
     if success then
         notificarJugador("Acceso concedido", "¡HWID autorizado!", 5)
     else
@@ -48,6 +48,7 @@ end
 local function autorizarHWID(playerHWID, currentTime)
     if authorizedHWIDs.permanent[playerHWID] == true then
         print("Acceso permanente concedido.")
+        passwordSetTime = nil -- Reiniciar el tiempo de la contraseña para acceso permanente
         cargarMenu()
     elseif authorizedHWIDs.temporary[playerHWID] == true then
         print("Acceso temporal concedido.")
