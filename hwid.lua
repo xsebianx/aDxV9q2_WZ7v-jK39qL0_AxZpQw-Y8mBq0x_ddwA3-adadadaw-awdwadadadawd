@@ -37,7 +37,7 @@ local function cargarMenu()
     local success, err = pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/menu.lua"))()
     end)
-    
+   
     if success then
         notificarJugador("Acceso concedido", "¡HWID autorizado!", 5)
     else
