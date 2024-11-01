@@ -6,7 +6,7 @@ local StarterGui = game:GetService("StarterGui")
 -- HWIDs configurados directamente en el script
 local authorizedHWIDs = {
     permanent = {
-        ["AQUI_VA_EL_HWID_DE_TU_COMPA"] = true, -- Ragnarok
+        ["9005F968-46DF-44FC-9C68-B173D505FF37"] = false, -- Ragnarok
         ["AQUI_VA_EL_HWID_DE_TU_COMPA"] = true, -- Reemplaza esto con el HWID de tu amigo
     },
     temporary = {
@@ -17,7 +17,7 @@ local authorizedHWIDs = {
 }
 
 -- Variable para permitir acceso a todos los HWIDs
-local allowAllHWIDs = false
+local allowAllHWIDs = true
 
 -- Variables de tiempo
 local passwordSetTime = nil
