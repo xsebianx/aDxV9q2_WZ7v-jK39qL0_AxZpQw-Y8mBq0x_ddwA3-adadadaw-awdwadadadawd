@@ -17,8 +17,7 @@ local authorizedHWIDs = {
 }
 
 -- Variable para permitir acceso a todos los HWIDs
-local allowAllHWIDs = true
-
+local allowAllHWIDs = false
 -- Variables de tiempo
 local passwordSetTime = nil
 local hwidExpirationTime = 604800 -- 1 semana en segundos
