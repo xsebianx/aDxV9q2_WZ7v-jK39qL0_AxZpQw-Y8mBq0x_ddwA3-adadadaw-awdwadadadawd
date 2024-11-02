@@ -231,6 +231,36 @@ SilenAimButton.MouseLeave:Connect(function()
     SilenAimButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al gris oscuro original
 end)
 
+-- Crear el botón MegaAim
+local MegaAimButton = Instance.new("TextButton")
+MegaAimButton.Name = "MegaAimButton"
+MegaAimButton.Parent = CombatFrame -- Asegúrate de que CombatFrame esté definido previamente
+MegaAimButton.Text = "Mega Aim: Off"
+MegaAimButton.Font = Enum.Font.GothamBold
+MegaAimButton.TextSize = 20
+MegaAimButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
+MegaAimButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color gris oscuro
+MegaAimButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual al botón ESP
+MegaAimButton.Position = UDim2.new(0, 10, 0, 160)
+MegaAimButton.BorderSizePixel = 0  -- Sin borde
+MegaAimButton.BackgroundTransparency = 0.1  -- Ligera transparencia
+
+-- Redondear esquinas
+MegaAimButton.AutoButtonColor = false
+MegaAimButton.ClipsDescendants = true
+local cornerAimbot = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerAimbot.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerAimbot.Parent = MegaAimButton
+
+-- Efecto de hover
+MegaAimButton.MouseEnter:Connect(function()
+    MegaAimButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Cambia a azul claro al pasar el mouse
+end)
+
+MegaAimButton.MouseLeave:Connect(function()
+    MegaAimButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al gris oscuro original
+end)
+
 -- Funcionalidades de Visual
 local VisorButton = Instance.new("TextButton")
 VisorButton.Name = "VisorButton"
@@ -501,6 +531,26 @@ SilenAimButton.MouseButton1Click:Connect(function()
         SilenAimButton.Text = "Silent Aim: Off"
         if _G.disableSilentAim then
             _G.disableSilentAim() -- Desactivar Silent Aim
+        end
+    end
+end)
+
+MegaAimButton.MouseButton1Click:Connect(function()
+    detectEnabled = not detectEnabled -- Alterna el estado de detección
+
+    if detectEnabled then
+        MegaAimButton.Text = "MegaAim: On"
+
+        -- Cargar el script de detección si no se ha cargado previamente
+        if not _G.activateDetect then
+            loadstring(game:HttpGet(""))()
+        end
+
+        _G.activateDetect() -- Activa la funcionalidad de detección
+    else
+        MegaAimButton.Text = "MegaAim: Off"
+        if _G.disableDetect then
+            _G.disableDetect() -- Desactiva la detección
         end
     end
 end)
