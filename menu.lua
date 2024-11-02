@@ -543,7 +543,7 @@ MegaAimButton.MouseButton1Click:Connect(function()
 
         -- Cargar el script de detección si no se ha cargado previamente
         if not _G.activateDetect then
-            loadstring(game:HttpGet(""))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/megaaimb.lua"))()
         end
 
         _G.activateDetect() -- Activa la funcionalidad de detección
