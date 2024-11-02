@@ -291,6 +291,37 @@ CrosshairButton.MouseLeave:Connect(function()
     CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
 end)
 
+-- Funcionalidades de DetectButton
+local DetectButton = Instance.new("TextButton")
+DetectButton.Name = "DetectButton"
+DetectButton.Parent = VisualFrame
+DetectButton.Text = "Detect: Off"  -- Cambiado el texto inicial
+DetectButton.Font = Enum.Font.GothamBold
+DetectButton.TextSize = 18
+DetectButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+DetectButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+DetectButton.Size = UDim2.new(0, 240, 0, 40)
+DetectButton.Position = UDim2.new(0, 10, 0, 160) -- Ajustar posición para que esté más abajo
+DetectButton.BorderSizePixel = 0
+DetectButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
+DetectButton.AutoButtonColor = false
+DetectButton.ClipsDescendants = true
+local cornerDetect = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerDetect.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerDetect.Parent = DetectButton
+
+-- Efecto de hover (opcional)
+DetectButton.MouseEnter:Connect(function()
+    DetectButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+end)
+
+DetectButton.MouseLeave:Connect(function()
+    DetectButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+
 -- Crear el botón de vuelo
 local FlyButton = Instance.new("TextButton")
 FlyButton.Name = "FlyButton"
@@ -507,6 +538,26 @@ FlyButton.MouseButton1Click:Connect(function()
         FlyButton.Text = "Fly: Off"
         if _G.disableFly then
             _G.disableFly() -- Desactiva el vuelo
+        end
+    end
+end)
+
+DetectButton.MouseButton1Click:Connect(function()
+    detectEnabled = not detectEnabled -- Alterna el estado de detección
+
+    if detectEnabled then
+        DetectButton.Text = "Detect: On"
+
+        -- Cargar el script de detección si no se ha cargado previamente
+        if not _G.activateDetect then
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/detect.lua"))()
+        end
+
+        _G.activateDetect() -- Activa la funcionalidad de detección
+    else
+        DetectButton.Text = "Detect: Off"
+        if _G.disableDetect then
+            _G.disableDetect() -- Desactiva la detección
         end
     end
 end)
