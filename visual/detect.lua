@@ -118,3 +118,6 @@ createEnemyMenu()
 
 -- Conectar la función de verificación en cada ciclo si la detección está activada
 game:GetService("RunService").RenderStepped:Connect(checkForEnemies)
+
+-- Mensaje para confirmar que el script se ha ejecutado
+print("El sistema de detección de enemigos está activado. Usa _G.activateDetect() para activarlo y _G.disableDetect() para desactivarlo.")
