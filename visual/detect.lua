@@ -8,11 +8,13 @@ local detectEnabled = false -- Variable para el estado de detección
 -- Función para activar la detección
 function activateDetect()
     detectEnabled = true -- Activar la detección
+    print("Detección activada.") -- Confirmar que se ha activado
 end
 
 -- Función para desactivar la detección
 function disableDetect()
     detectEnabled = false -- Desactivar la detección
+    print("Detección desactivada.") -- Confirmar que se ha desactivado
 end
 
 -- Asignar las funciones a las variables globales
