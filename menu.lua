@@ -536,21 +536,21 @@ SilenAimButton.MouseButton1Click:Connect(function()
 end)
 
 MegaAimButton.MouseButton1Click:Connect(function()
-    detectEnabled = not detectEnabled -- Alterna el estado de detección
+    megAimbEnabled = not megAimbEnabled -- Alterna el estado de Mega Aim
 
-    if detectEnabled then
+    if megAimbEnabled then
         MegaAimButton.Text = "MegaAim: On"
 
-        -- Cargar el script de detección si no se ha cargado previamente
-        if not _G.activateDetect then
+        -- Cargar el script de Mega Aim si no se ha cargado previamente
+        if not _G.activateMegaaimb then
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/megaaimb.lua"))()
         end
 
-        _G.activateDetect() -- Activa la funcionalidad de detección
+        _G.activateMegaaimb() -- Activa la funcionalidad de Mega Aim
     else
         MegaAimButton.Text = "MegaAim: Off"
-        if _G.disableDetect then
-            _G.disableDetect() -- Desactiva la detección
+        if _G.disableMegaaimb then
+            _G.disableMegaaimb() -- Desactiva la funcionalidad de Mega Aim
         end
     end
 end)
