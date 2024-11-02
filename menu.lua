@@ -707,6 +707,7 @@ NoRecoilButton.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Botón para activar/desactivar Head Spand
 HeadSpandButton.MouseButton1Click:Connect(function()
     headSpandEnabled = not headSpandEnabled -- Alternar el estado de la expansión de la cabeza
     if headSpandEnabled then
