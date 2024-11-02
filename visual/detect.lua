@@ -3,23 +3,7 @@ local enemyMenu
 local enemyLabels = {}
 local enemySpheres = {}
 local detectionRadius = 300 -- Radio de detección para el enemigo
-local detectEnabled = false -- Variable para el estado de detección
-
--- Función para activar la detección
-function activateDetect()
-    detectEnabled = true -- Activar la detección
-    print("Detección activada.") -- Confirmar que se ha activado
-end
-
--- Función para desactivar la detección
-function disableDetect()
-    detectEnabled = false -- Desactivar la detección
-    print("Detección desactivada.") -- Confirmar que se ha desactivado
-end
-
--- Asignar las funciones a las variables globales
-_G.activateDetect = activateDetect
-_G.disableDetect = disableDetect
+local detectEnabled = false -- Estado de detección
 
 -- Crear un mini menú para mostrar enemigos
 local function createEnemyMenu()
@@ -69,7 +53,7 @@ end
 
 -- Función para verificar y apuntar a los enemigos
 local function checkForEnemies()
-    if not detectEnabled then return end -- Verificar si la detección está habilitada
+    if not detectEnabled then return end -- Salir si la detección no está activada
 
     local players = game.Players:GetPlayers()
     local localPlayer = game.Players.LocalPlayer
@@ -115,11 +99,35 @@ local function checkForEnemies()
     enemyMenu.Visible = enemyCount > 0
 end
 
+-- Función para activar la detección
+function activateDetect()
+    detectEnabled = true -- Activar la detección
+    print("Detección activada.") -- Confirmar que se ha activado
+end
+
+-- Función para desactivar la detección
+function disableDetect()
+    detectEnabled = false -- Desactivar la detección
+    print("Detección desactivada.") -- Confirmar que se ha desactivado
+
+    -- Ocultar todas las etiquetas de enemigos
+    for _, label in pairs(enemyLabels) do
+        label.Visible = false
+    end
+
+    -- Limpiar esferas existentes
+    for _, sphere in pairs(enemySpheres) do
+        sphere:Destroy() -- Destruir la esfera
+    end
+    enemySpheres = {} -- Reiniciar la lista de esferas
+end
+
 -- Crear los elementos de UI
 createEnemyMenu()
 
--- Conectar la función de verificación en cada ciclo si la detección está activada
+-- Conectar la función de verificación en cada ciclo
 game:GetService("RunService").RenderStepped:Connect(checkForEnemies)
 
--- Mensaje para confirmar que el script se ha ejecutado
-print("El sistema de detección de enemigos está activado. Usa _G.activateDetect() para activarlo y _G.disableDetect() para desactivarlo.")
+-- Asignar las funciones a las variables globales
+_G.activateDetect = activateDetect
+_G.disableDetect = disableDetect
