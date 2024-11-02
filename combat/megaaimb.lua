@@ -83,14 +83,14 @@ mouse.Button2Up:Connect(function()
     end
 end)
 
--- Función para activar el Megaaimb
 function activateMegaaimb()
     megAimbEnabled = true -- Activa la funcionalidad
+    print("MegaAim activado")
 end
 
--- Función para desactivar el Megaaimb
 function disableMegaaimb()
     megAimbEnabled = false -- Desactiva la funcionalidad
+    print("MegaAim desactivado")
 end
 
 -- Asignar las funciones a las variables globales
