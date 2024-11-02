@@ -712,7 +712,8 @@ local function updateEsp(player, esp)
 
             if visible then
                 local scaleFactor = 1 / (depth * tan(rad(camera.FieldOfView / 2)) * 2) * 1000
-                local width, height = round(4 * scaleFactor, 5 * scaleFactor)
+                -- Cambia los factores de escala para ajustar el tamaño del ESP
+                local width, height = round(2 * scaleFactor, 2.5 * scaleFactor) -- Reduce el tamaño del ESP
                 local x, y = round(position.X, position.Y)
 
                 -- Obtener la distancia entre el jugador local y el objetivo
@@ -732,8 +733,8 @@ local function updateEsp(player, esp)
                 esp.boxoutline.Position = esp.box.Position
 
                 -- Ajustar el tamaño del texto y cuadros en función de la distancia
-                local textScale = distance <= 800 and 1.25 or 1  -- Hacer un 25% más grandes los que están cerca (<= 800)
-                local nameAndDistanceScale = distance <= 800 and 1.5 or 1 -- Aumentar un 50% más para el nombre y la distancia
+                local textScale = distance <= 800 and 0.8 or 0.75  -- Reducir el tamaño del texto cerca y lejos
+                local nameAndDistanceScale = distance <= 800 and 1.2 or 0.75 -- Ajustar el tamaño del nombre y distancia
 
                 -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
@@ -760,7 +761,6 @@ local function updateEsp(player, esp)
         esp.distance.Visible = false
     end
 end
-
 
 
 local function removeEsp(player)
