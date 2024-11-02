@@ -21,6 +21,25 @@ local function expandHead(player)
     end)
 end
 
+-- Función para activar la expansión de la cabeza
+function activateHeadExpand()
+    for _, player in pairs(players:GetPlayers()) do
+        expandHead(player)
+    end
+end
+
+-- Función para desactivar la expansión de la cabeza
+function disableHeadExpand()
+    for _, player in pairs(players:GetPlayers()) do
+        local character = player.Character
+        if character and character:FindFirstChild("Head") then
+            local head = character.Head
+            head.Size = Vector3.new(2, 1, 1) -- Restablecer tamaño a los valores originales
+            head.Transparency = 0 -- Hacerla opaca
+        end
+    end
+end
+
 -- Conectar a los eventos de jugador
 players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function(character)
@@ -37,24 +56,6 @@ for _, player in pairs(players:GetPlayers()) do
 
         -- También expande la cabeza de los jugadores existentes
         expandHead(player)
-    end
-end
-
--- Función para activar la expansión de la cabeza
-function activateHeadExpand()
-    for _, player in pairs(players:GetPlayers()) do
-        expandHead(player)
-    end
-end
-
--- Función para desactivar la expansión de la cabeza
-function disableHeadExpand()
-    for _, player in pairs(players:GetPlayers()) do
-        local character = player.Character
-        if character and character:FindFirstChild("Head") then
-            character.Head.Size = Vector3.new(2, 1, 1) -- Restablecer tamaño a los valores originales
-            character.Head.Transparency = 0 -- Hacerla opaca
-        end
     end
 end
 
