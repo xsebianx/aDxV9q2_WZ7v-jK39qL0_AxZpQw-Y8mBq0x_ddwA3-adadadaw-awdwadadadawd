@@ -471,6 +471,41 @@ NoRecoilButton.MouseLeave:Connect(function()
     NoRecoilButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
 end)
 
+-- Crear el botón de "Head Spand"
+local HeadSpandButton = Instance.new("TextButton")
+HeadSpandButton.Name = "HeadSpandButton"
+HeadSpandButton.Parent = ExtraFrame
+HeadSpandButton.Text = "Head: Off"  -- Estado inicial
+HeadSpandButton.Font = Enum.Font.GothamBold
+HeadSpandButton.TextSize = 18
+HeadSpandButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+HeadSpandButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+HeadSpandButton.Size = UDim2.new(0, 240, 0, 40)
+HeadSpandButton.Position = UDim2.new(0, 10, 0, 210)
+HeadSpandButton.BorderSizePixel = 0
+HeadSpandButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas para el botón de "Head Spand"
+HeadSpandButton.AutoButtonColor = false
+HeadSpandButton.ClipsDescendants = true
+local cornerHeadSpand = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerHeadSpand.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerHeadSpand.Parent = HeadSpandButton
+
+-- Estado inicial para Head Spand
+local headSpandEnabled = false
+
+-- Funciones para activar y desactivar Head Spand
+local function activateHeadSpand()
+    headSpandEnabled = true
+    -- Aquí deberías añadir la lógica específica para activar Head Spand
+end
+
+local function disableHeadSpand()
+    headSpandEnabled = false
+    -- Aquí deberías añadir la lógica específica para desactivar Head Spand
+end
+
 -- Funcionalidades del menú
 CombatButton.MouseButton1Click:Connect(function()
     CombatFrame.Visible = not CombatFrame.Visible
@@ -671,6 +706,23 @@ NoRecoilButton.MouseButton1Click:Connect(function()
         end
     end
 end)
+
+HeadSpandButton.MouseButton1Click:Connect(function()
+    headSpandEnabled = not headSpandEnabled
+    if headSpandEnabled then
+        HeadSpandButton.Text = "Head: On"
+
+        -- Cargar el script de Head Spand desde GitHub
+        loadstring(game:HttpGet(""))()  -- Reemplaza con la URL correcta del script de Head Spand
+        _G.activateHeadSpand() -- Activa la funcionalidad de Head Spand
+    else
+        HeadSpandButton.Text = "Head: Off"
+        if _G.disableHeadSpand then
+            _G.disableHeadSpand() -- Desactiva la funcionalidad de Head Spand
+        end
+    end
+end)
+
 
 -- Funcionalidad para minimizar el menú con la tecla "P"
 local UserInputService = game:GetService("UserInputService")
