@@ -713,7 +713,7 @@ HeadSpandButton.MouseButton1Click:Connect(function()
         HeadSpandButton.Text = "Head: On"
 
         -- Cargar el script de Head Spand desde GitHub
-        loadstring(game:HttpGet(""))()  -- Reemplaza con la URL correcta del script de Head Spand
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/head.lua"))()  -- Reemplaza con la URL correcta del script de Head Spand
         _G.activateHeadSpand() -- Activa la funcionalidad de Head Spand
     else
         HeadSpandButton.Text = "Head: Off"
