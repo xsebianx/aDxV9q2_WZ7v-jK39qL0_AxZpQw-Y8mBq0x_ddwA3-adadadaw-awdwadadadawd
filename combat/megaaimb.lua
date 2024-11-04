@@ -21,6 +21,7 @@ local function unhighlightEnemy(enemy)
     for _, highlight in ipairs(highlightedEnemies) do
         if highlight.Parent == enemy.Character then
             highlight:Destroy()
+            table.remove(highlightedEnemies, _)
             break
         end
     end
@@ -83,6 +84,7 @@ mouse.Button2Up:Connect(function()
     end
 end)
 
+-- Funciones para activar y desactivar el Megaaimb
 function activateMegaaimb()
     megAimbEnabled = true -- Activa la funcionalidad
     print("MegaAim activado")
