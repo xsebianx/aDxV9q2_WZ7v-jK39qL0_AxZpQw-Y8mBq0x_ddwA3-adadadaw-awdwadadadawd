@@ -2,6 +2,8 @@ local players = game:GetService("Players")
 
 -- Función para cambiar el tamaño de la cabeza y hacerla transparente
 local function expandHead(player)
+    if player == players.LocalPlayer then return end -- No aplicar al jugador local
+
     local character = player.Character or player.CharacterAdded:Wait() -- Esperar hasta que el personaje esté disponible
     local head = character:FindFirstChild("Head")
     if head then
