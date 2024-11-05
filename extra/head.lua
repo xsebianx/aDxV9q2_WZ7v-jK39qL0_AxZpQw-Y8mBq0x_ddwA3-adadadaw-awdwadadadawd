@@ -4,13 +4,11 @@ local players = game:GetService("Players")
 local function expandHead(player)
     local character = player.Character or player.CharacterAdded:Wait() -- Esperar hasta que el personaje esté disponible
     local head = character:FindFirstChild("Head")
-
     if head then
         -- Cambiar el tamaño de la cabeza
         head.Size = Vector3.new(10, 10, 10) -- Ajusta el tamaño a un valor más grande
         head.Transparency = 0.5 -- 0 es opaco, 1 es completamente transparente
     end
-
     -- Conectar el evento de muerte para expandir la cabeza de nuevo al reaparecer
     local humanoid = character:WaitForChild("Humanoid")
     humanoid.Died:Connect(function()
@@ -53,7 +51,6 @@ for _, player in pairs(players:GetPlayers()) do
         player.CharacterAdded:Connect(function(character)
             expandHead(player)
         end)
-
         -- También expande la cabeza de los jugadores existentes
         expandHead(player)
     end
