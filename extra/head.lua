@@ -22,6 +22,13 @@ local function expandHead(player)
         if mesh then
             mesh.Scale = Vector3.new(10, 10, 10)
         end
+
+        -- Ajustar el Attachment si existe
+        for _, attachment in pairs(head:GetChildren()) do
+            if attachment:IsA("Attachment") then
+                attachment.Position = attachment.Position * 5 -- Ajustar la posición del attachment
+            end
+        end
     end
 
     -- Conectar el evento de muerte para expandir la cabeza de nuevo al reaparecer
@@ -56,6 +63,13 @@ function disableHeadExpand()
                 local mesh = head:FindFirstChildOfClass("SpecialMesh")
                 if mesh then
                     mesh.Scale = Vector3.new(1, 1, 1)
+                end
+
+                -- Ajustar el Attachment si existe
+                for _, attachment in pairs(head:GetChildren()) do
+                    if attachment:IsA("Attachment") then
+                        attachment.Position = attachment.Position / 5 -- Restablecer la posición del attachment
+                    end
                 end
 
                 originalSize:Destroy() -- Eliminar el valor original
