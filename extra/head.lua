@@ -16,18 +16,12 @@ local function expandHead(player)
         -- Cambiar el tamaño de la cabeza
         head.Size = Vector3.new(10, 10, 10) -- Ajusta el tamaño a un valor más grande
         head.Transparency = 0.5 -- 0 es opaco, 1 es completamente transparente
+        head.Massless = true -- Hacer la cabeza sin masa para no afectar la física del personaje
 
         -- Ajustar el Mesh si existe
         local mesh = head:FindFirstChildOfClass("SpecialMesh")
         if mesh then
             mesh.Scale = Vector3.new(10, 10, 10)
-        end
-
-        -- Ajustar el Attachment si existe
-        for _, attachment in pairs(head:GetChildren()) do
-            if attachment:IsA("Attachment") then
-                attachment.Position = attachment.Position * 5 -- Ajustar la posición del attachment
-            end
         end
     end
 
@@ -58,18 +52,12 @@ function disableHeadExpand()
             if originalSize then
                 head.Size = originalSize.Value -- Restablecer tamaño a los valores originales
                 head.Transparency = 0 -- Hacerla opaca
+                head.Massless = false -- Restaurar la masa de la cabeza
 
                 -- Ajustar el Mesh si existe
                 local mesh = head:FindFirstChildOfClass("SpecialMesh")
                 if mesh then
                     mesh.Scale = Vector3.new(1, 1, 1)
-                end
-
-                -- Ajustar el Attachment si existe
-                for _, attachment in pairs(head:GetChildren()) do
-                    if attachment:IsA("Attachment") then
-                        attachment.Position = attachment.Position / 5 -- Restablecer la posición del attachment
-                    end
                 end
 
                 originalSize:Destroy() -- Eliminar el valor original
