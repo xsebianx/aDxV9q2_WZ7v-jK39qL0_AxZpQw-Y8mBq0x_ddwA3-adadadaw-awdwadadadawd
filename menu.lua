@@ -1,5 +1,4 @@
---Drakath Hub ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+-- Creación del GUI para DrakHub con colores
 local DrakHub = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
@@ -8,7 +7,6 @@ local MinimizeButton = Instance.new("TextButton")
 
 local isMinimized = false
 -- Categorías
-local HomeButton = Instance.new("TextButton")
 local CombatButton = Instance.new("TextButton")
 local VisualButton = Instance.new("TextButton")
 local ExtraButton = Instance.new("TextButton")
@@ -26,18 +24,6 @@ local FlyButton = Instance.new("TextButton")
 local VisorButton = Instance.new("TextButton")
 local CrosshairButton = Instance.new("TextButton")
 local ZoomButton = Instance.new("TextButton")
-
--- Pantalla de bienvenida
-local WelcomeFrame = Instance.new("Frame")
-local WelcomeText = Instance.new("TextLabel")
-local DiscordIcon = Instance.new("ImageButton")
-local YouTubeIcon = Instance.new("ImageButton")
-local WelcomeBackground = Instance.new("Frame")
-local DiscordLabel = Instance.new("TextLabel")
-local YouTubeLabel = Instance.new("TextLabel")
-
--- Mensaje de copiado
-local CopyMessage = Instance.new("TextLabel")
 
 -- Propiedades generales de la GUI
 DrakHub.Name = "DrakHub"
@@ -69,20 +55,6 @@ Title.TextColor3 = Color3.fromRGB(255, 255, 255) -- Color del texto blanco
 Title.BackgroundTransparency = 1
 Title.Size = UDim2.new(1, 0, 0, 40)
 
--- Botón de Inicio con fondo degradado
-HomeButton.Name = "HomeButton"
-HomeButton.Parent = MainFrame
-HomeButton.Text = "Inicio"
-HomeButton.Font = Enum.Font.Gotham
-HomeButton.TextSize = 18
-HomeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-HomeButton.BackgroundColor3 = Color3.fromRGB(255, 215, 0) -- Dorado
-HomeButton.Size = UDim2.new(0, 120, 0, 40)
-HomeButton.Position = UDim2.new(0, 10, 0, 60)
-local HomeUICorner = Instance.new("UICorner")
-HomeUICorner.CornerRadius = UDim.new(0, 8)
-HomeUICorner.Parent = HomeButton
-
 -- Botón de Combat con fondo degradado
 CombatButton.Name = "CombatButton"
 CombatButton.Parent = MainFrame
@@ -92,7 +64,7 @@ CombatButton.TextSize = 18
 CombatButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CombatButton.BackgroundColor3 = Color3.fromRGB(45, 85, 255) -- Azul intenso
 CombatButton.Size = UDim2.new(0, 120, 0, 40)
-CombatButton.Position = UDim2.new(0, 10, 0, 110)
+CombatButton.Position = UDim2.new(0, 10, 0, 60)
 local CombatUICorner = Instance.new("UICorner")
 CombatUICorner.CornerRadius = UDim.new(0, 8)
 CombatUICorner.Parent = CombatButton
@@ -106,7 +78,7 @@ VisualButton.TextSize = 18
 VisualButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 VisualButton.BackgroundColor3 = Color3.fromRGB(45, 255, 85) -- Verde intenso
 VisualButton.Size = UDim2.new(0, 120, 0, 40)
-VisualButton.Position = UDim2.new(0, 10, 0, 160)
+VisualButton.Position = UDim2.new(0, 10, 0, 110)
 local VisualUICorner = Instance.new("UICorner")
 VisualUICorner.CornerRadius = UDim.new(0, 8)
 VisualUICorner.Parent = VisualButton
@@ -120,7 +92,7 @@ ExtraButton.TextSize = 18
 ExtraButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ExtraButton.BackgroundColor3 = Color3.fromRGB(255, 85, 45) -- Naranja intenso
 ExtraButton.Size = UDim2.new(0, 120, 0, 40)
-ExtraButton.Position = UDim2.new(0, 10, 0, 210)
+ExtraButton.Position = UDim2.new(0, 10, 0, 160)
 local ExtraUICorner = Instance.new("UICorner")
 ExtraUICorner.CornerRadius = UDim.new(0, 8)
 ExtraUICorner.Parent = ExtraButton
@@ -169,117 +141,6 @@ ExtraFrame.ScrollBarThickness = 6
 local ExtraFrameUICorner = Instance.new("UICorner")
 ExtraFrameUICorner.CornerRadius = UDim.new(0, 8)
 ExtraFrameUICorner.Parent = ExtraFrame
-
--- Pantalla de bienvenida
-WelcomeFrame.Name = "WelcomeFrame"
-WelcomeFrame.Parent = MainFrame
-WelcomeFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-WelcomeFrame.BorderColor3 = Color3.fromRGB(85, 170, 255)
-WelcomeFrame.BorderSizePixel = 2
-WelcomeFrame.Size = UDim2.new(0, 280, 0, 290)
-WelcomeFrame.Position = UDim2.new(0, 140, 0, 60)
-local WelcomeFrameUICorner = Instance.new("UICorner")
-WelcomeFrameUICorner.CornerRadius = UDim.new(0, 8)
-WelcomeFrameUICorner.Parent = WelcomeFrame
-
-WelcomeBackground.Name = "WelcomeBackground"
-WelcomeBackground.Parent = WelcomeFrame
-WelcomeBackground.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-WelcomeBackground.Size = UDim2.new(1, 0, 1, 0)
-local WelcomeBackgroundUICorner = Instance.new("UICorner")
-WelcomeBackgroundUICorner.CornerRadius = UDim.new(0, 8)
-WelcomeBackgroundUICorner.Parent = WelcomeBackground
-
-WelcomeText.Name = "WelcomeText"
-WelcomeText.Parent = WelcomeFrame
-WelcomeText.Text = "¡Bienvenido a DrakHub!"
-WelcomeText.Font = Enum.Font.GothamBold
-WelcomeText.TextSize = 24
-WelcomeText.TextColor3 = Color3.fromRGB(255, 255, 255)
-WelcomeText.BackgroundTransparency = 1
-WelcomeText.Size = UDim2.new(1, 0, 0, 40)
-WelcomeText.Position = UDim2.new(0, 0, 0, 10)
-
-local SubText = Instance.new("TextLabel")
-SubText.Name = "SubText"
-SubText.Parent = WelcomeFrame
-SubText.Text = "Selecciona una categoría para comenzar"
-SubText.Font = Enum.Font.Gotham
-SubText.TextSize = 18
-SubText.TextColor3 = Color3.fromRGB(200, 200, 200)
-SubText.BackgroundTransparency = 1
-SubText.Size = UDim2.new(1, 0, 0, 30)
-SubText.Position = UDim2.new(0, 0, 0, 50)
-
-DiscordIcon.Name = "DiscordIcon"
-DiscordIcon.Parent = WelcomeFrame
-DiscordIcon.Image = "rbxassetid://6031075939" -- Icono de Discord
-DiscordIcon.Size = UDim2.new(0, 50, 0, 50)
-DiscordIcon.Position = UDim2.new(0.5, -60, 0.5, -25)
-DiscordIcon.BackgroundTransparency = 1
-
-YouTubeIcon.Name = "YouTubeIcon"
-YouTubeIcon.Parent = WelcomeFrame
-YouTubeIcon.Image = "rbxassetid://6031075938" -- Icono de YouTube
-YouTubeIcon.Size = UDim2.new(0, 50, 0, 50)
-YouTubeIcon.Position = UDim2.new(0.5, 10, 0.5, -25)
-YouTubeIcon.BackgroundTransparency = 1
-
-DiscordLabel.Name = "DiscordLabel"
-DiscordLabel.Parent = WelcomeFrame
-DiscordLabel.Text = "Discord"
-DiscordLabel.Font = Enum.Font.Gotham
-DiscordLabel.TextSize = 14
-DiscordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-DiscordLabel.BackgroundTransparency = 1
-DiscordLabel.Size = UDim2.new(0, 50, 0, 20)
-DiscordLabel.Position = UDim2.new(0.5, -60, 0.5, 30)
-
-YouTubeLabel.Name = "YouTubeLabel"
-YouTubeLabel.Parent = WelcomeFrame
-YouTubeLabel.Text = "YouTube"
-YouTubeLabel.Font = Enum.Font.Gotham
-YouTubeLabel.TextSize = 14
-YouTubeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-YouTubeLabel.BackgroundTransparency = 1
-YouTubeLabel.Size = UDim2.new(0, 50, 0, 20)
-YouTubeLabel.Position = UDim2.new(0.5, 10, 0.5, 30)
-
--- Mensaje de copiado
-CopyMessage.Name = "CopyMessage"
-CopyMessage.Parent = MainFrame
-CopyMessage.Text = ""
-CopyMessage.Font = Enum.Font.GothamBold
-CopyMessage.TextSize = 18
-CopyMessage.TextColor3 = Color3.fromRGB(255, 255, 255)
-CopyMessage.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-CopyMessage.BackgroundTransparency = 0.5
-CopyMessage.Size = UDim2.new(0, 300, 0, 50)
-CopyMessage.Position = UDim2.new(0.5, -150, 1, -60)
-CopyMessage.Visible = false
-local CopyMessageUICorner = Instance.new("UICorner")
-CopyMessageUICorner.CornerRadius = UDim.new(0, 8)
-CopyMessageUICorner.Parent = CopyMessage
-
--- Función para mostrar el mensaje de copiado
-local function showCopyMessage(text)
-    CopyMessage.Text = text
-    CopyMessage.Visible = true
-    wait(2)
-    CopyMessage.Visible = false
-end
-
--- Funcionalidad para abrir enlaces
-DiscordIcon.MouseButton1Click:Connect(function()
-    setclipboard("https://discord.gg/V9mJgYhTaJ") -- Reemplaza con tu enlace de Discord
-    showCopyMessage("El enlace de Discord ha sido copiado")
-end)
-
-YouTubeIcon.MouseButton1Click:Connect(function()
-    setclipboard("https://www.youtube.com/@drakath7559") -- Reemplaza con tu enlace de YouTube
-    showCopyMessage("El enlace de YouTube ha sido copiado")
-end)
--- Botones ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 -- Crear el botón Aimbot
 local AimbotButton = Instance.new("TextButton")
@@ -644,43 +505,23 @@ local function disableHeadSpand()
     headSpandEnabled = false
     -- Aquí deberías añadir la lógica específica para desactivar Head Spand
 end
--- Separadores +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
--- Funcionalidad para mostrar y ocultar submenús
-HomeButton.MouseButton1Click:Connect(function()
-    WelcomeFrame.Visible = true
-    CombatFrame.Visible = false
-    VisualFrame.Visible = false
-    ExtraFrame.Visible = false
-end)
-
+-- Funcionalidades del menú
 CombatButton.MouseButton1Click:Connect(function()
     CombatFrame.Visible = not CombatFrame.Visible
     VisualFrame.Visible = false
     ExtraFrame.Visible = false
-    WelcomeFrame.Visible = false
 end)
-
 VisualButton.MouseButton1Click:Connect(function()
     VisualFrame.Visible = not VisualFrame.Visible
     CombatFrame.Visible = false
     ExtraFrame.Visible = false
-    WelcomeFrame.Visible = false
 end)
-
 ExtraButton.MouseButton1Click:Connect(function()
     ExtraFrame.Visible = not ExtraFrame.Visible
     CombatFrame.Visible = false
     VisualFrame.Visible = false
-    WelcomeFrame.Visible = false
 end)
-
--- Mostrar la pantalla de bienvenida al inicio
-WelcomeFrame.Visible = true
-CombatFrame.Visible = false
-VisualFrame.Visible = false
-ExtraFrame.Visible = false
--- Conexiones Externas ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 AimbotButton.MouseButton1Click:Connect(function()
     aimEnabled = not aimEnabled -- Cambiar el estado del aimbot
@@ -1161,3 +1002,5 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
         end
     end
 end))
+
+-- Insta hit +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
