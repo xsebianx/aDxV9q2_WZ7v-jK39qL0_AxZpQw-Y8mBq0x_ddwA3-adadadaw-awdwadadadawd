@@ -727,31 +727,34 @@ SilenAimButton.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Variable para verificar si el script de Mega Aim ha sido cargado
 local megaAimScriptLoaded = false 
 
 MegaAimButton.MouseButton1Click:Connect(function()
-    megAimbEnabled = not megAimbEnabled 
+    megAimbEnabled = not megAimbEnabled -- Alterna el estado de Mega Aim
 
     if megAimbEnabled then
         MegaAimButton.Text = "MegaAim: On"
 
+        -- Cargar el script de Mega Aim si no se ha cargado previamente
         if not megaAimScriptLoaded then
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/megaaimb.lua"))()
-            megaAimScriptLoaded = true 
+            megaAimScriptLoaded = true -- Marca el script como cargado
+        end
 
         if _G.activateMegaaimb then
-            _G.activateMegaaimb() 
-            print("MegaAim activado") 
+            _G.activateMegaaimb() -- Activa la funcionalidad de Mega Aim
+            print("MegaAim activado") -- Mensaje de depuración
         else
-            print("Función activateMegaaimb no está disponible.") 
+            print("Función activateMegaaimb no está disponible.") -- Mensaje de error
         end
     else
         MegaAimButton.Text = "MegaAim: Off"
         if _G.disableMegaaimb then
-            _G.disableMegaaimb() 
-            print("MegaAim desactivado") 
+            _G.disableMegaaimb() -- Desactiva la funcionalidad de Mega Aim
+            print("MegaAim desactivado") -- Mensaje de depuración
         else
-            print("Función disableMegaaimb no está disponible.") 
+            print("Función disableMegaaimb no está disponible.") -- Mensaje de error
         end
     end
 end)
