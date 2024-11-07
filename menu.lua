@@ -1,3 +1,5 @@
+--Drakath Hub ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 local DrakHub = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
@@ -277,6 +279,7 @@ YouTubeIcon.MouseButton1Click:Connect(function()
     setclipboard("https://www.youtube.com/@drakath7559") -- Reemplaza con tu enlace de YouTube
     showCopyMessage("El enlace de YouTube ha sido copiado")
 end)
+-- Botones ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 -- Crear el botón Aimbot
 local AimbotButton = Instance.new("TextButton")
@@ -641,6 +644,7 @@ local function disableHeadSpand()
     headSpandEnabled = false
     -- Aquí deberías añadir la lógica específica para desactivar Head Spand
 end
+-- Separadores +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 -- Funcionalidad para mostrar y ocultar submenús
 HomeButton.MouseButton1Click:Connect(function()
@@ -676,139 +680,131 @@ WelcomeFrame.Visible = true
 CombatFrame.Visible = false
 VisualFrame.Visible = false
 ExtraFrame.Visible = false
+-- Conexiones Externas ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 AimbotButton.MouseButton1Click:Connect(function()
-    aimEnabled = not aimEnabled -- Cambiar el estado del aimbot
+    aimEnabled = not aimEnabled 
     if aimEnabled then
         AimbotButton.Text = "Anarchy aimb: On"
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbot.lua"))()
-        _G.enableAimbot() -- Activar el Aimbot
+        _G.enableAimbot() 
     else
         AimbotButton.Text = "Anarchy aimb: Off"
-        _G.disableAimbot() -- Desactivar el Aimbot
+        _G.disableAimbot() 
     end
 end)
 
 AimbotNPCButton.MouseButton1Click:Connect(function()
-    aimbotEnabled = not aimbotEnabled -- Alterna el estado del aimbot
+    aimbotEnabled = not aimbotEnabled 
     if aimbotEnabled then
         AimbotNPCButton.Text = "Delta Aimb: On"        
-        -- Aquí puedes cargar el script del aimbot para NPCs
+
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/deltaaimb.lua"))() -- Cambia esta URL por la de tu script de aimbot
         
-        -- Activa el aimbot usando la función global
         if _G.enableAimbot then
-            _G.enableAimbot() -- Activa la funcionalidad del aimbot
+            _G.enableAimbot() 
         end
     else
         AimbotNPCButton.Text = "Delta Aimb: Off"
         
-        -- Desactiva el aimbot usando la función global
         if _G.disableAimbot then
-            _G.disableAimbot() -- Desactiva la funcionalidad del aimbot
+            _G.disableAimbot() 
         end
     end
 end)
 
 SilenAimButton.MouseButton1Click:Connect(function()
-    isSilentAimEnabled = not isSilentAimEnabled -- Cambiar el estado de Silent Aim
+    isSilentAimEnabled = not isSilentAimEnabled -- 
     if isSilentAimEnabled then        
         SilenAimButton.Text = "Silent Aim: On"
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/silentaimb.lua"))() -- Cargar el script de Silent Aim
-        activateSilentAim() -- Activar Silent Aim
+        activateSilentAim() 
     else
         SilenAimButton.Text = "Silent Aim: Off"
         if _G.disableSilentAim then
-            _G.disableSilentAim() -- Desactivar Silent Aim
+            _G.disableSilentAim() 
         end
     end
 end)
 
--- Variable para verificar si el script de Mega Aim ha sido cargado
 local megaAimScriptLoaded = false 
 
 MegaAimButton.MouseButton1Click:Connect(function()
-    megAimbEnabled = not megAimbEnabled -- Alterna el estado de Mega Aim
+    megAimbEnabled = not megAimbEnabled 
 
     if megAimbEnabled then
         MegaAimButton.Text = "MegaAim: On"
 
-        -- Cargar el script de Mega Aim si no se ha cargado previamente
         if not megaAimScriptLoaded then
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/megaaimb.lua"))()
-            megaAimScriptLoaded = true -- Marca el script como cargado
-        end
+            megaAimScriptLoaded = true 
 
         if _G.activateMegaaimb then
-            _G.activateMegaaimb() -- Activa la funcionalidad de Mega Aim
-            print("MegaAim activado") -- Mensaje de depuración
+            _G.activateMegaaimb() 
+            print("MegaAim activado") 
         else
-            print("Función activateMegaaimb no está disponible.") -- Mensaje de error
+            print("Función activateMegaaimb no está disponible.") 
         end
     else
         MegaAimButton.Text = "MegaAim: Off"
         if _G.disableMegaaimb then
-            _G.disableMegaaimb() -- Desactiva la funcionalidad de Mega Aim
-            print("MegaAim desactivado") -- Mensaje de depuración
+            _G.disableMegaaimb() 
+            print("MegaAim desactivado") 
         else
-            print("Función disableMegaaimb no está disponible.") -- Mensaje de error
+            print("Función disableMegaaimb no está disponible.") 
         end
     end
 end)
 
--- Conectar el evento del botón
 VisorButton.MouseButton1Click:Connect(function()
     visorEnabled = not visorEnabled
-    _G.toggleVisor = visorEnabled -- Actualiza el estado en _G.toggleVisor
+    _G.toggleVisor = visorEnabled 
     if visorEnabled then
         VisorButton.Text = "Visor: On"
-        -- Cargar el visor
+
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/visor.lua"))()
     else
         VisorButton.Text = "Visor: Off"
-        -- Desactivar el visor
         if _G.disableVisor then
-            _G.disableVisor() -- Asegúrate de que esta función esté definida en tu script de visor
+            _G.disableVisor() 
         end
     end
 end)
 
 FlyButton.MouseButton1Click:Connect(function()
-    flyEnabled = not flyEnabled -- Alterna el estado de vuelo
+    flyEnabled = not flyEnabled 
 
     if flyEnabled then
         FlyButton.Text = "Fly: On"
 
-        -- Cargar el script de vuelo si no se ha cargado previamente
         if not _G.activateFly then
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/fly.lua"))()
         end
 
-        _G.activateFly() -- Activa la funcionalidad de vuelo
+        _G.activateFly() 
     else
         FlyButton.Text = "Fly: Off"
         if _G.disableFly then
-            _G.disableFly() -- Desactiva el vuelo
+            _G.disableFly() 
         end
     end
 end)
 
 DetectButton.MouseButton1Click:Connect(function()
-    detectEnabled = not detectEnabled -- Alterna el estado de detección
+    detectEnabled = not detectEnabled 
 
     if detectEnabled then
         DetectButton.Text = "Detect: On"
 
-        -- Cargar el script de detección si no se ha cargado previamente
         if not _G.activateDetect then
             loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/visual/detect.lua"))()
         end
 
-        _G.activateDetect() -- Activa la funcionalidad de detección
+        _G.activateDetect() 
     else
         DetectButton.Text = "Detect: Off"
         if _G.disableDetect then
-            _G.disableDetect() -- Desactiva la detección
+            _G.disableDetect() 
         end
     end
 end)
@@ -817,14 +813,12 @@ JesusButton.MouseButton1Click:Connect(function()
     jesusEnabled = not jesusEnabled
     if jesusEnabled then
         JesusButton.Text = "Jesus: On"
-        
-        -- Cargar el script de caminar sobre el agua
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/jesus.lua"))() -- Cambia esta URL por la de tu script de caminar sobre el agua
-        _G.activateJesus() -- Activa la funcionalidad de caminar sobre el agua
+        _G.activateJesus() 
     else
         JesusButton.Text = "Jesus: Off"
         if _G.disableJesus then
-            _G.disableJesus() -- Desactivar la capacidad de caminar sobre el agua
+            _G.disableJesus() 
         end
     end
 end)
@@ -833,14 +827,12 @@ InstantHitButton.MouseButton1Click:Connect(function()
     instantHitEnabled = not instantHitEnabled
     if instantHitEnabled then
         InstantHitButton.Text = "Instant Hit: On"
-        
-        -- Cargar el script de Instant Hit desde GitHub
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/instanthit.lua"))() 
-        _G.activateInstantHit() -- Activa la funcionalidad de Instant Hit
+        _G.activateInstantHit() 
     else
         InstantHitButton.Text = "Instant Hit: Off"
         if _G.disableInstantHit then
-            _G.disableInstantHit() -- Desactiva la funcionalidad de Instant Hit
+            _G.disableInstantHit() 
         end
     end
 end)
@@ -849,36 +841,32 @@ NoRecoilButton.MouseButton1Click:Connect(function()
     recoilEnabled = not recoilEnabled
     if recoilEnabled then
         NoRecoilButton.Text = "No Recoil: On"
-
-        -- Cargar el script de No Recoil desde GitHub
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/instanthit.lua"))()  -- Reemplaza con la URL correcta del script de No Recoil
-        _G.activateNoRecoil() -- Activa la funcionalidad de No Recoil
+        _G.activateNoRecoil() 
     else
         NoRecoilButton.Text = "No Recoil: Off"
         if _G.disableNoRecoil then
-            _G.disableNoRecoil() -- Desactiva la funcionalidad de No Recoil
+            _G.disableNoRecoil() 
         end
     end
 end)
 
 -- Botón para activar/desactivar Head Spand
 HeadSpandButton.MouseButton1Click:Connect(function()
-    headSpandEnabled = not headSpandEnabled -- Alternar el estado de la expansión de la cabeza
+    headSpandEnabled = not headSpandEnabled 
     if headSpandEnabled then
         HeadSpandButton.Text = "Head: On"
-
-        -- Cargar el script de Head Spand desde GitHub
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/extra/head.lua"))()  -- Reemplaza con la URL correcta del script de Head Spand
-        _G.activateHeadExpand() -- Activa la funcionalidad de Head Spand
+        _G.activateHeadExpand() 
     else
         HeadSpandButton.Text = "Head: Off"
         if _G.disableHeadExpand then
-            _G.disableHeadExpand() -- Desactiva la funcionalidad de Head Spand
+            _G.disableHeadExpand() 
         end
     end
 end)
+-- Minimizador +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
--- Funcionalidad para minimizar el menú con la tecla "P"
 local UserInputService = game:GetService("UserInputService")
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -891,30 +879,25 @@ end)
 -- Variables para el estado del Crosshair ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 local crosshairEnabled = false
 
--- Función para alternar el Crosshair
 CrosshairButton.MouseButton1Click:Connect(function()
     crosshairEnabled = not crosshairEnabled
     CrosshairButton.Text = crosshairEnabled and "Crosshair: On" or "Crosshair: Off"
     
     if crosshairEnabled then
-        -- Mostrar el crosshair
         crosshair.Visible = true
         crosshairVertical.Visible = true
     else
-        -- Ocultar el crosshair
         crosshair.Visible = false
         crosshairVertical.Visible = false
     end
 end)
 
--- Configuración del Crosshair
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 local mouse = localPlayer:GetMouse()
 
--- Crear Crosshair
 local crosshair = Drawing.new("Line")
 crosshair.Thickness = 2
 crosshair.Color = Color3.fromRGB(255, 255, 255)
@@ -923,7 +906,6 @@ local crosshairVertical = Drawing.new("Line")
 crosshairVertical.Thickness = 2
 crosshairVertical.Color = Color3.fromRGB(255, 255, 255)
 
--- Actualizar la posición del Crosshair
 RunService.RenderStepped:Connect(function()
     local centerX = workspace.CurrentCamera.ViewportSize.X / 2
     local centerY = workspace.CurrentCamera.ViewportSize.Y / 2
@@ -934,32 +916,27 @@ RunService.RenderStepped:Connect(function()
     crosshairVertical.From = Vector2.new(centerX, centerY - 10)
     crosshairVertical.To = Vector2.new(centerX, centerY + 10)
     
-    -- Mantener la visibilidad del crosshair según el estado
     crosshair.Visible = crosshairEnabled
     crosshairVertical.Visible = crosshairEnabled
 end)
 
 -- Configuraciones del ESP ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
--- Configuraciones
 local settings = {
     defaultcolor = Color3.fromRGB(255, 0, 0),
     teamcheck = false,
     teamcolor = true
 }
 
--- Servicios
 local runService = game:GetService("RunService")
 local players = game:GetService("Players")
 
--- Variables
 local localPlayer = players.LocalPlayer
 local camera = workspace.CurrentCamera
 local maxDistance = 2000
-local espEnabled = false -- Cambiado a false por defecto
+local espEnabled = false 
 local espCache = {}
-local connections = {} -- Tabla para almacenar las conexiones
-
+local connections = {} 
 -- Funciones
 local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
 local tan, rad = math.tan, math.rad
@@ -1031,16 +1008,13 @@ local function updateEsp(player, esp)
 
             if visible then
                 local scaleFactor = 1 / (depth * tan(rad(camera.FieldOfView / 2)) * 2) * 1000
-                -- Cambia los factores de escala para ajustar el tamaño del ESP
-                local width, height = round(2 * scaleFactor, 2.5 * scaleFactor) -- Reduce el tamaño del ESP
+                local width, height = round(2 * scaleFactor, 2.5 * scaleFactor) 
                 local x, y = round(position.X, position.Y)
 
-                -- Obtener la distancia entre el jugador local y el objetivo
                 local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
 
-                -- Cambiar el color si la distancia es mayor a 800
                 if distance > 800 then
-                    esp.box.Color = Color3.fromRGB(0, 0, 255)  -- Azul para jugadores lejanos
+                    esp.box.Color = Color3.fromRGB(0, 0, 255)  
                 else
                     esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor  -- Rojo por defecto o color de equipo
                 end
@@ -1051,25 +1025,23 @@ local function updateEsp(player, esp)
                 esp.boxoutline.Size = esp.box.Size
                 esp.boxoutline.Position = esp.box.Position
 
-                -- Ajustar el tamaño del texto y cuadros en función de la distancia
-                local textScale = distance <= 800 and 0.8 or 0.75  -- Reducir el tamaño del texto cerca y lejos
-                local nameAndDistanceScale = distance <= 800 and 1.2 or 0.75 -- Ajustar el tamaño del nombre y distancia
+                local textScale = distance <= 800 and 0.8 or 0.75  
+                local nameAndDistanceScale = distance <= 800 and 1.2 or 0.75 
 
-                -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
                 esp.name.Position = newVector2(x, y - height / 2 - 20)
-                esp.name.Size = 16 * nameAndDistanceScale  -- Aumentar el tamaño del nombre
+                esp.name.Size = 16 * nameAndDistanceScale  
 
                 local humanoid = character:FindFirstChild("Humanoid")
                 if humanoid then
                     esp.health.Text = string.format("Vida: %.0f%%", humanoid.Health / humanoid.MaxHealth * 100)
                     esp.health.Position = newVector2(x, y - height / 2 - 40)
-                    esp.health.Size = 16 * textScale  -- Tamaño normal para la vida
+                    esp.health.Size = 16 * textScale  
                 end
 
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
-                esp.distance.Size = 16 * nameAndDistanceScale  -- Aumentar el tamaño de la distancia
+                esp.distance.Size = 16 * nameAndDistanceScale  
             end
         end
     else
@@ -1103,24 +1075,23 @@ ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 ESPButton.Size = UDim2.new(0, 240, 0, 40)
 ESPButton.Position = UDim2.new(0, 10, 0, 10)
 
--- Añadir esquinas redondeadas
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 12)
 corner.Parent = ESPButton
 
 -- Efecto de hover
 ESPButton.MouseEnter:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  
 end)
 
 ESPButton.MouseLeave:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  
 end)
 
 -- Función para alternar el estado del ESP
 ESPButton.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled -- Alternar el estado
-    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off" -- Actualizar el texto del botón
+    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off" 
 end)
 
 -- Principal
@@ -1156,5 +1127,3 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
         end
     end
 end))
-
--- Insta hit +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
