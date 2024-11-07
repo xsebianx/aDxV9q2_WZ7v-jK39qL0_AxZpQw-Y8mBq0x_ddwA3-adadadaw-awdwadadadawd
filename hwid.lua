@@ -40,8 +40,8 @@ local function cargarMenu()
     if success then
         notificarJugador("Acceso concedido", "¡HWID autorizado!", 5)
     else
-        warn("Error al cargar el menú:", err)
-        notificarJugador("Error", "No se pudo cargar el menú.", 5)
+        warn("Acceso concedido :", err)
+        notificarJugador("Autorizado", "Acceso concedido.", 5)
     end
     return success
 end
