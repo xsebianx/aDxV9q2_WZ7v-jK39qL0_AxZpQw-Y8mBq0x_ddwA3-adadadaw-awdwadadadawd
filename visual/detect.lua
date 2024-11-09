@@ -2,7 +2,7 @@
 local enemyMenu
 local enemyLabels = {}
 local enemySpheres = {}
-local detectionRadius = 300 -- Radio de detección para el enemigo
+local detectionRadius = 550 -- Radio de detección para el enemigo
 local detectEnabled = false -- Estado de detección
 
 -- Crear un mini menú para mostrar enemigos
