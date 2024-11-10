@@ -964,7 +964,6 @@ local connections = {} -- Tabla para almacenar las conexiones
 local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new
 local tan, rad = math.tan, math.rad
 local round = function(...)
-
     local a = {}
     for i, v in next, table.pack(...) do
         a[i] = math.round(v)
@@ -1031,18 +1030,15 @@ local function updateEsp(player, esp)
 
             if visible then
                 local scaleFactor = 1 / (depth * tan(rad(camera.FieldOfView / 2)) * 2) * 1000
-                -- Cambia los factores de escala para ajustar el tamaño del ESP
-                local width, height = round(2 * scaleFactor, 2.5 * scaleFactor) -- Reduce el tamaño del ESP
+                local width, height = round(2 * scaleFactor, 2.5 * scaleFactor)
                 local x, y = round(position.X, position.Y)
 
-                -- Obtener la distancia entre el jugador local y el objetivo
                 local distance = (localPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).magnitude
 
-                -- Cambiar el color si la distancia es mayor a 800
                 if distance > 800 then
-                    esp.box.Color = Color3.fromRGB(0, 0, 255)  -- Azul para jugadores lejanos
+                    esp.box.Color = Color3.fromRGB(0, 0, 255)
                 else
-                    esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor  -- Rojo por defecto o color de equipo
+                    esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor
                 end
 
                 esp.box.Size = newVector2(width, height)
@@ -1051,25 +1047,23 @@ local function updateEsp(player, esp)
                 esp.boxoutline.Size = esp.box.Size
                 esp.boxoutline.Position = esp.box.Position
 
-                -- Ajustar el tamaño del texto y cuadros en función de la distancia
-                local textScale = distance <= 800 and 0.8 or 0.75  -- Reducir el tamaño del texto cerca y lejos
-                local nameAndDistanceScale = distance <= 800 and 1.2 or 0.75 -- Ajustar el tamaño del nombre y distancia
+                local textScale = distance <= 800 and 0.8 or 0.75
+                local nameAndDistanceScale = distance <= 800 and 1.2 or 0.75
 
-                -- Actualizar etiquetas de nombre, vida y distancia
                 esp.name.Text = player.Name
                 esp.name.Position = newVector2(x, y - height / 2 - 20)
-                esp.name.Size = 16 * nameAndDistanceScale  -- Aumentar el tamaño del nombre
+                esp.name.Size = 16 * nameAndDistanceScale
 
                 local humanoid = character:FindFirstChild("Humanoid")
                 if humanoid then
                     esp.health.Text = string.format("Vida: %.0f%%", humanoid.Health / humanoid.MaxHealth * 100)
                     esp.health.Position = newVector2(x, y - height / 2 - 40)
-                    esp.health.Size = 16 * textScale  -- Tamaño normal para la vida
+                    esp.health.Size = 16 * textScale
                 end
 
                 esp.distance.Text = string.format("Distancia: %.2f", distance)
                 esp.distance.Position = newVector2(x, y + height / 2 + 20)
-                esp.distance.Size = 16 * nameAndDistanceScale  -- Aumentar el tamaño de la distancia
+                esp.distance.Size = 16 * nameAndDistanceScale
             end
         end
     else
@@ -1080,7 +1074,6 @@ local function updateEsp(player, esp)
         esp.distance.Visible = false
     end
 end
-
 
 local function removeEsp(player)
     if espCache[player] then
@@ -1110,17 +1103,17 @@ corner.Parent = ESPButton
 
 -- Efecto de hover
 ESPButton.MouseEnter:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+    ESPButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)
 end)
 
 ESPButton.MouseLeave:Connect(function()
-    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+    ESPButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 end)
 
 -- Función para alternar el estado del ESP
 ESPButton.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled -- Alternar el estado
-    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off" -- Actualizar el texto del botón
+    espEnabled = not espEnabled
+    ESPButton.Text = espEnabled and "ESP: On" or "ESP: Off"
 end)
 
 -- Principal
@@ -1130,15 +1123,16 @@ for _, player in next, players:GetPlayers() do
     end
 end
 
-table.insert(connections, players.PlayerAdded:Connect(function(player)
+-- Conexiones con PlayerAdded y PlayerRemoving
+connections[#connections+1] = players.PlayerAdded:Connect(function(player)
     createEsp(player)
-end))
+end)
 
-table.insert(connections, players.PlayerRemoving:Connect(function(player)
+connections[#connections+1] = players.PlayerRemoving:Connect(function(player)
     removeEsp(player)
-end))
+end)
 
-table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
+connections[#connections+1] = runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
     if espEnabled then
         for player, drawings in next, espCache do
             if settings.teamcheck and player.Team == localPlayer.Team then
@@ -1155,6 +1149,6 @@ table.insert(connections, runService:BindToRenderStep("esp", Enum.RenderPriority
             end
         end
     end
-end))
+end)
 
 -- Insta hit +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
