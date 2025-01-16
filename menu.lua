@@ -430,7 +430,7 @@ cornerDetect.Parent = DetectButton
 
 -- Efecto de hover (opcional)
 DetectButton.MouseEnter:Connect(function()
-    DetectButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
+    DetectButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Color verde clarito al pasar el mouse
 end)
 
 DetectButton.MouseLeave:Connect(function()
@@ -1097,6 +1097,7 @@ end)
 
 -- full bright +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+-- Configuraciones de iluminación
 local LightingConfigs = {
     {
         name = "Config 1",
@@ -1154,21 +1155,50 @@ local LightingConfigs = {
     }
 }
 
--- Monitoreo constante para mantener los efectos
+-- Monitoreo constante para asegurar que los efectos se mantengan
 local function ensureEffects()
     local Lighting = game:GetService("Lighting")
     local flir = Lighting:FindFirstChild("FlirScopeOverlay")
     if not flir then
         flir = Instance.new("ColorCorrectionEffect", Lighting)
         flir.Name = "FlirScopeOverlay"
-        flir.Brightness = 4
-        flir.Contrast = 6
-        flir.Saturation = 5
+        flir.Brightness = 6
+        flir.Contrast = 10
+        flir.Saturation = 4
+        flir.TintColor = Color3.fromRGB(26, 26, 26)
+        flir.Enabled = true
     end
 end
 
--- Actualización constante
-game:GetService("RunService").Stepped:Connect(ensureEffects)
+-- Asegurar que *Full Bright* siempre esté activo, independientemente de cambios en el clima, hora o acciones del jugador
+local function forceFullBright()
+    local Lighting = game:GetService("Lighting")
+    Lighting.Technology = Enum.Technology.Voxel
+    Lighting.ExposureCompensation = 2.5
+    Lighting.Brightness = 3.5
+    Lighting.Ambient = Color3.fromRGB(200, 200, 200)
+    Lighting.OutdoorAmbient = Color3.fromRGB(220, 220, 220)
+    
+    local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere", Lighting)
+    atmosphere.Color = Color3.fromRGB(190, 190, 190)
+    atmosphere.Decay = Color3.fromRGB(120, 120, 120)
+    atmosphere.Density = 0.15
+    atmosphere.Glare = 0.2
+    atmosphere.Haze = 0.1
+
+    local flir = Lighting:FindFirstChild("FlirScopeOverlay") or Instance.new("ColorCorrectionEffect", Lighting)
+    flir.Name = "FlirScopeOverlay"
+    flir.Brightness = 6
+    flir.Contrast = 10
+    flir.Saturation = 4
+    flir.TintColor = Color3.fromRGB(26, 26, 26)
+    flir.Enabled = true
+end
+
+-- Llamar a forceFullBright constantemente para evitar que la configuración cambie
+game:GetService("RunService").Heartbeat:Connect(function()
+    forceFullBright()
+end)
 
 -- Crear botón principal
 local ConfigButton = Instance.new("TextButton")
@@ -1189,11 +1219,11 @@ cornerConfig.Parent = ConfigButton
 
 -- Efecto hover para el botón principal
 ConfigButton.MouseEnter:Connect(function()
-    ConfigButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    ConfigButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
 end)
 
 ConfigButton.MouseLeave:Connect(function()
-    ConfigButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    ConfigButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 end)
 
 -- Crear lista desplegable
@@ -1239,11 +1269,11 @@ for i, config in ipairs(LightingConfigs) do
 
     -- Efecto hover para las opciones
     OptionButton.MouseEnter:Connect(function()
-        OptionButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        OptionButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
     end)
 
     OptionButton.MouseLeave:Connect(function()
-        OptionButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        OptionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     end)
 
     -- Aplicar configuración al hacer clic
