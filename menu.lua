@@ -1095,4 +1095,164 @@ connections[#connections+1] = runService:BindToRenderStep("esp", Enum.RenderPrio
     end
 end)
 
--- Insta hit +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- full bright +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+local LightingConfigs = {
+    {
+        name = "Config 1",
+        apply = function()
+            -- Configuración 1: Más oscura, luz tenue.
+            local Lighting = game:GetService("Lighting")
+            Lighting.Technology = Enum.Technology.Voxel
+            Lighting.ExposureCompensation = 0.5
+            Lighting.Brightness = 1
+            Lighting.Ambient = Color3.fromRGB(70, 70, 70) -- Más tenue
+            Lighting.OutdoorAmbient = Color3.fromRGB(80, 80, 80) -- Menos contraste
+            local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere", Lighting)
+            atmosphere.Color = Color3.fromRGB(110, 110, 110)
+            atmosphere.Decay = Color3.fromRGB(70, 70, 70)
+            atmosphere.Density = 0.3 -- Un poco más denso
+            atmosphere.Glare = 0.1
+            atmosphere.Haze = 0.2
+
+            -- Configurar FlirScopeOverlay
+            local flir = Lighting:FindFirstChild("FlirScopeOverlay") or Instance.new("ColorCorrectionEffect", Lighting)
+            flir.Name = "FlirScopeOverlay"
+            flir.Brightness = 6
+            flir.Contrast = 10
+            flir.Saturation = 4
+            flir.TintColor = Color3.fromRGB(26, 26, 26)
+            flir.Enabled = true
+        end
+    },
+    {
+        name = "Config 2",
+        apply = function()
+            -- Configuración 2: Más clara, ideal para la noche.
+            local Lighting = game:GetService("Lighting")
+            Lighting.Technology = Enum.Technology.Voxel
+            Lighting.ExposureCompensation = 2.5 -- Más exposición
+            Lighting.Brightness = 3.5 -- Luz brillante
+            Lighting.Ambient = Color3.fromRGB(200, 200, 200) -- Muy claro
+            Lighting.OutdoorAmbient = Color3.fromRGB(220, 220, 220) -- Ambiente iluminado
+            local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere", Lighting)
+            atmosphere.Color = Color3.fromRGB(190, 190, 190) -- Ambiente claro
+            atmosphere.Decay = Color3.fromRGB(120, 120, 120)
+            atmosphere.Density = 0.15 -- Menos densidad para mayor claridad
+            atmosphere.Glare = 0.2 -- Reflejo suave
+            atmosphere.Haze = 0.1 -- Menor neblina
+
+            -- Configurar FlirScopeOverlay
+            local flir = Lighting:FindFirstChild("FlirScopeOverlay") or Instance.new("ColorCorrectionEffect", Lighting)
+            flir.Name = "FlirScopeOverlay"
+            flir.Brightness = 6
+            flir.Contrast = 10
+            flir.Saturation = 4
+            flir.TintColor = Color3.fromRGB(26, 26, 26)
+            flir.Enabled = true
+        end
+    }
+}
+
+-- Monitoreo constante para mantener los efectos
+local function ensureEffects()
+    local Lighting = game:GetService("Lighting")
+    local flir = Lighting:FindFirstChild("FlirScopeOverlay")
+    if not flir then
+        flir = Instance.new("ColorCorrectionEffect", Lighting)
+        flir.Name = "FlirScopeOverlay"
+        flir.Brightness = 4
+        flir.Contrast = 6
+        flir.Saturation = 5
+    end
+end
+
+-- Actualización constante
+game:GetService("RunService").Stepped:Connect(ensureEffects)
+
+-- Crear botón principal
+local ConfigButton = Instance.new("TextButton")
+ConfigButton.Name = "ConfigButton"
+ConfigButton.Parent = VisualFrame
+ConfigButton.Text = "Full Bright Config"
+ConfigButton.Font = Enum.Font.GothamBold
+ConfigButton.TextSize = 18
+ConfigButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ConfigButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+ConfigButton.Size = UDim2.new(0, 240, 0, 40)
+ConfigButton.Position = UDim2.new(0, 10, 0, 210) -- Posición ajustada
+ConfigButton.BorderSizePixel = 0
+
+local cornerConfig = Instance.new("UICorner")
+cornerConfig.CornerRadius = UDim.new(0, 12)
+cornerConfig.Parent = ConfigButton
+
+-- Efecto hover para el botón principal
+ConfigButton.MouseEnter:Connect(function()
+    ConfigButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+end)
+
+ConfigButton.MouseLeave:Connect(function()
+    ConfigButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+end)
+
+-- Crear lista desplegable
+local DropDownFrame = Instance.new("Frame")
+DropDownFrame.Name = "DropDownFrame"
+DropDownFrame.Parent = VisualFrame
+DropDownFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+DropDownFrame.BorderSizePixel = 0
+DropDownFrame.Size = UDim2.new(0, 240, 0, 0) -- Comienza contraído
+DropDownFrame.Position = UDim2.new(0, 10, 0, 260) -- Justo debajo del botón principal
+DropDownFrame.ClipsDescendants = true
+
+local cornerDropDown = Instance.new("UICorner")
+cornerDropDown.CornerRadius = UDim.new(0, 12)
+cornerDropDown.Parent = DropDownFrame
+
+-- Animación para abrir/cerrar el menú
+local function ToggleDropDown()
+    if DropDownFrame.Size == UDim2.new(0, 240, 0, 0) then
+        DropDownFrame:TweenSize(UDim2.new(0, 240, 0, 40 * #LightingConfigs), "Out", "Quad", 0.2, true)
+    else
+        DropDownFrame:TweenSize(UDim2.new(0, 240, 0, 0), "Out", "Quad", 0.2, true)
+    end
+end
+
+-- Opciones dentro del menú desplegable
+for i, config in ipairs(LightingConfigs) do
+    local OptionButton = Instance.new("TextButton")
+    OptionButton.Name = "Option" .. i
+    OptionButton.Parent = DropDownFrame
+    OptionButton.Text = config.name
+    OptionButton.Font = Enum.Font.Gotham
+    OptionButton.TextSize = 16
+    OptionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    OptionButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    OptionButton.Size = UDim2.new(1, 0, 0, 40)
+    OptionButton.Position = UDim2.new(0, 0, 0, (i - 1) * 40)
+    OptionButton.BorderSizePixel = 0
+
+    local cornerOption = Instance.new("UICorner")
+    cornerOption.CornerRadius = UDim.new(0, 12)
+    cornerOption.Parent = OptionButton
+
+    -- Efecto hover para las opciones
+    OptionButton.MouseEnter:Connect(function()
+        OptionButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    end)
+
+    OptionButton.MouseLeave:Connect(function()
+        OptionButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    end)
+
+    -- Aplicar configuración al hacer clic
+    OptionButton.MouseButton1Click:Connect(function()
+        config.apply()
+        ConfigButton.Text = "Selected: " .. config.name
+        ToggleDropDown()
+    end)
+end
+
+-- Abrir/cerrar el menú desplegable al hacer clic en el botón principal
+ConfigButton.MouseButton1Click:Connect(ToggleDropDown)
