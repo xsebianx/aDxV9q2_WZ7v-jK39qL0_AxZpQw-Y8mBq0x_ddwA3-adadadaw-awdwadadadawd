@@ -1097,7 +1097,6 @@ end)
 
 -- full bright +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
--- Configuraciones de iluminación
 local LightingConfigs = {
     {
         name = "Config 1",
@@ -1155,50 +1154,25 @@ local LightingConfigs = {
     }
 }
 
--- Monitoreo constante para asegurar que los efectos se mantengan
+-- Variable para almacenar la configuración actual
+local currentConfig = nil
+
+-- Función para asegurar que los efectos se mantengan
 local function ensureEffects()
-    local Lighting = game:GetService("Lighting")
-    local flir = Lighting:FindFirstChild("FlirScopeOverlay")
-    if not flir then
-        flir = Instance.new("ColorCorrectionEffect", Lighting)
-        flir.Name = "FlirScopeOverlay"
-        flir.Brightness = 6
-        flir.Contrast = 10
-        flir.Saturation = 4
-        flir.TintColor = Color3.fromRGB(26, 26, 26)
-        flir.Enabled = true
+    if currentConfig then
+        currentConfig.apply()
     end
 end
 
--- Asegurar que *Full Bright* siempre esté activo, independientemente de cambios en el clima, hora o acciones del jugador
-local function forceFullBright()
-    local Lighting = game:GetService("Lighting")
-    Lighting.Technology = Enum.Technology.Voxel
-    Lighting.ExposureCompensation = 2.5
-    Lighting.Brightness = 3.5
-    Lighting.Ambient = Color3.fromRGB(200, 200, 200)
-    Lighting.OutdoorAmbient = Color3.fromRGB(220, 220, 220)
-    
-    local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere", Lighting)
-    atmosphere.Color = Color3.fromRGB(190, 190, 190)
-    atmosphere.Decay = Color3.fromRGB(120, 120, 120)
-    atmosphere.Density = 0.15
-    atmosphere.Glare = 0.2
-    atmosphere.Haze = 0.1
-
-    local flir = Lighting:FindFirstChild("FlirScopeOverlay") or Instance.new("ColorCorrectionEffect", Lighting)
-    flir.Name = "FlirScopeOverlay"
-    flir.Brightness = 6
-    flir.Contrast = 10
-    flir.Saturation = 4
-    flir.TintColor = Color3.fromRGB(26, 26, 26)
-    flir.Enabled = true
+-- Función para aplicar la configuración seleccionada y mantener el efecto de "Full Bright"
+local function applyConfig(config)
+    currentConfig = config
+    config.apply()
+    ensureEffects()
 end
 
--- Llamar a forceFullBright constantemente para evitar que la configuración cambie
-game:GetService("RunService").Heartbeat:Connect(function()
-    forceFullBright()
-end)
+-- Actualización constante para mantener los efectos
+game:GetService("RunService").Stepped:Connect(ensureEffects)
 
 -- Crear botón principal
 local ConfigButton = Instance.new("TextButton")
@@ -1278,7 +1252,7 @@ for i, config in ipairs(LightingConfigs) do
 
     -- Aplicar configuración al hacer clic
     OptionButton.MouseButton1Click:Connect(function()
-        config.apply()
+        applyConfig(config)
         ConfigButton.Text = "Selected: " .. config.name
         ToggleDropDown()
     end)
@@ -1286,3 +1260,6 @@ end
 
 -- Abrir/cerrar el menú desplegable al hacer clic en el botón principal
 ConfigButton.MouseButton1Click:Connect(ToggleDropDown)
+
+-- Aplicar la configuración inicial (opcional, si no quieres que se aplique ninguna configuración al inicio, puedes comentar esta línea)
+applyConfig(LightingConfigs[1])
