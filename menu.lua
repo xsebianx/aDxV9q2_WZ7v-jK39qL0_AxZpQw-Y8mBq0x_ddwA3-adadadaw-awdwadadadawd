@@ -631,7 +631,7 @@ AimbotButton.MouseButton1Click:Connect(function()
         AimbotButton.Text = "Anarchy aimb: Off"
         _G.disableAimbot() -- Desactivar el Aimbot
     end
-end
+end)
 
 AimbotNPCButton.MouseButton1Click:Connect(function()
     aimbotEnabled = not aimbotEnabled -- Alterna el estado del aimbot
