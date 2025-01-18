@@ -145,15 +145,82 @@ SubText.BackgroundTransparency = 1
 SubText.Size = UDim2.new(1, 0, 0, 30)
 SubText.Position = UDim2.new(0, 0, 0, 50)
 
-Instructions.Name = "Instructions"
-Instructions.Parent = WelcomeFrame
-Instructions.Text = "Press 'P' to minimize/maximize Menu"
-Instructions.Font = Enum.Font.Gotham
-Instructions.TextSize = 14
-Instructions.TextColor3 = Color3.fromRGB(200, 200, 200)
-Instructions.BackgroundTransparency = 1
-Instructions.Size = UDim2.new(1, 0, 0, 20)
-Instructions.Position = UDim2.new(0, 0, 1, -30)
+-- Tecla configurable
+local defaultKey = Enum.KeyCode.P -- Tecla predeterminada
+local userKey = defaultKey -- Tecla elegida por el usuario
+local choosingKey = false
+
+local function createKeyChooser()
+    local keyChooser = Instance.new("Frame")
+    local keyText = Instance.new("TextLabel")
+    local setKeyButton = Instance.new("TextButton")
+    local keyChooserUICorner = Instance.new("UICorner")
+    local keyChooserUIStroke = Instance.new("UIStroke")
+
+    keyChooser.Name = "KeyChooser"
+    keyChooser.Parent = WelcomeFrame
+    keyChooser.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    keyChooser.Size = UDim2.new(0, 300, 0, 100)
+    keyChooser.Position = UDim2.new(0.5, -150, 0, 200, -30) -- Ajuste de posición
+
+    keyChooserUICorner.CornerRadius = UDim.new(0, 12)
+    keyChooserUICorner.Parent = keyChooser
+
+    keyText.Name = "KeyText"
+    keyText.Parent = keyChooser
+    keyText.Text = "Minimize Key/Tecla Minimizar:"
+    keyText.Font = Enum.Font.Gotham
+    keyText.TextSize = 18
+    keyText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    keyText.BackgroundTransparency = 1
+    keyText.Size = UDim2.new(1, 0, 0.5, 0)
+
+    setKeyButton.Name = "SetKeyButton"
+    setKeyButton.Parent = keyChooser
+    setKeyButton.Text = "Set Key/Tecla"
+    setKeyButton.Font = Enum.Font.Gotham
+    setKeyButton.TextSize = 16
+    setKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    setKeyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    setKeyButton.Size = UDim2.new(1, -20, 0.3, 0)
+    setKeyButton.Position = UDim2.new(0, 10, 0.6, 0)
+
+    local setKeyButtonUICorner = Instance.new("UICorner")
+    setKeyButtonUICorner.CornerRadius = UDim.new(0, 8)
+    setKeyButtonUICorner.Parent = setKeyButton
+
+    local setKeyButtonUIStroke = Instance.new("UIStroke")
+    setKeyButtonUIStroke.Parent = setKeyButton
+    setKeyButtonUIStroke.Color = Color3.fromRGB(255, 0, 0) -- Borde rojo
+    setKeyButtonUIStroke.Thickness = 1 -- Grosor fino
+
+    setKeyButton.MouseButton1Click:Connect(function()
+        keyText.Text = "Press any key..."
+        choosingKey = true
+    end)
+
+    game:GetService("UserInputService").InputBegan:Connect(function(input)
+        if choosingKey then
+            userKey = input.KeyCode
+            keyText.Text = "Key configured/Listo: " .. tostring(userKey)
+            choosingKey = false
+        end
+    end)
+
+    return keyChooser
+end
+
+local keyChooser = createKeyChooser()
+
+-- Minimizar/Maximizar menú
+local isVisible = true
+game:GetService("UserInputService").InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == userKey then
+        isVisible = not isVisible
+        MainFrame.Visible = isVisible
+    end
+end)
 
 DiscordIcon.Name = "DiscordIcon"
 DiscordIcon.Parent = WelcomeFrame
@@ -819,16 +886,6 @@ HeadSpandButton.MouseButton1Click:Connect(function()
         if _G.disableHeadExpand then
             _G.disableHeadExpand() -- Desactiva la funcionalidad de Head Spand
         end
-    end
-end)
-
--- Funcionalidad para minimizar el menú con la tecla "P"
-local UserInputService = game:GetService("UserInputService")
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.P then
-        isMinimized = not isMinimized
-        MainFrame.Visible = not isMinimized
     end
 end)
 
