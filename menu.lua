@@ -1156,6 +1156,26 @@ end)
 
 local LightingConfigs = {
     {
+        name = "Default",
+        apply = function()
+            -- Restaurar la configuración original de iluminación
+            local Lighting = game:GetService("Lighting")
+            Lighting.Technology = Enum.Technology.Compatibility
+            Lighting.ExposureCompensation = 0
+            Lighting.Brightness = 2
+            Lighting.Ambient = Color3.fromRGB(127, 127, 127)
+            Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+            local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+            if atmosphere then
+                atmosphere:Destroy()
+            end
+            local flir = Lighting:FindFirstChild("FlirScopeOverlay")
+            if flir then
+                flir:Destroy()
+            end
+        end
+    },
+    {
         name = "Config 1",
         apply = function()
             -- Configuración 1: Más oscura, luz tenue.
@@ -1318,5 +1338,5 @@ end
 -- Abrir/cerrar el menú desplegable al hacer clic en el botón principal
 ConfigButton.MouseButton1Click:Connect(ToggleDropDown)
 
--- Aplicar la configuración inicial (opcional, si no quieres que se aplique ninguna configuración al inicio, puedes comentar esta línea)
-applyConfig(LightingConfigs[1])
+-- No aplicar ninguna configuración automáticamente al inicio
+-- applyConfig(LightingConfigs[1])
