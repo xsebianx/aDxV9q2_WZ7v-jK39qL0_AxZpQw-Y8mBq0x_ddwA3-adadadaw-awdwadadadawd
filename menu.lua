@@ -798,7 +798,7 @@ TeleportButton.MouseButton1Click:Connect(function()
     if teleportEnabled then
         TeleportButton.Text = "Teleport: On"
         if not teleportScriptLoaded then
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/New/teleport.lua"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/New/teleportMenu.lua"))()
             teleportScriptLoaded = true
         end
         if _G.showTeleportMenu then
