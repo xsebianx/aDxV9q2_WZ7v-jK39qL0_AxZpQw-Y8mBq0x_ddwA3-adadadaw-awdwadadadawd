@@ -589,8 +589,7 @@ HeadSpandButton.MouseLeave:Connect(function()
     HeadSpandButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
 end)
 
-local teleportScriptLoaded = false
-
+-- Botón Teleport
 local TeleportButton = Instance.new("TextButton")
 TeleportButton.Name = "TeleportButton"
 TeleportButton.Parent = NewFrame
