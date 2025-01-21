@@ -1,3 +1,7 @@
+-- teleportMenu.lua
+
+_G.teleportMenuActive = _G.teleportMenuActive or false
+
 local function showTeleportMenu()
     if not _G.teleportMenuActive then
         _G.teleportMenuActive = true
@@ -169,3 +173,6 @@ local function hideTeleportMenu()
         _G.teleportMenuActive = false
     end
 end
+
+_G.showTeleportMenu = showTeleportMenu
+_G.hideTeleportMenu = hideTeleportMenu
