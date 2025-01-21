@@ -66,11 +66,10 @@ local function createCategoryButton(name, text, position, color, hoverColor)
     return button
 end
 
-local HomeButton = createCategoryButton("HomeButton", "Inicio", UDim2.new(0, 10, 0, 60), Color3.fromRGB(255, 215, 0), Color3.fromRGB(255, 223, 0))
-local CombatButton = createCategoryButton("CombatButton", "Combat", UDim2.new(0, 10, 0, 110), Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 69, 0))
-local VisualButton = createCategoryButton("VisualButton", "Visual", UDim2.new(0, 10, 0, 160), Color3.fromRGB(0, 0, 255), Color3.fromRGB(30, 144, 255))
-local NewButton = createCategoryButton("NewButton", "New", UDim2.new(0, 10, 0, 210), Color3.fromRGB(0, 255, 0), Color3.fromRGB(144, 238, 144))
-local ExtraButton = createCategoryButton("ExtraButton", "Extra", UDim2.new(0, 10, 0, 260), Color3.fromRGB(255, 165, 0), Color3.fromRGB(255, 140, 0))
+local HomeButton = createCategoryButton("HomeButton", "Inicio", UDim2.new(0, 10, 0, 60), Color3.fromRGB(255, 215, 0), Color3.fromRGB(255, 215, 0))
+local CombatButton = createCategoryButton("CombatButton", "Combat", UDim2.new(0, 10, 0, 110), Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 0, 0)) -- Red
+local VisualButton = createCategoryButton("VisualButton", "Visual", UDim2.new(0, 10, 0, 160), Color3.fromRGB(100, 100, 255), Color3.fromRGB(100, 100, 255)) -- Blue
+local ExtraButton = createCategoryButton("ExtraButton", "Extra", UDim2.new(0, 10, 0, 210), Color3.fromRGB(144, 238, 144), Color3.fromRGB(144, 238, 144)) -- Green
 
 -- Function to create submenus
 local function createSubMenu(name, position, color)
@@ -91,9 +90,9 @@ local function createSubMenu(name, position, color)
 end
 
 local CombatFrame = createSubMenu("CombatFrame", UDim2.new(0, 140, 0, 60), Color3.fromRGB(70, 50, 50)) -- Light Red
-local VisualFrame = createSubMenu("VisualFrame", UDim2.new(0, 140, 0, 60), Color3.fromRGB(50, 50, 70)) -- Dark Blue
-local NewFrame = createSubMenu("NewFrame", UDim2.new(0, 140, 0, 60), Color3.fromRGB(50, 70, 50)) -- Dark Green
-local ExtraFrame = createSubMenu("ExtraFrame", UDim2.new(0, 140, 0, 60), Color3.fromRGB(70, 70, 50)) -- Dark Yellow
+local VisualFrame = createSubMenu("VisualFrame", UDim2.new(0, 140, 0, 60), Color3.fromRGB(50, 50, 70)) -- Light Blue
+local ExtraFrame = createSubMenu("ExtraFrame", UDim2.new(0, 140, 0, 60), Color3.fromRGB(50, 70, 50)) -- Light Green
+
 
 -- Welcome screen and copy message
 local WelcomeFrame = Instance.new("Frame")
@@ -296,100 +295,121 @@ AimbotButton.Parent = CombatFrame
 AimbotButton.Text = "Anarchy aimb: Off"
 AimbotButton.Font = Enum.Font.GothamBold
 AimbotButton.TextSize = 20
-AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AimbotButton.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
-AimbotButton.Size = UDim2.new(0, 240, 0, 40)
+AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
+AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color gris oscuro (igual que ESP)
+AimbotButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual al botón ESP
 AimbotButton.Position = UDim2.new(0, 10, 0, 10)
-AimbotButton.BorderSizePixel = 0
-AimbotButton.BackgroundTransparency = 0.1
+AimbotButton.BorderSizePixel = 0  -- Sin borde
+AimbotButton.BackgroundTransparency = 0.1  -- Ligera transparencia
+
+-- Redondear esquinas
 AimbotButton.AutoButtonColor = false
 AimbotButton.ClipsDescendants = true
-local cornerAimbot = Instance.new("UICorner")
-cornerAimbot.CornerRadius = UDim.new(0, 12)
+local cornerAimbot = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerAimbot.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas (igual que ESP)
 cornerAimbot.Parent = AimbotButton
+
+-- Efecto de hover (opcional)
 AimbotButton.MouseEnter:Connect(function()
-    AimbotButton.BackgroundColor3 = Color3.fromRGB(150, 75, 75)
+    AimbotButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)  -- Azul claro al pasar el mouse
 end)
+
 AimbotButton.MouseLeave:Connect(function()
-    AimbotButton.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
+    AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al gris oscuro original
 end)
 
 -- Botón Aimbot NPC
-local AimbotNPCButton = Instance.new("TextButton")
+AimbotNPCButton = Instance.new("TextButton")  -- Crea el botón
 AimbotNPCButton.Name = "AimbotNPCButton"
 AimbotNPCButton.Parent = CombatFrame
 AimbotNPCButton.Text = "Delta aim: Off"
 AimbotNPCButton.Font = Enum.Font.GothamBold
-AimbotNPCButton.TextSize = 20
+AimbotNPCButton.TextSize = 20  -- Tamaño del texto ajustado
 AimbotNPCButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
-AimbotNPCButton.Size = UDim2.new(0, 240, 0, 40)
-AimbotNPCButton.Position = UDim2.new(0, 10, 0, 60)
-AimbotNPCButton.BorderSizePixel = 0
-AimbotNPCButton.BackgroundTransparency = 0.1
+AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color inicial (igual al ESP y Aimbot)
+AimbotNPCButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual que el botón ESP
+AimbotNPCButton.Position = UDim2.new(0, 10, 0, 60)  -- Posición bajo el botón Aimbot
+AimbotNPCButton.BorderSizePixel = 0  -- Sin borde
+AimbotNPCButton.BackgroundTransparency = 0.1  -- Ligera transparencia para suavidad
+
+-- Redondear esquinas
 AimbotNPCButton.AutoButtonColor = false
 AimbotNPCButton.ClipsDescendants = true
-local cornerAimbotNPC = Instance.new("UICorner")
-cornerAimbotNPC.CornerRadius = UDim.new(0, 12)
+local cornerAimbotNPC = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerAimbotNPC.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas (igual que ESP)
 cornerAimbotNPC.Parent = AimbotNPCButton
+
+-- Efecto de hover (opcional)
 AimbotNPCButton.MouseEnter:Connect(function()
-    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(150, 75, 75)
-end)
-AimbotNPCButton.MouseLeave:Connect(function()
-    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
+    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)  -- Color al pasar el mouse (azul claro)
 end)
 
--- Botón Silent Aim
+AimbotNPCButton.MouseLeave:Connect(function()
+    AimbotNPCButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original (gris oscuro)
+end)
+
 local SilenAimButton = Instance.new("TextButton")
 SilenAimButton.Name = "SilenAimButton"
 SilenAimButton.Parent = CombatFrame
 SilenAimButton.Text = "Silent Aim: Off"
 SilenAimButton.Font = Enum.Font.GothamBold
 SilenAimButton.TextSize = 20
-SilenAimButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-SilenAimButton.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
-SilenAimButton.Size = UDim2.new(0, 240, 0, 40)
+SilenAimButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
+SilenAimButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color gris oscuro (igual que ESP)
+SilenAimButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual al botón ESP
 SilenAimButton.Position = UDim2.new(0, 10, 0, 110)
-SilenAimButton.BorderSizePixel = 0
-SilenAimButton.BackgroundTransparency = 0.1
+SilenAimButton.BorderSizePixel = 0  -- Sin borde
+SilenAimButton.BackgroundTransparency = 0.1  -- Ligera transparencia
+
+-- Redondear esquinas
 SilenAimButton.AutoButtonColor = false
 SilenAimButton.ClipsDescendants = true
-local cornerSilenAim = Instance.new("UICorner")
-cornerSilenAim.CornerRadius = UDim.new(0, 12)
-cornerSilenAim.Parent = SilenAimButton
+local cornerAimbot = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerAimbot.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas (igual que ESP)
+cornerAimbot.Parent = SilenAimButton
+
+-- Efecto de hover (opcional)
 SilenAimButton.MouseEnter:Connect(function()
-    SilenAimButton.BackgroundColor3 = Color3.fromRGB(150, 75, 75)
-end)
-SilenAimButton.MouseLeave:Connect(function()
-    SilenAimButton.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
+    SilenAimButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)  -- Azul claro al pasar el mouse
 end)
 
--- Botón Mega Aim
+SilenAimButton.MouseLeave:Connect(function()
+    SilenAimButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al gris oscuro original
+end)
+
+-- Crear el botón MegaAim
 local MegaAimButton = Instance.new("TextButton")
 MegaAimButton.Name = "MegaAimButton"
-MegaAimButton.Parent = CombatFrame
+MegaAimButton.Parent = CombatFrame -- Asegúrate de que CombatFrame esté definido previamente
 MegaAimButton.Text = "Mega Aim: Off"
 MegaAimButton.Font = Enum.Font.GothamBold
 MegaAimButton.TextSize = 20
-MegaAimButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MegaAimButton.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
-MegaAimButton.Size = UDim2.new(0, 240, 0, 40)
+MegaAimButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Color blanco para el texto
+MegaAimButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Color gris oscuro
+MegaAimButton.Size = UDim2.new(0, 240, 0, 40)  -- Tamaño igual al botón ESP
 MegaAimButton.Position = UDim2.new(0, 10, 0, 160)
-MegaAimButton.BorderSizePixel = 0
-MegaAimButton.BackgroundTransparency = 0.1
+MegaAimButton.BorderSizePixel = 0  -- Sin borde
+MegaAimButton.BackgroundTransparency = 0.1  -- Ligera transparencia
+
+-- Redondear esquinas
 MegaAimButton.AutoButtonColor = false
 MegaAimButton.ClipsDescendants = true
-local cornerMegaAim = Instance.new("UICorner")
-cornerMegaAim.CornerRadius = UDim.new(0, 12)
-cornerMegaAim.Parent = MegaAimButton
+local cornerAimbot = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerAimbot.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
+cornerAimbot.Parent = MegaAimButton
+
+-- Efecto de hover
 MegaAimButton.MouseEnter:Connect(function()
-    MegaAimButton.BackgroundColor3 = Color3.fromRGB(150, 75, 75)
-end)
-MegaAimButton.MouseLeave:Connect(function()
-    MegaAimButton.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
+    MegaAimButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)  -- Cambia a azul claro al pasar el mouse
 end)
 
--- Botón Visor
+MegaAimButton.MouseLeave:Connect(function()
+    MegaAimButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al gris oscuro original
+end)
+
+
+
+-- Funcionalidades de Visual
 local VisorButton = Instance.new("TextButton")
 VisorButton.Name = "VisorButton"
 VisorButton.Parent = VisualFrame
@@ -397,24 +417,29 @@ VisorButton.Text = "Visor: Off"
 VisorButton.Font = Enum.Font.GothamBold
 VisorButton.TextSize = 18
 VisorButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-VisorButton.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
+VisorButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 VisorButton.Size = UDim2.new(0, 240, 0, 40)
 VisorButton.Position = UDim2.new(0, 10, 0, 60)
 VisorButton.BorderSizePixel = 0
 VisorButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
 VisorButton.AutoButtonColor = false
 VisorButton.ClipsDescendants = true
-local cornerVisor = Instance.new("UICorner")
-cornerVisor.CornerRadius = UDim.new(0, 12)
+local cornerVisor = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerVisor.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
 cornerVisor.Parent = VisorButton
+
+-- Efecto de hover (opcional)
 VisorButton.MouseEnter:Connect(function()
-    VisorButton.BackgroundColor3 = Color3.fromRGB(75, 75, 150)
-end)
-VisorButton.MouseLeave:Connect(function()
-    VisorButton.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
+    VisorButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Color verde clarito al pasar el mouse
 end)
 
--- Botón Crosshair
+VisorButton.MouseLeave:Connect(function()
+    VisorButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+-- Funcionalidades de Crosshair
 local CrosshairButton = Instance.new("TextButton")
 CrosshairButton.Name = "CrosshairButton"
 CrosshairButton.Parent = VisualFrame
@@ -422,203 +447,222 @@ CrosshairButton.Text = "Crosshair: Off"
 CrosshairButton.Font = Enum.Font.GothamBold
 CrosshairButton.TextSize = 18
 CrosshairButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
+CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 CrosshairButton.Size = UDim2.new(0, 240, 0, 40)
-CrosshairButton.Position = UDim2.new(0, 10, 0, 110)
+CrosshairButton.Position = UDim2.new(0, 10, 0, 110) -- Ajustar posición para que esté más abajo
 CrosshairButton.BorderSizePixel = 0
 CrosshairButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
 CrosshairButton.AutoButtonColor = false
 CrosshairButton.ClipsDescendants = true
-local cornerCrosshair = Instance.new("UICorner")
-cornerCrosshair.CornerRadius = UDim.new(0, 12)
+local cornerCrosshair = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerCrosshair.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
 cornerCrosshair.Parent = CrosshairButton
+
+-- Efecto de hover (opcional)
 CrosshairButton.MouseEnter:Connect(function()
-    CrosshairButton.BackgroundColor3 = Color3.fromRGB(75, 75, 150)
-end)
-CrosshairButton.MouseLeave:Connect(function()
-    CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
+    CrosshairButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Color verde clarito al pasar el mouse
 end)
 
--- Botón Detect
+CrosshairButton.MouseLeave:Connect(function()
+    CrosshairButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+-- Funcionalidades de DetectButton
 local DetectButton = Instance.new("TextButton")
 DetectButton.Name = "DetectButton"
 DetectButton.Parent = VisualFrame
-DetectButton.Text = "Detect: Off"
+DetectButton.Text = "Detect: Off"  -- Cambiado el texto inicial
 DetectButton.Font = Enum.Font.GothamBold
 DetectButton.TextSize = 18
 DetectButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-DetectButton.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
+DetectButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 DetectButton.Size = UDim2.new(0, 240, 0, 40)
-DetectButton.Position = UDim2.new(0, 10, 0, 160)
+DetectButton.Position = UDim2.new(0, 10, 0, 160) -- Ajustar posición para que esté más abajo
 DetectButton.BorderSizePixel = 0
 DetectButton.BackgroundTransparency = 0.1
+
+-- Funcionalidades de DetectButton (continuación)
+DetectButton.Position = UDim2.new(0, 10, 0, 160) -- Ajustar posición para que esté más abajo
+DetectButton.BorderSizePixel = 0
+DetectButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
 DetectButton.AutoButtonColor = false
 DetectButton.ClipsDescendants = true
-local cornerDetect = Instance.new("UICorner")
-cornerDetect.CornerRadius = UDim.new(0, 12)
+local cornerDetect = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerDetect.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
 cornerDetect.Parent = DetectButton
+
+-- Efecto de hover (opcional)
 DetectButton.MouseEnter:Connect(function()
-    DetectButton.BackgroundColor3 = Color3.fromRGB(75, 75, 150)
-end)
-DetectButton.MouseLeave:Connect(function()
-    DetectButton.BackgroundColor3 = Color3.fromRGB(50, 50, 100)
+    DetectButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)  -- Color verde clarito al pasar el mouse
 end)
 
--- Botón Fly
+DetectButton.MouseLeave:Connect(function()
+    DetectButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+
+-- Crear el botón de vuelo
 local FlyButton = Instance.new("TextButton")
 FlyButton.Name = "FlyButton"
 FlyButton.Parent = ExtraFrame
-FlyButton.Text = "Fly: Off"
+FlyButton.Text = "Fly: Off"  -- Estado inicial
 FlyButton.Font = Enum.Font.GothamBold
 FlyButton.TextSize = 18
 FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-FlyButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
+FlyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 FlyButton.Size = UDim2.new(0, 240, 0, 40)
-FlyButton.Position = UDim2.new(0, 10, 0, 10)
+FlyButton.Position = UDim2.new(0, 10, 0, 10) -- Ajustar posición
 FlyButton.BorderSizePixel = 0
 FlyButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
 FlyButton.AutoButtonColor = false
 FlyButton.ClipsDescendants = true
-local cornerFly = Instance.new("UICorner")
-cornerFly.CornerRadius = UDim.new(0, 12)
+local cornerFly = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerFly.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
 cornerFly.Parent = FlyButton
+
+-- Efecto de hover (opcional)
 FlyButton.MouseEnter:Connect(function()
-    FlyButton.BackgroundColor3 = Color3.fromRGB(150, 150, 75)
-end)
-FlyButton.MouseLeave:Connect(function()
-    FlyButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
+    FlyButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color verde clarito al pasar el mouse
 end)
 
--- Botón Jesus
+FlyButton.MouseLeave:Connect(function()
+    FlyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+-- Crear el botón de caminar sobre agua
 local JesusButton = Instance.new("TextButton")
 JesusButton.Name = "JesusButton"
 JesusButton.Parent = ExtraFrame
-JesusButton.Text = "Jesus: Off"
+JesusButton.Text = "Jesus: Off"  -- Estado inicial
 JesusButton.Font = Enum.Font.GothamBold
 JesusButton.TextSize = 18
 JesusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-JesusButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
+JesusButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 JesusButton.Size = UDim2.new(0, 240, 0, 40)
-JesusButton.Position = UDim2.new(0, 10, 0, 60)
+JesusButton.Position = UDim2.new(0, 10, 0, 60) -- Ajustar posición
 JesusButton.BorderSizePixel = 0
 JesusButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas
 JesusButton.AutoButtonColor = false
 JesusButton.ClipsDescendants = true
-local cornerJesus = Instance.new("UICorner")
-cornerJesus.CornerRadius = UDim.new(0, 12)
+local cornerJesus = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerJesus.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
 cornerJesus.Parent = JesusButton
+
+-- Efecto de hover (opcional)
 JesusButton.MouseEnter:Connect(function()
-    JesusButton.BackgroundColor3 = Color3.fromRGB(150, 150, 75)
-end)
-JesusButton.MouseLeave:Connect(function()
-    JesusButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
+    JesusButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color naranja al pasar el mouse
 end)
 
--- Botón Instant Hit
+JesusButton.MouseLeave:Connect(function()
+    JesusButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
 local InstantHitButton = Instance.new("TextButton")
 InstantHitButton.Name = "InstantHitButton"
 InstantHitButton.Parent = ExtraFrame
-InstantHitButton.Text = "Instant Hit: Off"
+InstantHitButton.Text = "Instant Hit: Off"  -- Estado inicial
 InstantHitButton.Font = Enum.Font.GothamBold
 InstantHitButton.TextSize = 18
 InstantHitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-InstantHitButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
+InstantHitButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 InstantHitButton.Size = UDim2.new(0, 240, 0, 40)
-InstantHitButton.Position = UDim2.new(0, 10, 0, 110)
+InstantHitButton.Position = UDim2.new(0, 10, 0, 110) -- Ajustar posición debajo del botón Jesus
 InstantHitButton.BorderSizePixel = 0
 InstantHitButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas para el botón de "Instant Hit"
 InstantHitButton.AutoButtonColor = false
 InstantHitButton.ClipsDescendants = true
-local cornerInstantHit = Instance.new("UICorner")
-cornerInstantHit.CornerRadius = UDim.new(0, 12)
+local cornerInstantHit = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerInstantHit.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
 cornerInstantHit.Parent = InstantHitButton
+
+-- Efecto de hover (opcional) para "Instant Hit"
 InstantHitButton.MouseEnter:Connect(function()
-    InstantHitButton.BackgroundColor3 = Color3.fromRGB(150, 150, 75)
-end)
-InstantHitButton.MouseLeave:Connect(function()
-    InstantHitButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
+    InstantHitButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color naranja al pasar el mouse
 end)
 
--- Botón No Recoil
+InstantHitButton.MouseLeave:Connect(function()
+    InstantHitButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+-- Crear el botón de "No Recoil"
 local NoRecoilButton = Instance.new("TextButton")
 NoRecoilButton.Name = "NoRecoilButton"
 NoRecoilButton.Parent = ExtraFrame
-NoRecoilButton.Text = "No Recoil: Off"
+NoRecoilButton.Text = "No Recoil: Off"  -- Estado inicial
 NoRecoilButton.Font = Enum.Font.GothamBold
 NoRecoilButton.TextSize = 18
 NoRecoilButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-NoRecoilButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
+NoRecoilButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 NoRecoilButton.Size = UDim2.new(0, 240, 0, 40)
 NoRecoilButton.Position = UDim2.new(0, 10, 0, 160)
 NoRecoilButton.BorderSizePixel = 0
 NoRecoilButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas para el botón de "No Recoil"
 NoRecoilButton.AutoButtonColor = false
 NoRecoilButton.ClipsDescendants = true
-local cornerNoRecoil = Instance.new("UICorner")
-cornerNoRecoil.CornerRadius = UDim.new(0, 12)
+local cornerNoRecoil = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerNoRecoil.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
 cornerNoRecoil.Parent = NoRecoilButton
+
+-- Efecto de hover (opcional) para "No Recoil"
 NoRecoilButton.MouseEnter:Connect(function()
-    NoRecoilButton.BackgroundColor3 = Color3.fromRGB(150, 150, 75)
-end)
-NoRecoilButton.MouseLeave:Connect(function()
-    NoRecoilButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
+    NoRecoilButton.BackgroundColor3 = Color3.fromRGB(144, 238, 144)  -- Color naranja al pasar el mouse
 end)
 
--- Botón Head Spand
+NoRecoilButton.MouseLeave:Connect(function()
+    NoRecoilButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  -- Volver al color original
+end)
+
+-- Crear el botón de "Head Spand"
 local HeadSpandButton = Instance.new("TextButton")
 HeadSpandButton.Name = "HeadSpandButton"
 HeadSpandButton.Parent = ExtraFrame
-HeadSpandButton.Text = "Head: Off"
+HeadSpandButton.Text = "Head: Off"  -- Estado inicial
 HeadSpandButton.Font = Enum.Font.GothamBold
 HeadSpandButton.TextSize = 18
 HeadSpandButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-HeadSpandButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
+HeadSpandButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 HeadSpandButton.Size = UDim2.new(0, 240, 0, 40)
 HeadSpandButton.Position = UDim2.new(0, 10, 0, 210)
 HeadSpandButton.BorderSizePixel = 0
 HeadSpandButton.BackgroundTransparency = 0.1
+
+-- Redondear esquinas para el botón de "Head Spand"
 HeadSpandButton.AutoButtonColor = false
 HeadSpandButton.ClipsDescendants = true
-local cornerHeadSpand = Instance.new("UICorner")
-cornerHeadSpand.CornerRadius = UDim.new(0, 12)
+local cornerHeadSpand = Instance.new("UICorner")  -- Añadir esquinas redondeadas
+cornerHeadSpand.CornerRadius = UDim.new(0, 12)  -- Radio de las esquinas
 cornerHeadSpand.Parent = HeadSpandButton
-HeadSpandButton.MouseEnter:Connect(function()
-    HeadSpandButton.BackgroundColor3 = Color3.fromRGB(150, 150, 75)
-end)
-HeadSpandButton.MouseLeave:Connect(function()
-    HeadSpandButton.BackgroundColor3 = Color3.fromRGB(100, 100, 50)
-end)
 
--- Botón Teleport
-local TeleportButton = Instance.new("TextButton")
-TeleportButton.Name = "TeleportButton"
-TeleportButton.Parent = NewFrame
-TeleportButton.Text = "Teleport: Off"
-TeleportButton.Font = Enum.Font.GothamBold
-TeleportButton.TextSize = 18
-TeleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-TeleportButton.BackgroundColor3 = Color3.fromRGB(50, 100, 50)
-TeleportButton.Size = UDim2.new(0, 240, 0, 40)
-TeleportButton.Position = UDim2.new(0, 10, 0, 10)
-TeleportButton.BorderSizePixel = 0
-TeleportButton.BackgroundTransparency = 0.1
-TeleportButton.AutoButtonColor = false
-TeleportButton.ClipsDescendants = true
-local cornerTeleport = Instance.new("UICorner")
-cornerTeleport.CornerRadius = UDim.new(0, 12)
-cornerTeleport.Parent = TeleportButton
-TeleportButton.MouseEnter:Connect(function()
-    TeleportButton.BackgroundColor3 = Color3.fromRGB(75, 150, 75)
-end)
-TeleportButton.MouseLeave:Connect(function()
-    TeleportButton.BackgroundColor3 = Color3.fromRGB(50, 100, 50)
-end)
+-- Estado inicial para Head Spand
+local headSpandEnabled = false
 
+-- Funciones para activar y desactivar Head Spand
+local function activateHeadSpand()
+    headSpandEnabled = true
+    -- Aquí deberías añadir la lógica específica para activar Head Spand
+end
 
+local function disableHeadSpand()
+    headSpandEnabled = false
+    -- Aquí deberías añadir la lógica específica para desactivar Head Spand
+end
+
+-- Button functionalities
 HomeButton.MouseButton1Click:Connect(function()
     CombatFrame.Visible = false
     VisualFrame.Visible = false
-    NewFrame.Visible = false
     ExtraFrame.Visible = false
     WelcomeFrame.Visible = true
 end)
@@ -626,7 +670,6 @@ end)
 CombatButton.MouseButton1Click:Connect(function()
     CombatFrame.Visible = true
     VisualFrame.Visible = false
-    NewFrame.Visible = false
     ExtraFrame.Visible = false
     WelcomeFrame.Visible = false
 end)
@@ -634,15 +677,6 @@ end)
 VisualButton.MouseButton1Click:Connect(function()
     CombatFrame.Visible = false
     VisualFrame.Visible = true
-    NewFrame.Visible = false
-    ExtraFrame.Visible = false
-    WelcomeFrame.Visible = false
-end)
-
-NewButton.MouseButton1Click:Connect(function()
-    CombatFrame.Visible = false
-    VisualFrame.Visible = false
-    NewFrame.Visible = true
     ExtraFrame.Visible = false
     WelcomeFrame.Visible = false
 end)
@@ -650,7 +684,6 @@ end)
 ExtraButton.MouseButton1Click:Connect(function()
     CombatFrame.Visible = false
     VisualFrame.Visible = false
-    NewFrame.Visible = false
     ExtraFrame.Visible = true
     WelcomeFrame.Visible = false
 end)
@@ -787,30 +820,6 @@ DetectButton.MouseButton1Click:Connect(function()
         DetectButton.Text = "Detect: Off"
         if _G.disableDetect then
             _G.disableDetect() -- Desactiva la detección
-        end
-    end
-end)
-
-local teleportEnabled = false
-TeleportButton.MouseButton1Click:Connect(function()
-    teleportEnabled = not teleportEnabled
-    if teleportEnabled then
-        TeleportButton.Text = "Teleport: On"
-        if not teleportScriptLoaded then
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/New/teleportMenu.lua"))()
-            teleportScriptLoaded = true
-        end
-        if _G.showTeleportMenu then
-            _G.showTeleportMenu()
-        else
-            print("Función showTeleportMenu no está disponible.")
-        end
-    else
-        TeleportButton.Text = "Teleport: Off"
-        if _G.hideTeleportMenu then
-            _G.hideTeleportMenu()
-        else
-            print("Función hideTeleportMenu no está disponible.")
         end
     end
 end)
