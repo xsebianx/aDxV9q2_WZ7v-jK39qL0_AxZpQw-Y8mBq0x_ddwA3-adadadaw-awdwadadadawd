@@ -19,6 +19,7 @@ local function expandHead(player)
         head.Size = Vector3.new(10, 10, 10) -- Ajusta el tamaño a un valor más grande
         head.Transparency = 0.5 -- 0 es opaco, 1 es completamente transparente
         head.Massless = true -- Hacer la cabeza sin masa para no afectar la física del personaje
+        head.CanCollide = true -- Asegurarse de que la cabeza pueda colisionar
 
         -- Ajustar el Mesh si existe
         local mesh = head:FindFirstChildOfClass("SpecialMesh")
@@ -55,6 +56,7 @@ function disableHeadExpand()
                 head.Size = originalSize.Value -- Restablecer tamaño a los valores originales
                 head.Transparency = 0 -- Hacerla opaca
                 head.Massless = false -- Restaurar la masa de la cabeza
+                head.CanCollide = true -- Restaurar la colisión
 
                 -- Ajustar el Mesh si existe
                 local mesh = head:FindFirstChildOfClass("SpecialMesh")
