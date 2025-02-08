@@ -201,19 +201,3 @@ if localPlayer.Character then
 end
 
 localPlayer.CharacterAdded:Connect(onCharacterAdded)
-
--- Funciones globales para activar y desactivar el aimbot
-_G.enableAimbot = function()
-    aimEnabled = true
-    fovCircle.Visible = true
-    showNotification("Aimbot Activado")
-end
-
-_G.disableAimbot = function()
-    aimEnabled = false
-    closestTarget = nil
-    fovCircle.Visible = false
-    visibleLabel.Visible = false
-    targetIndicator.Visible = false
-    showNotification("Aimbot Desactivado")
-end
