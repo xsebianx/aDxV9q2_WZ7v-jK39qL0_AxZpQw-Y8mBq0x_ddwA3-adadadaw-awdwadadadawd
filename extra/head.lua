@@ -18,13 +18,22 @@ local function expandHead(player)
         -- Cambiar el tamaño de la cabeza
         head.Size = Vector3.new(10, 10, 10) -- Ajusta el tamaño a un valor más grande
         head.Transparency = 0.5 -- 0 es opaco, 1 es completamente transparente
-        head.Massless = true -- Hacer la cabeza sin masa para no afectar la física del personaje
         head.CanCollide = true -- Asegurarse de que la cabeza pueda colisionar
 
         -- Ajustar el Mesh si existe
         local mesh = head:FindFirstChildOfClass("SpecialMesh")
         if mesh then
             mesh.Scale = Vector3.new(10, 10, 10)
+        end
+
+        -- Asegurarse de que la cabeza esté correctamente unida al cuerpo
+        local weld = head:FindFirstChildOfClass("Weld")
+        if not weld then
+            weld = Instance.new("Weld")
+            weld.Part0 = head
+            weld.Part1 = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+            weld.C0 = CFrame.new(0, 1.5, 0)
+            weld.Parent = head
         end
     end
 
@@ -55,7 +64,6 @@ function disableHeadExpand()
             if originalSize then
                 head.Size = originalSize.Value -- Restablecer tamaño a los valores originales
                 head.Transparency = 0 -- Hacerla opaca
-                head.Massless = false -- Restaurar la masa de la cabeza
                 head.CanCollide = true -- Restaurar la colisión
 
                 -- Ajustar el Mesh si existe
