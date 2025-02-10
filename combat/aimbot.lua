@@ -3,11 +3,8 @@ local fieldOfView = 30 -- Campo de visión ajustado a 30 grados para un equilibr
 local detectionRadius = 75 -- Radio de detección ampliado para mayor facilidad de uso
 local closestTarget = nil
 local fovCircle
-local visibleLabel
 local targetIndicator
-local notificationLabel
-local sound
-local predictionFactor = 0.1 -- Factor de predicción para el movimiento del objetivo
+local predictionFactor = 0.165 -- Factor de predicción ajustado para mayor precisión
 
 -- Crear un círculo visual para mostrar el FOV del aimbot
 local function createFOVCircle()
@@ -20,20 +17,6 @@ local function createFOVCircle()
     fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
 end
 
--- Crear un TextLabel para mostrar "Jugador visible"
-local function createVisibleLabel()
-    if visibleLabel then visibleLabel:Remove() end
-    local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-    visibleLabel = Instance.new("TextLabel", screenGui)
-    visibleLabel.Size = UDim2.new(0, 200, 0, 50)
-    visibleLabel.Position = UDim2.new(0.5, -100, 0, 10)
-    visibleLabel.Text = "Jugador visible"
-    visibleLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-    visibleLabel.TextScaled = true
-    visibleLabel.BackgroundTransparency = 1
-    visibleLabel.Visible = false
-end
-
 -- Crear un indicador visual para el objetivo
 local function createTargetIndicator()
     if targetIndicator then targetIndicator:Remove() end
@@ -42,36 +25,6 @@ local function createTargetIndicator()
     targetIndicator.Thickness = 2
     targetIndicator.Radius = 5
     targetIndicator.Color = Color3.fromRGB(0, 255, 0)
-end
-
--- Crear un TextLabel para notificaciones
-local function createNotificationLabel()
-    if notificationLabel then notificationLabel:Remove() end
-    local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-    notificationLabel = Instance.new("TextLabel", screenGui)
-    notificationLabel.Size = UDim2.new(0, 300, 0, 50)
-    notificationLabel.Position = UDim2.new(0.5, -150, 0, 60)
-    notificationLabel.Text = ""
-    notificationLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-    notificationLabel.TextScaled = true
-    notificationLabel.BackgroundTransparency = 1
-    notificationLabel.Visible = false
-end
-
--- Crear un sonido para alertas
-local function createAlertSound()
-    if sound then sound:Destroy() end
-    sound = Instance.new("Sound", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-    sound.SoundId = "rbxassetid://12222242" -- ID del sonido de alerta
-    sound.Volume = 1
-end
-
--- Mostrar una notificación
-local function showNotification(message)
-    notificationLabel.Text = message
-    notificationLabel.Visible = true
-    wait(2)
-    notificationLabel.Visible = false
 end
 
 -- Verificar si el objetivo es visible, sin obstáculos en el camino
@@ -136,21 +89,16 @@ game:GetService("RunService").RenderStepped:Connect(function()
         local newTarget = getClosestPlayerInFOV() -- Encontrar el jugador más cercano dentro del FOV y radio de detección
         if newTarget and newTarget ~= closestTarget then
             closestTarget = newTarget
-            showNotification("Objetivo detectado: " .. closestTarget.Name)
-            sound:Play()
         end
         if closestTarget then
             aimbot(closestTarget) -- Usar Aimbot para asegurar el impacto
-            visibleLabel.Visible = true -- Mostrar el mensaje "Jugador visible"
             targetIndicator.Visible = true
             local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(closestTarget.Character.Head.Position)
             targetIndicator.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
         else
-            visibleLabel.Visible = false -- Ocultar el mensaje si no hay objetivo visible
             targetIndicator.Visible = false
         end
     else
-        visibleLabel.Visible = false -- Ocultar el mensaje si el aimbot no está habilitado
         targetIndicator.Visible = false
     end
     -- Actualizar la posición del círculo FOV
@@ -172,27 +120,20 @@ game:GetService("UserInputService").InputEnded:Connect(function(input)
         aimEnabled = false
         closestTarget = nil
         fovCircle.Visible = false
-        visibleLabel.Visible = false -- Ocultar el mensaje cuando se desactiva el aimbot
         targetIndicator.Visible = false
     end
 end)
 
--- Iniciar el círculo de FOV, el mensaje de visibilidad, el indicador de objetivo, el sistema de notificación y el sistema de estadísticas
+-- Iniciar el círculo de FOV y el indicador de objetivo
 createFOVCircle()
-createVisibleLabel()
 createTargetIndicator()
-createNotificationLabel()
-createAlertSound()
 
 -- Manejar la reconexión del jugador y la muerte
 local localPlayer = game.Players.LocalPlayer
 local function onCharacterAdded(character)
     character:WaitForChild("Humanoid").Died:Connect(function()
         createFOVCircle()
-        createVisibleLabel()
         createTargetIndicator()
-        createNotificationLabel()
-        createAlertSound()
     end)
 end
 
