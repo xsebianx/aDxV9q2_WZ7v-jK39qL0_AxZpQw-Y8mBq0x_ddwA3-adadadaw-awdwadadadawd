@@ -124,16 +124,24 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Cambiar nombres de funciones para que coincidan
+-- Al final de megaaimb.lua, añade:
 function enableMegaaimb()
     megAimbEnabled = true
+    print("MegaAim activado")
 end
 
 function disableMegaaimb()
     megAimbEnabled = false
     aimbotEnabled = false
+    
     -- Limpiar highlights
+    for enemy, highlight in pairs(highlightedEnemies) do
+        highlight:Destroy()
+    end
+    highlightedEnemies = {}
+    
+    print("MegaAim desactivado")
 end
 
-_G.enableMegaaimb = enableMegaaimb  -- Usar "enable" en lugar de "activate"
+_G.enableMegaaimb = enableMegaaimb
 _G.disableMegaaimb = disableMegaaimb

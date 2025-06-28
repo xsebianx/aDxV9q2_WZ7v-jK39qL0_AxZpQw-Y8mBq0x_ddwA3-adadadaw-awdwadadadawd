@@ -223,11 +223,12 @@ end
 LocalPlayer.CharacterRemoving:Connect(cleanUp)
 game:BindToClose(cleanUp)
 
--- Al final de aimbot.lua
+-- Al final de aimbot.lua, añade:
 function enableAimbot()
     if not renderStepped then
         createVisuals()
         renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
+        print("Aimbot activado")
     end
 end
 
@@ -236,6 +237,7 @@ function disableAimbot()
         renderStepped:Disconnect()
         renderStepped = nil
         cleanUp()
+        print("Aimbot desactivado")
     end
 end
 
