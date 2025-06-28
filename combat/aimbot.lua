@@ -1,27 +1,23 @@
+-- Versión final del aimbot para integrar con tu menú principal
 local aimEnabled = false
 local fieldOfView = 30
 local closestTarget = nil
 local fovCircle, targetIndicator
 local predictionFactor = 0.165
-local lastTargetPosition = nil
-local lastUpdateTime = tick()
+local targetLockDuration = 0.5
+local lockStartTime = 0
+local smoothingFactor = 0.3
+local positionHistory = {}
 
--- Servicios esenciales SI
+-- Servicios esenciales
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local renderStepped
 
--- Verificar si una función existe antes de llamarla
-local function safeCall(func, ...)
-    if func and type(func) == "function" then
-        return func(...)
-    end
-    return nil
-end
-
--- Crear elementos visuales básicos
+-- Función para crear elementos visuales
 local function createVisuals()
     if fovCircle then pcall(function() fovCircle:Remove() end) end
     if targetIndicator then pcall(function() targetIndicator:Remove() end) end
@@ -36,16 +32,16 @@ local function createVisuals()
     fovCircle.Filled = false
     fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     
-    -- Indicador de objetivo simple
+    -- Indicador de objetivo
     targetIndicator = Drawing.new("Circle")
     targetIndicator.Visible = false
     targetIndicator.Thickness = 2
-    targetIndicator.Radius = 6
+    targetIndicator.Radius = 8
     targetIndicator.Color = Color3.fromRGB(50, 255, 50)
-    targetIndicator.Filled = true
+    targetIndicator.Filled = false
 end
 
--- Verificación de visibilidad MEJORADA
+-- Verificación de visibilidad
 local function isVisible(targetPart)
     if not targetPart then return false end
     
@@ -55,18 +51,15 @@ local function isVisible(targetPart)
     raycastParams.IgnoreWater = true
     
     local origin = Camera.CFrame.Position
-    local direction = (targetPart.Position - origin)
-    local distance = direction.Magnitude
-    direction = direction.Unit * distance
+    local direction = (targetPart.Position - origin).Unit
     
-    local raycastResult = workspace:Raycast(origin, direction, raycastParams)
-    
-    return raycastResult == nil or (raycastResult.Instance and raycastResult.Instance:IsDescendantOf(targetPart.Parent))
+    local raycastResult = workspace:Raycast(origin, direction * 1000, raycastParams)
+    return raycastResult and raycastResult.Instance:IsDescendantOf(targetPart.Parent)
 end
 
--- Encontrar objetivo más cercano con seguimiento continuo
+-- Encontrar objetivo más cercano
 local function findClosestTarget()
-    local closestPlayer = nil
+    local bestTarget = nil
     local minAngle = math.rad(fieldOfView)
     local shortestDistance = math.huge
     local cameraDir = Camera.CFrame.LookVector
@@ -83,175 +76,161 @@ local function findClosestTarget()
                 
                 if angle < minAngle and distance < shortestDistance and isVisible(head) then
                     shortestDistance = distance
-                    closestPlayer = player
+                    bestTarget = player
                 end
             end
         end
     end
     
-    return closestPlayer
+    return bestTarget
 end
 
--- Predicción mejorada con seguridad
+-- Predicción de movimiento
 local function predictPosition(target)
     if not target or not target.Character then return nil end
-    
     local head = target.Character:FindFirstChild("Head")
     if not head then return nil end
     
-    -- Calcular velocidad REAL con verificación de tiempo
-    local currentPosition = head.Position
-    local velocity = head.Velocity
+    if not positionHistory[target] then positionHistory[target] = {} end
     
-    if lastTargetPosition and lastUpdateTime then
-        local deltaTime = tick() - lastUpdateTime
-        if deltaTime > 0 then
-            -- Combinar velocidad actual con desplazamiento reciente
-            local actualMovement = (currentPosition - lastTargetPosition)
-            velocity = (velocity + actualMovement/deltaTime) * 0.5
-        end
+    table.insert(positionHistory[target], {
+        position = head.Position,
+        time = tick()
+    })
+    
+    while #positionHistory[target] > 5 do
+        table.remove(positionHistory[target], 1)
     end
     
-    lastTargetPosition = currentPosition
-    lastUpdateTime = tick()
+    if #positionHistory[target] < 2 then
+        return head.Position
+    end
     
-    -- Aumentar predicción en movimiento lateral
-    local rightVector = Camera.CFrame.RightVector
-    local lateralMovement = velocity:Dot(rightVector) * rightVector
-    local lateralPrediction = lateralMovement * (predictionFactor + 0.05)
+    local velocity = (positionHistory[target][#positionHistory[target]].position - 
+                    positionHistory[target][1].position) / 
+                    (positionHistory[target][#positionHistory[target]].time - 
+                    positionHistory[target][1].time)
     
-    return head.Position + velocity * predictionFactor + lateralPrediction
+    return head.Position + velocity * predictionFactor
 end
 
--- Seguimiento con protección contra nil
+-- Seguimiento suavizado
 local function preciseAim(target)
     if not target then return end
-    
     local predictedPosition = predictPosition(target)
     if not predictedPosition then return end
     
     local targetScreenPos, onScreen = Camera:WorldToViewportPoint(predictedPosition)
     if not onScreen then return end
     
-    local mousePos = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+    local mousePos = UserInputService:GetMouseLocation()
     local targetPos = Vector2.new(targetScreenPos.X, targetScreenPos.Y)
-    
-    -- Corrección adicional para movimiento rápido
     local delta = targetPos - mousePos
-    local distance = delta.Magnitude
     
-    -- Factor dinámico basado en velocidad
-    local dynamicFactor = math.clamp(0.15 + (distance/500), 0.1, 0.3)
-    
-    -- Llamada segura a mousemoverel (Solución para error de línea 667)
-    safeCall(mousemoverel, delta.X * (dynamicFactor + 0.05), delta.Y * dynamicFactor)
+    mousemoverel(delta.X * smoothingFactor, delta.Y * smoothingFactor)
 end
 
--- Verificación de seguridad MEJORADA
+-- Verificación de seguridad
 local function safetyCheck()
-    if not LocalPlayer then return false end
-    if not LocalPlayer.Character then return false end
-    
+    if not LocalPlayer or not LocalPlayer.Character then return false end
     local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+    return humanoid and humanoid.Health > 0 and not UserInputService:GetFocusedTextBox()
+end
+
+-- Mantener objetivo
+local function shouldKeepTarget(target)
+    if not target then return false end
+    if tick() - lockStartTime < targetLockDuration then return true end
+    
+    if not target.Character then return false end
+    local head = target.Character:FindFirstChild("Head")
+    if not head then return false end
+    
+    local humanoid = target.Character:FindFirstChild("Humanoid")
     if not humanoid or humanoid.Health <= 0 then return false end
     
-    -- No activar durante interacciones de UI
-    if UserInputService:GetFocusedTextBox() then return false end
+    local cameraDir = Camera.CFrame.LookVector
+    local directionToTarget = (head.Position - Camera.CFrame.Position).Unit
+    local angle = math.acos(cameraDir:Dot(directionToTarget))
     
-    return true
+    return angle < math.rad(fieldOfView) and isVisible(head)
 end
 
--- Conexión principal con manejo de errores
-local renderStepped
-renderStepped = RunService.RenderStepped:Connect(function()
-    pcall(function()
-        if not safetyCheck() then
-            if fovCircle then fovCircle.Visible = false end
-            if targetIndicator then targetIndicator.Visible = false end
-            lastTargetPosition = nil
-            return
+-- Función principal del aimbot
+local function aimbotLoop()
+    if not safetyCheck() then
+        if fovCircle then fovCircle.Visible = false end
+        if targetIndicator then targetIndicator.Visible = false end
+        closestTarget = nil
+        return
+    end
+    
+    if aimEnabled then
+        if not shouldKeepTarget(closestTarget) then
+            closestTarget = findClosestTarget()
+            lockStartTime = tick()
         end
         
-        if aimEnabled then
-            closestTarget = findClosestTarget()
-            
-            if closestTarget then
-                -- Llamada segura a preciseAim (Solución para error de línea 663)
-                safeCall(preciseAim, closestTarget)
-                if targetIndicator then
-                    targetIndicator.Visible = true
-                    local head = closestTarget.Character:FindFirstChild("Head")
-                    if head then
-                        local screenPos = Camera:WorldToViewportPoint(head.Position)
-                        targetIndicator.Position = Vector2.new(screenPos.X, screenPos.Y)
-                    end
+        if closestTarget then
+            preciseAim(closestTarget)
+            if targetIndicator then
+                targetIndicator.Visible = true
+                local head = closestTarget.Character:FindFirstChild("Head")
+                if head then
+                    local screenPos = Camera:WorldToViewportPoint(head.Position)
+                    targetIndicator.Position = Vector2.new(screenPos.X, screenPos.Y)
                 end
-            else
-                if targetIndicator then targetIndicator.Visible = false end
-                lastTargetPosition = nil
-            end
-            
-            if fovCircle then
-                fovCircle.Visible = true
-                fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
             end
         else
-            if fovCircle then fovCircle.Visible = false end
             if targetIndicator then targetIndicator.Visible = false end
-            lastTargetPosition = nil
         end
-    end)
-end)
-
--- Controles con protección
-UserInputService.InputBegan:Connect(function(input)
-    pcall(function()
-        if input.UserInputType == Enum.UserInputType.MouseButton2 and safetyCheck() then
-            aimEnabled = true
-            lastTargetPosition = nil
+        
+        if fovCircle then
+            fovCircle.Visible = true
+            fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
         end
-    end)
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    pcall(function()
-        if input.UserInputType == Enum.UserInputType.MouseButton2 then
-            aimEnabled = false
-            closestTarget = nil
-            lastTargetPosition = nil
-        end
-    end)
-end)
-
--- Inicialización segura
-pcall(createVisuals)
-
--- SOLUCIÓN PARA ERROR BindToClose (línea 239):
--- Sistema de limpieza alternativo sin usar BindToClose
-local function cleanUp()
-    pcall(function()
-        if renderStepped then
-            renderStepped:Disconnect()
-        end
-        if fovCircle then 
-            fovCircle:Remove()
-            fovCircle = nil
-        end
-        if targetIndicator then 
-            targetIndicator:Remove()
-            targetIndicator = nil
-        end
-    end)
+    else
+        if fovCircle then fovCircle.Visible = false end
+        if targetIndicator then targetIndicator.Visible = false end
+        closestTarget = nil
+    end
 end
 
--- Limpiar al morir o cambiar de personaje
-LocalPlayer.CharacterRemoving:Connect(cleanUp)
-LocalPlayer.CharacterAdded:Connect(function()
-    cleanUp()
-    pcall(createVisuals)
-end)
-
--- Limpiar al salir del juego (solo si es posible en el cliente)
-if game:IsLoaded() then
-    game.OnClose = cleanUp
+-- Funciones globales para tu menú principal
+_G.enableAimbot = function()
+    aimEnabled = true
+    createVisuals()
+    
+    if not renderStepped then
+        renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
+    end
+    
+    print("Aimbot activado")
 end
+
+_G.disableAimbot = function()
+    aimEnabled = false
+    closestTarget = nil
+    
+    if fovCircle then 
+        fovCircle:Remove()
+        fovCircle = nil
+    end
+    
+    if targetIndicator then 
+        targetIndicator:Remove()
+        targetIndicator = nil
+    end
+    
+    if renderStepped then
+        renderStepped:Disconnect()
+        renderStepped = nil
+    end
+    
+    print("Aimbot desactivado")
+end
+
+-- Limpieza al salir
+game:BindToClose(function()
+    _G.disableAimbot()
+end)
