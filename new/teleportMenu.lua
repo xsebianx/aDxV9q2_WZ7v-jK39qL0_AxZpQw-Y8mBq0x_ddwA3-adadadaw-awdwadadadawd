@@ -71,7 +71,7 @@ local function showTeleportMenu()
 
         local title = Instance.new("TextLabel")
         title.Size = UDim2.new(1, 0, 1, 0)
-        title.Text = "DRÁCULA HUB - TELEPORT"
+        title.Text = "DRAKHUB - TELEPORT"
         title.TextColor3 = Color3.fromRGB(255, 255, 255)
         title.TextSize = 24
         title.Font = Enum.Font.GothamBlack
