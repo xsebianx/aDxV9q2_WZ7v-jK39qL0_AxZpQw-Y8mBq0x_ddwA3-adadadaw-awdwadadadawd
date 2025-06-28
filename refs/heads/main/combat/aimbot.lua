@@ -222,3 +222,22 @@ end
 -- Limpieza al cambiar de personaje o salir
 LocalPlayer.CharacterRemoving:Connect(cleanUp)
 game:BindToClose(cleanUp)
+
+-- Al final de aimbot.lua
+function enableAimbot()
+    if not renderStepped then
+        createVisuals()
+        renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
+    end
+end
+
+function disableAimbot()
+    if renderStepped then
+        renderStepped:Disconnect()
+        renderStepped = nil
+        cleanUp()
+    end
+end
+
+_G.enableAimbot = enableAimbot
+_G.disableAimbot = disableAimbot
