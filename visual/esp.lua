@@ -18,7 +18,7 @@ local espCache = {}
 local connections = {}
 local renderStepBound = false
 
--- Funciones seguras
+-- Funciones seguras mejoradas
 local function safeWtvp(position)
     if not camera then
         camera = workspace.CurrentCamera
@@ -46,7 +46,16 @@ local function safeCreateDrawing(type, props)
 end
 
 local function safeCreateEsp(player)
-    if not player or not player.Parent or espCache[player] then return end
+    if not player or not player.Parent then return end
+    
+    -- Eliminar cualquier ESP existente para este jugador primero
+    if espCache[player] then
+        for _, drawing in pairs(espCache[player]) do
+            pcall(function()
+                if drawing then drawing:Remove() end
+            end)
+        end
+    end
     
     local drawings = {
         box = safeCreateDrawing("Square", {
@@ -91,7 +100,7 @@ local function safeCreateEsp(player)
     }
     
     -- Verificar que todos los dibujos se crearon correctamente
-    for _, drawing in pairs(drawings) do
+    for name, drawing in pairs(drawings) do
         if not drawing then
             for _, d in pairs(drawings) do
                 pcall(function() if d then d:Remove() end end)
@@ -131,21 +140,16 @@ local function safeUpdateEsp(player, esp)
     local visible = viewportResult.Z > 0
     local depth = viewportResult.Z
 
-    local function setDrawingVisibility(drawing, visibleState)
-        if drawing then
-            pcall(function()
-                drawing.Visible = visibleState
-            end)
-        end
-    end
-
-    local shouldShow = visible and depth <= maxDistance
+    local shouldShow = visible and depth <= maxDistance and espEnabled
     
-    setDrawingVisibility(esp.box, shouldShow)
-    setDrawingVisibility(esp.boxoutline, shouldShow)
-    setDrawingVisibility(esp.name, shouldShow)
-    setDrawingVisibility(esp.health, shouldShow)
-    setDrawingVisibility(esp.distance, shouldShow)
+    -- Actualizar visibilidad primero
+    pcall(function()
+        if esp.box then esp.box.Visible = shouldShow end
+        if esp.boxoutline then esp.boxoutline.Visible = shouldShow end
+        if esp.name then esp.name.Visible = shouldShow end
+        if esp.health then esp.health.Visible = shouldShow end
+        if esp.distance then esp.distance.Visible = shouldShow end
+    end)
 
     if not shouldShow then return true end
 
@@ -205,12 +209,13 @@ end
 local function safeRemoveEsp(player)
     if not espCache[player] then return end
     
-    for _, drawing in pairs(espCache[player]) do
+    for name, drawing in pairs(espCache[player]) do
         pcall(function()
             if drawing and typeof(drawing) == "userdata" then
                 drawing:Remove()
             end
         end)
+        espCache[player][name] = nil
     end
     
     espCache[player] = nil
@@ -223,33 +228,19 @@ local function cleanUpESP()
     end
     
     espCache = {}
-    
-    -- Desconectar solo las conexiones específicas
-    for _, conn in ipairs(connections) do
-        if conn ~= renderStepConnection then
-            pcall(function() 
-                if typeof(conn) == "RBXScriptConnection" then
-                    conn:Disconnect() 
-                end
-            end)
-        end
-    end
-    
-    connections = {}
 end
 
--- Conexiones para jugadores (siempre activas)
+-- Conexiones seguras
 local function safePlayerAdded(player)
-    if player ~= localPlayer then
-        safeCreateEsp(player)
-    end
+    if player == localPlayer then return end
+    safeCreateEsp(player)
 end
 
 local function safePlayerRemoving(player)
     safeRemoveEsp(player)
 end
 
--- Principal
+-- Inicialización
 local function initializeESP()
     -- Limpiar cualquier instancia previa
     cleanUpESP()
@@ -259,23 +250,18 @@ local function initializeESP()
         safePlayerAdded(player)
     end
 
-    -- Configurar conexiones
-    connections[#connections+1] = players.PlayerAdded:Connect(safePlayerAdded)
-    connections[#connections+1] = players.PlayerRemoving:Connect(safePlayerRemoving)
-end
-
--- Inicialización segura
-local success, err = pcall(initializeESP)
-if not success then
-    warn("ESP initialization failed:", err)
+    -- Configurar conexiones permanentes
+    connections.playerAdded = players.PlayerAdded:Connect(safePlayerAdded)
+    connections.playerRemoving = players.PlayerRemoving:Connect(safePlayerRemoving)
 end
 
 -- Manejo del render step
 local function startRenderStep()
     if renderStepBound then return end
     
-    renderStepConnection = runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
+    connections.renderStep = runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
         if not espEnabled then
+            -- Ocultar todos los elementos sin eliminarlos
             for _, drawings in pairs(espCache) do
                 for _, drawing in pairs(drawings) do
                     pcall(function() 
@@ -286,6 +272,7 @@ local function startRenderStep()
             return
         end
 
+        -- Actualizar solo si está habilitado
         for player, drawings in pairs(espCache) do
             if not pcall(safeUpdateEsp, player, drawings) then
                 safeRemoveEsp(player)
@@ -293,20 +280,26 @@ local function startRenderStep()
         end
     end)
     
-    connections[#connections+1] = renderStepConnection
     renderStepBound = true
 end
 
 -- Exportar funciones para control externo
 _G.enableESP = function()
+    if espEnabled then return end
     espEnabled = true
     startRenderStep()
 end
 
 _G.disableESP = function()
+    if not espEnabled then return end
     espEnabled = false
-    cleanUpESP()
-    renderStepBound = false
+    cleanUpESP()  -- Eliminar completamente todos los elementos
+end
+
+-- Inicialización segura
+local success, err = pcall(initializeESP)
+if not success then
+    warn("ESP initialization failed:", err)
 end
 
 return {
