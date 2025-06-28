@@ -1,144 +1,171 @@
-local aimEnabled = false -- El aimbot está desactivado por defecto y se activa con clic derecho
-local fieldOfView = 30 -- Campo de visión ajustado a 30 grados para un equilibrio
-local detectionRadius = 75 -- Radio de detección ampliado para mayor facilidad de uso
+local aimEnabled = false
+local fieldOfView = 30
+local detectionRadius = fieldOfView  -- Ahora igual al FOV para consistencia
 local closestTarget = nil
 local fovCircle
 local targetIndicator
-local predictionFactor = 0.165 -- Factor de predicción ajustado para mayor precisión
+local predictionFactor = 0.165
 
--- Crear un círculo visual para mostrar el FOV del aimbot
-local function createFOVCircle()
+-- Configuración esencial para evitar detección
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Crear elementos visuales
+local function createVisuals()
     if fovCircle then fovCircle:Remove() end
+    if targetIndicator then targetIndicator:Remove() end
+    
     fovCircle = Drawing.new("Circle")
     fovCircle.Visible = false
-    fovCircle.Thickness = 2
+    fovCircle.Thickness = 1
+    fovCircle.Transparency = 0.5
     fovCircle.Radius = fieldOfView
-    fovCircle.Color = Color3.fromRGB(255, 0, 0)
-    fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-end
-
--- Crear un indicador visual para el objetivo
-local function createTargetIndicator()
-    if targetIndicator then targetIndicator:Remove() end
+    fovCircle.Color = Color3.fromRGB(255, 50, 50)
+    fovCircle.Filled = false
+    
     targetIndicator = Drawing.new("Circle")
     targetIndicator.Visible = false
     targetIndicator.Thickness = 2
-    targetIndicator.Radius = 5
-    targetIndicator.Color = Color3.fromRGB(0, 255, 0)
+    targetIndicator.Radius = 6
+    targetIndicator.Color = Color3.fromRGB(50, 255, 50)
+    targetIndicator.Filled = true
 end
 
--- Verificar si el objetivo es visible, sin obstáculos en el camino
-local function isVisible(part)
-    local origin = workspace.CurrentCamera.CFrame.Position
-    local direction = (part.Position - origin).unit * 5000 -- Aumenta la longitud del rayo para mayor alcance
-    local ray = Ray.new(origin, direction)
-    local partHit, _ = workspace:FindPartOnRay(ray, game.Players.LocalPlayer.Character, false, true)
-    return partHit and partHit:IsDescendantOf(part.Parent)
+-- Verificación de visibilidad con RaycastParams
+local function isVisible(targetPart)
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+    raycastParams.IgnoreWater = true
+    
+    local origin = Camera.CFrame.Position
+    local direction = (targetPart.Position - origin).Unit * 1000
+    local raycastResult = workspace:Raycast(origin, direction, raycastParams)
+    
+    return raycastResult and raycastResult.Instance:IsDescendantOf(targetPart.Parent)
 end
 
--- Función para encontrar el objetivo más cercano dentro del campo de visión y que esté visible
-local function getClosestPlayerInFOV()
-    local closestDistance = math.huge
-    local target = nil
-    local camera = workspace.CurrentCamera
-    local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            local headScreenPos = camera:WorldToViewportPoint(player.Character.Head.Position)
-            local distanceFromCenter = (screenCenter - Vector2.new(headScreenPos.X, headScreenPos.Y)).magnitude
-            -- Si el jugador está dentro del campo de visión y está visible
-            if distanceFromCenter < detectionRadius and isVisible(player.Character.Head) then
-                local distance = (camera.CFrame.Position - player.Character.Head.Position).magnitude
-                if distance < closestDistance then
-                    closestDistance = distance
-                    target = player
+-- Encontrar objetivo con prioridad de visibilidad
+local function findOptimalTarget()
+    local optimalTarget = nil
+    local minAngle = math.rad(fieldOfView)
+    local cameraDir = Camera.CFrame.LookVector
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            local head = player.Character:FindFirstChild("Head")
+            
+            if humanoidRootPart and head then
+                local directionToTarget = (head.Position - Camera.CFrame.Position).Unit
+                local angle = math.acos(cameraDir:Dot(directionToTarget))
+                
+                if angle < minAngle and isVisible(head) then
+                    minAngle = angle
+                    optimalTarget = player
                 end
             end
         end
     end
-    return target
+    
+    return optimalTarget
 end
 
--- Función para predecir la posición del objetivo
+-- Predicción mejorada con ajuste balístico
 local function predictPosition(target)
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local head = target.Character.Head
-        local velocity = head.Velocity
-        local predictedPosition = head.Position + (velocity * predictionFactor)
-        return predictedPosition
-    end
-    return nil
+    if not target.Character then return nil end
+    
+    local head = target.Character:FindFirstChild("Head")
+    local rootPart = target.Character:FindFirstChild("HumanoidRootPart")
+    if not head or not rootPart then return nil end
+    
+    local distance = (head.Position - Camera.CFrame.Position).Magnitude
+    local travelTime = distance / 1000  -- Velocidad de bala aproximada
+    local velocity = rootPart.Velocity
+    
+    -- Ajuste para gravedad (solo si es necesario)
+    local gravityAdjustment = if target.Character.Humanoid:GetState() == Enum.HumanoidStateType.Freefall
+        then Vector3.new(0, workspace.Gravity * travelTime^2, 0)
+        else Vector3.zero
+        
+    return head.Position + velocity * travelTime - gravityAdjustment
 end
 
--- Función de Aimbot que apunta instantáneamente a la cabeza con predicción de movimiento
-local function aimbot(target)
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local predictedPosition = predictPosition(target)
-        if predictedPosition then
-            local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(predictedPosition)
-            local mousePos = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
-            local targetPos = Vector2.new(headScreenPos.X, headScreenPos.Y)
-            mousemoverel(targetPos.X - mousePos.X, targetPos.Y - mousePos.Y)
-        end
-    end
+-- Sistema de apuntado suavizado (menos detectable)
+local function smoothAim(target)
+    if not target then return end
+    
+    local predictedPosition = predictPosition(target)
+    if not predictedPosition then return end
+    
+    local targetScreenPos, onScreen = Camera:WorldToViewportPoint(predictedPosition)
+    if not onScreen then return end
+    
+    local mousePos = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+    local targetPos = Vector2.new(targetScreenPos.X, targetScreenPos.Y)
+    
+    -- Suavizado exponencial
+    local delta = (targetPos - mousePos) * 0.3
+    mousemoverel(delta.X, delta.Y)
 end
 
--- Actualizar el objetivo cada ciclo
-game:GetService("RunService").RenderStepped:Connect(function()
+-- Sistema de seguridad
+local function safetyCheck()
+    return LocalPlayer and LocalPlayer.Character and
+           LocalPlayer.Character:FindFirstChild("Humanoid") and
+           LocalPlayer.Character.Humanoid.Health > 0
+end
+
+-- Conexión principal
+local renderStepped = RunService.RenderStepped:Connect(function()
+    if not safetyCheck() then
+        if fovCircle then fovCircle.Visible = false end
+        if targetIndicator then targetIndicator.Visible = false end
+        return
+    end
+    
     if aimEnabled then
-        local newTarget = getClosestPlayerInFOV() -- Encontrar el jugador más cercano dentro del FOV y radio de detección
-        if newTarget and newTarget ~= closestTarget then
-            closestTarget = newTarget
-        end
+        closestTarget = findOptimalTarget()
+        
         if closestTarget then
-            aimbot(closestTarget) -- Usar Aimbot para asegurar el impacto
+            smoothAim(closestTarget)
             targetIndicator.Visible = true
-            local headScreenPos = workspace.CurrentCamera:WorldToViewportPoint(closestTarget.Character.Head.Position)
-            targetIndicator.Position = Vector2.new(headScreenPos.X, headScreenPos.Y)
+            local headPos = closestTarget.Character.Head.Position
+            local screenPos = Camera:WorldToViewportPoint(headPos)
+            targetIndicator.Position = Vector2.new(screenPos.X, screenPos.Y)
         else
             targetIndicator.Visible = false
         end
+        
+        fovCircle.Visible = true
+        fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     else
         targetIndicator.Visible = false
-    end
-    -- Actualizar la posición del círculo FOV
-    if fovCircle then
-        fovCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+        fovCircle.Visible = false
     end
 end)
 
--- Controles de teclas para activar el aimbot con clic derecho
-game:GetService("UserInputService").InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Clic derecho para activar el aimbot
+-- Controles
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
         aimEnabled = true
-        fovCircle.Visible = true
     end
 end)
 
-game:GetService("UserInputService").InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Soltar clic derecho para desactivar el aimbot
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
         aimEnabled = false
         closestTarget = nil
-        fovCircle.Visible = false
-        targetIndicator.Visible = false
     end
 end)
 
--- Iniciar el círculo de FOV y el indicador de objetivo
-createFOVCircle()
-createTargetIndicator()
+-- Inicialización
+createVisuals()
 
--- Manejar la reconexión del jugador y la muerte
-local localPlayer = game.Players.LocalPlayer
-local function onCharacterAdded(character)
-    character:WaitForChild("Humanoid").Died:Connect(function()
-        createFOVCircle()
-        createTargetIndicator()
-    end)
-end
-
-if localPlayer.Character then
-    onCharacterAdded(localPlayer.Character)
-end
-
-localPlayer.CharacterAdded:Connect(onCharacterAdded)
+-- Manejo de respawns
+LocalPlayer.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid").Died:Connect(createVisuals)
+end)
