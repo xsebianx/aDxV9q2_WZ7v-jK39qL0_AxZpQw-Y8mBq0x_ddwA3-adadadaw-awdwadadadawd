@@ -3,7 +3,9 @@ local fieldOfView = 30
 local closestTarget = nil
 local fovCircle, targetIndicator
 local predictionFactor = 0.165
-
+local lastTargetPosition = nil
+local lastUpdateTime = tick()
+-- si
 -- Servicios esenciales
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -24,17 +26,18 @@ local function createVisuals()
     fovCircle.Radius = fieldOfView
     fovCircle.Color = Color3.fromRGB(255, 50, 50)
     fovCircle.Filled = false
+    fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     
     -- Indicador de objetivo simple
     targetIndicator = Drawing.new("Circle")
     targetIndicator.Visible = false
     targetIndicator.Thickness = 2
-    targetIndicator.Radius = 5
+    targetIndicator.Radius = 6
     targetIndicator.Color = Color3.fromRGB(50, 255, 50)
-    targetIndicator.Filled = false
+    targetIndicator.Filled = true
 end
 
--- Verificación de visibilidad
+-- Verificación de visibilidad MEJORADA
 local function isVisible(targetPart)
     if not targetPart then return false end
     
@@ -46,14 +49,14 @@ local function isVisible(targetPart)
     local origin = Camera.CFrame.Position
     local direction = (targetPart.Position - origin)
     local distance = direction.Magnitude
-    direction = direction.Unit * distance * 1.2
+    direction = direction.Unit * distance
     
     local raycastResult = workspace:Raycast(origin, direction, raycastParams)
     
     return raycastResult == nil or raycastResult.Instance:IsDescendantOf(targetPart.Parent)
 end
 
--- Encontrar objetivo más cercano
+-- Encontrar objetivo más cercano con seguimiento continuo
 local function findClosestTarget()
     local closestPlayer = nil
     local minAngle = math.rad(fieldOfView)
@@ -81,18 +84,39 @@ local function findClosestTarget()
     return closestPlayer
 end
 
--- Predicción básica
+-- PREDICCIÓN MEJORADA (movimiento lateral)
 local function predictPosition(target)
     if not target or not target.Character then return nil end
     
     local head = target.Character:FindFirstChild("Head")
     if not head then return nil end
     
-    return head.Position + head.Velocity * predictionFactor
+    -- Calcular velocidad REAL (no solo del frame actual)
+    local currentPosition = head.Position
+    local velocity = head.Velocity
+    
+    if lastTargetPosition and lastUpdateTime then
+        local deltaTime = tick() - lastUpdateTime
+        if deltaTime > 0 then
+            -- Combinar velocidad actual con desplazamiento reciente
+            local actualMovement = (currentPosition - lastTargetPosition)
+            velocity = (velocity + actualMovement/deltaTime) * 0.5
+        end
+    end
+    
+    lastTargetPosition = currentPosition
+    lastUpdateTime = tick()
+    
+    -- Aumentar predicción en movimiento lateral
+    local rightVector = Camera.CFrame.RightVector
+    local lateralMovement = velocity:Dot(rightVector) * rightVector
+    local lateralPrediction = lateralMovement * (predictionFactor + 0.05)
+    
+    return head.Position + velocity * predictionFactor + lateralPrediction
 end
 
--- Apuntado suavizado
-local function smoothAim(target)
+-- SEGUIMIENTO PERFECTO (corrección de movimiento lateral)
+local function preciseAim(target)
     if not target then return end
     
     local predictedPosition = predictPosition(target)
@@ -104,8 +128,15 @@ local function smoothAim(target)
     local mousePos = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
     local targetPos = Vector2.new(targetScreenPos.X, targetScreenPos.Y)
     
-    local delta = (targetPos - mousePos) * 0.3
-    mousemoverel(delta.X, delta.Y)
+    -- Corrección adicional para movimiento rápido
+    local delta = targetPos - mousePos
+    local distance = delta.Magnitude
+    
+    -- Factor dinámico basado en velocidad
+    local dynamicFactor = math.clamp(0.15 + (distance/500), 0.1, 0.3)
+    
+    -- Aplicar con compensación lateral extra
+    mousemoverel(delta.X * (dynamicFactor + 0.05), delta.Y * dynamicFactor)
 end
 
 -- Verificación de seguridad
@@ -116,11 +147,12 @@ local function safetyCheck()
            LocalPlayer.Character.Humanoid.Health > 0
 end
 
--- Conexión principal
+-- Conexión principal ACTUALIZADA
 local renderStepped = RunService.RenderStepped:Connect(function()
     if not safetyCheck() then
         if fovCircle then fovCircle.Visible = false end
         if targetIndicator then targetIndicator.Visible = false end
+        lastTargetPosition = nil
         return
     end
     
@@ -128,15 +160,18 @@ local renderStepped = RunService.RenderStepped:Connect(function()
         closestTarget = findClosestTarget()
         
         if closestTarget then
-            smoothAim(closestTarget)
+            preciseAim(closestTarget)
             if targetIndicator then
                 targetIndicator.Visible = true
-                local headPos = closestTarget.Character.Head.Position
-                local screenPos = Camera:WorldToViewportPoint(headPos)
-                targetIndicator.Position = Vector2.new(screenPos.X, screenPos.Y)
+                local head = closestTarget.Character:FindFirstChild("Head")
+                if head then
+                    local screenPos = Camera:WorldToViewportPoint(head.Position)
+                    targetIndicator.Position = Vector2.new(screenPos.X, screenPos.Y)
+                end
             end
         else
             if targetIndicator then targetIndicator.Visible = false end
+            lastTargetPosition = nil
         end
         
         if fovCircle then
@@ -146,6 +181,7 @@ local renderStepped = RunService.RenderStepped:Connect(function()
     else
         if fovCircle then fovCircle.Visible = false end
         if targetIndicator then targetIndicator.Visible = false end
+        lastTargetPosition = nil
     end
 end)
 
@@ -153,6 +189,7 @@ end)
 UserInputService.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton2 and safetyCheck() then
         aimEnabled = true
+        lastTargetPosition = nil  // Resetear al comenzar nuevo objetivo
     end
 end)
 
@@ -160,13 +197,14 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         aimEnabled = false
         closestTarget = nil
+        lastTargetPosition = nil
     end
 end)
 
--- Inicialización
+// Inicialización
 createVisuals()
 
--- Limpieza
+// Limpieza
 game:BindToClose(function()
     renderStepped:Disconnect()
     if fovCircle then fovCircle:Remove() end
