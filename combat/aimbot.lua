@@ -1,4 +1,4 @@
--- Versión final del aimbot para integrar con tu menú principal
+-- Versión corregida del aimbot (sin BindToClose)
 local aimEnabled = false
 local fieldOfView = 30
 local closestTarget = nil
@@ -230,7 +230,20 @@ _G.disableAimbot = function()
     print("Aimbot desactivado")
 end
 
--- Limpieza al salir
-game:BindToClose(function()
+-- Sistema de limpieza alternativo (sin BindToClose)
+local function cleanUp()
     _G.disableAimbot()
+end
+
+-- Limpieza al cambiar de personaje
+LocalPlayer.CharacterRemoving:Connect(cleanUp)
+LocalPlayer.CharacterAdded:Connect(function()
+    cleanUp()
+end)
+
+-- Limpieza al salir del juego (alternativa para cliente)
+game:GetService("UserInputService").WindowFocused:Connect(function(focused)
+    if not focused then
+        cleanUp()
+    end
 end)
