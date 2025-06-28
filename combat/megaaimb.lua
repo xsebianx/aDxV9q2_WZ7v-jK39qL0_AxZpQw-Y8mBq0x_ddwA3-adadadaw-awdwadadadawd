@@ -67,7 +67,7 @@ local function checkEnemies()
         end
     end
 
-    -- Teletransportar al enemigo más cercano con ajustes de posición
+    -- Teletransportar al enemigo más cercano con ajustes de posición (FRENTE AL JUGADOR)
     if closestEnemy and closestEnemy.Character and closestEnemy.Character:FindFirstChild("HumanoidRootPart") then
         local now = tick()
         
@@ -75,18 +75,26 @@ local function checkEnemies()
         if now - lastTeleportTime >= teleportCooldown then
             lastTeleportTime = now
             
-            -- Calcular posición óptima para impacto de balas
+            -- CALCULAR POSICIÓN FRENTE AL JUGADOR
             local playerCFrame = playerCharacter.HumanoidRootPart.CFrame
-            local offset = playerCFrame.LookVector * -5 + Vector3.new(0, 1, 0)
+            local lookVector = playerCFrame.LookVector  -- Dirección hacia donde mira el jugador
             
-            -- Ajustar posición para sincronización de red
+            -- Posicionar 5 unidades frente al jugador y 1 unidad arriba
+            local teleportPosition = playerCFrame.Position + (lookVector * 5) + Vector3.new(0, 1, 0)
+            
+            -- Crear nuevo CFrame manteniendo la rotación original del enemigo
+            local enemyRotation = closestEnemy.Character.HumanoidRootPart.CFrame - closestEnemy.Character.HumanoidRootPart.CFrame.Position
+            local newCFrame = CFrame.new(teleportPosition) * enemyRotation
+            
+            -- Aplicar posición y resetear velocidad
+            closestEnemy.Character.HumanoidRootPart.CFrame = newCFrame
             closestEnemy.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
-            closestEnemy.Character.HumanoidRootPart.CFrame = playerCFrame + offset
+            closestEnemy.Character.HumanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
             
-            -- Forzar actualización de la cámara
-            workspace.CurrentCamera.CFrame = CFrame.lookAt(
-                workspace.CurrentCamera.CFrame.Position,
-                closestEnemy.Character.HumanoidRootPart.Position
+            -- Forzar al enemigo a mirar hacia el jugador para facilitar el disparo
+            closestEnemy.Character.HumanoidRootPart.CFrame = CFrame.new(
+                teleportPosition,
+                playerCharacter.HumanoidRootPart.Position
             )
         end
     end
