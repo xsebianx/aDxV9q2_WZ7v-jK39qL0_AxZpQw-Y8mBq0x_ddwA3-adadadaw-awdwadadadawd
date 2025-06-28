@@ -17,73 +17,90 @@ local espEnabled = false
 local espCache = {}
 local connections = {}
 
--- Funciones protegidas con pcall
+-- Funciones seguras
 local function safeWtvp(position)
+    if not camera then
+        camera = workspace.CurrentCamera
+        if not camera then return nil end
+    end
+    
     local success, result = pcall(function()
         return camera:WorldToViewportPoint(position)
     end)
+    
     return success and result or nil
+end
+
+local function safeCreateDrawing(type, props)
+    local success, drawing = pcall(Drawing.new, type)
+    if not success or not drawing then return nil end
+    
+    for prop, value in pairs(props) do
+        pcall(function()
+            drawing[prop] = value
+        end)
+    end
+    
+    return drawing
 end
 
 local function safeCreateEsp(player)
     if not player or not player.Parent then return end
     
-    local drawings = {}
+    local drawings = {
+        box = safeCreateDrawing("Square", {
+            Thickness = 1,
+            Filled = false,
+            Color = settings.defaultcolor,
+            Visible = false,
+            ZIndex = 2
+        }),
+        
+        boxoutline = safeCreateDrawing("Square", {
+            Thickness = 3,
+            Filled = false,
+            Color = Color3.new(),
+            Visible = false,
+            ZIndex = 1
+        }),
+        
+        name = safeCreateDrawing("Text", {
+            Color = Color3.new(1, 1, 1),
+            Size = 20,
+            Center = true,
+            Outline = true,
+            Visible = false
+        }),
+        
+        health = safeCreateDrawing("Text", {
+            Color = Color3.new(0, 1, 0),
+            Size = 20,
+            Center = true,
+            Outline = true,
+            Visible = false
+        }),
+        
+        distance = safeCreateDrawing("Text", {
+            Color = Color3.new(1, 0, 0),
+            Size = 20,
+            Center = true,
+            Outline = true,
+            Visible = false
+        })
+    }
     
-    local function createDrawing(type, props)
-        local success, drawing = pcall(function()
-            local d = Drawing.new(type)
-            for prop, value in pairs(props) do
-                pcall(function() d[prop] = value end)
+    -- Verificar que todos los dibujos se crearon correctamente
+    for _, drawing in pairs(drawings) do
+        if not drawing then
+            for _, d in pairs(drawings) do
+                pcall(function() if d then d:Remove() end end)
             end
-            return d
-        end)
-        return success and drawing or nil
+            return nil
+        end
     end
-
-    drawings.box = createDrawing("Square", {
-        Thickness = 1,
-        Filled = false,
-        Color = settings.defaultcolor,
-        Visible = false,
-        ZIndex = 2
-    })
-
-    drawings.boxoutline = createDrawing("Square", {
-        Thickness = 3,
-        Filled = false,
-        Color = Color3.new(),
-        Visible = false,
-        ZIndex = 1
-    })
-
-    drawings.name = createDrawing("Text", {
-        Color = Color3.new(1, 1, 1),
-        Size = 20,
-        Center = true,
-        Outline = true,
-        Visible = false
-    })
-
-    drawings.health = createDrawing("Text", {
-        Color = Color3.new(0, 1, 0),
-        Size = 20,
-        Center = true,
-        Outline = true,
-        Visible = false
-    })
-
-    drawings.distance = createDrawing("Text", {
-        Color = Color3.new(1, 0, 0),
-        Size = 20,
-        Center = true,
-        Outline = true,
-        Visible = false
-    })
-
-    if drawings.box and drawings.boxoutline and drawings.name and drawings.health and drawings.distance then
-        espCache[player] = drawings
-    end
+    
+    espCache[player] = drawings
+    return true
 end
 
 local function safeUpdateEsp(player, esp)
@@ -115,8 +132,10 @@ local function safeUpdateEsp(player, esp)
     local depth = viewportResult.Z
 
     local function setDrawingVisibility(drawing, visibleState)
-        if drawing and drawing.Visible ~= visibleState then
-            pcall(function() drawing.Visible = visibleState end)
+        if drawing then
+            pcall(function()
+                drawing.Visible = visibleState
+            end)
         end
     end
 
@@ -131,63 +150,58 @@ local function safeUpdateEsp(player, esp)
     if not shouldShow then return true end
 
     -- Cálculos seguros
-    local scaleFactor = 1 / (depth * math.tan(math.rad(camera.FieldOfView / 2)) * 2 * 1000
-    local width, height = math.round(2 * scaleFactor), math.round(2.5 * scaleFactor)
-    local x, y = math.round(position.X), math.round(position.Y)
+    local function safeCalc()
+        local scaleFactor = 1 / (depth * math.tan(math.rad(camera.FieldOfView / 2)) * 2) * 1000
+        local width, height = math.round(2 * scaleFactor), math.round(2.5 * scaleFactor)
+        local x, y = math.round(position.X), math.round(position.Y)
 
-    local distance = (localRoot.Position - humanoidRootPart.Position).Magnitude
+        local distance = (localRoot.Position - humanoidRootPart.Position).Magnitude
 
-    local boxColor = settings.defaultcolor
-    if distance > 800 then
-        boxColor = Color3.fromRGB(0, 0, 255)
-    elseif settings.teamcolor then
-        pcall(function() boxColor = player.TeamColor.Color end)
-    end
+        local boxColor = settings.defaultcolor
+        if distance > 800 then
+            boxColor = Color3.fromRGB(0, 0, 255)
+        elseif settings.teamcolor then
+            pcall(function() boxColor = player.TeamColor.Color end)
+        end
 
-    if esp.box then
         pcall(function()
-            esp.box.Size = Vector2.new(width, height)
-            esp.box.Position = Vector2.new(x - width / 2, y - height / 2)
-            esp.box.Color = boxColor
+            if esp.box then
+                esp.box.Size = Vector2.new(width, height)
+                esp.box.Position = Vector2.new(x - width / 2, y - height / 2)
+                esp.box.Color = boxColor
+            end
+
+            if esp.boxoutline then
+                esp.boxoutline.Size = Vector2.new(width, height)
+                esp.boxoutline.Position = Vector2.new(x - width / 2, y - height / 2)
+            end
+
+            local textScale = distance <= 800 and 0.8 or 0.75
+            local nameAndDistanceScale = distance <= 800 and 1.2 or 0.75
+
+            if esp.name then
+                esp.name.Text = player.Name
+                esp.name.Position = Vector2.new(x, y - height / 2 - 20)
+                esp.name.Size = 16 * nameAndDistanceScale
+            end
+
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid and esp.health then
+                local healthPercent = math.round((humanoid.Health / humanoid.MaxHealth) * 100)
+                esp.health.Text = string.format("Vida: %d%%", healthPercent)
+                esp.health.Position = Vector2.new(x, y - height / 2 - 40)
+                esp.health.Size = 16 * textScale
+            end
+
+            if esp.distance then
+                esp.distance.Text = string.format("Distancia: %.2f", distance)
+                esp.distance.Position = Vector2.new(x, y + height / 2 + 20)
+                esp.distance.Size = 16 * nameAndDistanceScale
+            end
         end)
     end
 
-    if esp.boxoutline then
-        pcall(function()
-            esp.boxoutline.Size = Vector2.new(width, height)
-            esp.boxoutline.Position = Vector2.new(x - width / 2, y - height / 2)
-        end)
-    end
-
-    local textScale = distance <= 800 and 0.8 or 0.75
-    local nameAndDistanceScale = distance <= 800 and 1.2 or 0.75
-
-    if esp.name then
-        pcall(function()
-            esp.name.Text = player.Name
-            esp.name.Position = Vector2.new(x, y - height / 2 - 20)
-            esp.name.Size = 16 * nameAndDistanceScale
-        end)
-    end
-
-    local humanoid = character:FindFirstChild("Humanoid")
-    if humanoid and esp.health then
-        pcall(function()
-            local healthPercent = math.round((humanoid.Health / humanoid.MaxHealth) * 100)
-            esp.health.Text = string.format("Vida: %d%%", healthPercent)
-            esp.health.Position = Vector2.new(x, y - height / 2 - 40)
-            esp.health.Size = 16 * textScale
-        end)
-    end
-
-    if esp.distance then
-        pcall(function()
-            esp.distance.Text = string.format("Distancia: %.2f", distance)
-            esp.distance.Position = Vector2.new(x, y + height / 2 + 20)
-            esp.distance.Size = 16 * nameAndDistanceScale
-        end)
-    end
-
+    pcall(safeCalc)
     return true
 end
 
@@ -196,7 +210,7 @@ local function safeRemoveEsp(player)
     
     for _, drawing in pairs(espCache[player]) do
         pcall(function()
-            if drawing and drawing.Remove then
+            if drawing and typeof(drawing) == "userdata" then
                 drawing:Remove()
             end
         end)
@@ -220,31 +234,6 @@ local function safePlayerRemoving(player)
     end)
 end
 
--- Principal
-for _, player in players:GetPlayers() do
-    safePlayerAdded(player)
-end
-
-connections[#connections+1] = players.PlayerAdded:Connect(safePlayerAdded)
-connections[#connections+1] = players.PlayerRemoving:Connect(safePlayerRemoving)
-
-connections[#connections+1] = runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
-    if not espEnabled then
-        for _, drawings in pairs(espCache) do
-            for _, drawing in pairs(drawings) do
-                pcall(function() drawing.Visible = false end)
-            end
-        end
-        return
-    end
-
-    for player, drawings in pairs(espCache) do
-        if not pcall(safeUpdateEsp, player, drawings) then
-            safeRemoveEsp(player)
-        end
-    end
-end)
-
 -- Función para limpiar completamente el ESP
 local function cleanUpESP()
     for player in pairs(espCache) do
@@ -252,11 +241,55 @@ local function cleanUpESP()
     end
     
     for _, conn in ipairs(connections) do
-        pcall(function() conn:Disconnect() end)
+        pcall(function() 
+            if typeof(conn) == "RBXScriptConnection" then
+                conn:Disconnect() 
+            end
+        end)
     end
     
     connections = {}
     espCache = {}
+end
+
+-- Principal
+local function initializeESP()
+    -- Limpiar cualquier instancia previa
+    cleanUpESP()
+
+    -- Crear ESP para jugadores existentes
+    for _, player in players:GetPlayers() do
+        safePlayerAdded(player)
+    end
+
+    -- Configurar conexiones
+    connections[#connections+1] = players.PlayerAdded:Connect(safePlayerAdded)
+    connections[#connections+1] = players.PlayerRemoving:Connect(safePlayerRemoving)
+
+    connections[#connections+1] = runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
+        if not espEnabled then
+            for _, drawings in pairs(espCache) do
+                for _, drawing in pairs(drawings) do
+                    pcall(function() 
+                        if drawing then drawing.Visible = false end
+                    end)
+                end
+            end
+            return
+        end
+
+        for player, drawings in pairs(espCache) do
+            if not pcall(safeUpdateEsp, player, drawings) then
+                safeRemoveEsp(player)
+            end
+        end
+    end)
+end
+
+-- Inicialización segura
+local success, err = pcall(initializeESP)
+if not success then
+    warn("ESP initialization failed:", err)
 end
 
 -- Exportar funciones para control externo
