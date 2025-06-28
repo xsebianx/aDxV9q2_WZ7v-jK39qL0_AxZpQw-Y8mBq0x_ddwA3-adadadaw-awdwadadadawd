@@ -6,16 +6,19 @@ local predictionFactor = 0.165
 local lastTargetPosition = nil
 local lastUpdateTime = tick()
 
--- Servicios esenciales
+-- Servicios esenciales SI
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- 1. VERIFICACIÓN DE FUNCIONES CRÍTICAS
-local function isFunctionValid(fn)
-    return type(fn) == "function"
+-- Verificar si una función existe antes de llamarla
+local function safeCall(func, ...)
+    if func and type(func) == "function" then
+        return func(...)
+    end
+    return nil
 end
 
 -- Crear elementos visuales básicos
@@ -46,9 +49,6 @@ end
 local function isVisible(targetPart)
     if not targetPart then return false end
     
-    -- 2. VERIFICACIÓN DE RAYCASTPARAMS
-    if not isFunctionValid(RaycastParams.new) then return false end
-    
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
     raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
@@ -58,9 +58,6 @@ local function isVisible(targetPart)
     local direction = (targetPart.Position - origin)
     local distance = direction.Magnitude
     direction = direction.Unit * distance
-    
-    -- 3. VERIFICACIÓN DE WORKSPACE RAYCAST
-    if not isFunctionValid(workspace.Raycast) then return false end
     
     local raycastResult = workspace:Raycast(origin, direction, raycastParams)
     
@@ -75,7 +72,6 @@ local function findClosestTarget()
     local cameraDir = Camera.CFrame.LookVector
     
     for _, player in ipairs(Players:GetPlayers()) do
-        -- 4. VERIFICACIÓN DE JUGADOR VÁLIDO
         if player ~= LocalPlayer and player.Character then
             local humanoid = player.Character:FindFirstChild("Humanoid")
             local head = player.Character:FindFirstChild("Head")
@@ -147,15 +143,8 @@ local function preciseAim(target)
     -- Factor dinámico basado en velocidad
     local dynamicFactor = math.clamp(0.15 + (distance/500), 0.1, 0.3)
     
-    -- 5. VERIFICACIÓN CRÍTICA DE MOUSEMOVEREL
-    if mousemoverel and type(mousemoverel) == "function" then
-        -- Aplicar con compensación lateral extra
-        mousemoverel(delta.X * (dynamicFactor + 0.05), delta.Y * dynamicFactor)
-    else
-        -- Sistema alternativo si mousemoverel no está disponible
-        warn("mousemoverel no está disponible - usando método alternativo")
-        UserInputService.MouseDelta = Vector3.new(delta.X * 0.5, delta.Y * 0.5, 0)
-    end
+    -- Llamada segura a mousemoverel (Solución para error de línea 667)
+    safeCall(mousemoverel, delta.X * (dynamicFactor + 0.05), delta.Y * dynamicFactor)
 end
 
 -- Verificación de seguridad MEJORADA
@@ -173,7 +162,8 @@ local function safetyCheck()
 end
 
 -- Conexión principal con manejo de errores
-local renderStepped = RunService.RenderStepped:Connect(function()
+local renderStepped
+renderStepped = RunService.RenderStepped:Connect(function()
     pcall(function()
         if not safetyCheck() then
             if fovCircle then fovCircle.Visible = false end
@@ -186,7 +176,8 @@ local renderStepped = RunService.RenderStepped:Connect(function()
             closestTarget = findClosestTarget()
             
             if closestTarget then
-                preciseAim(closestTarget)
+                -- Llamada segura a preciseAim (Solución para error de línea 663)
+                safeCall(preciseAim, closestTarget)
                 if targetIndicator then
                     targetIndicator.Visible = true
                     local head = closestTarget.Character:FindFirstChild("Head")
@@ -235,11 +226,32 @@ end)
 -- Inicialización segura
 pcall(createVisuals)
 
--- Limpieza con protección
-game:BindToClose(function()
+-- SOLUCIÓN PARA ERROR BindToClose (línea 239):
+-- Sistema de limpieza alternativo sin usar BindToClose
+local function cleanUp()
     pcall(function()
-        renderStepped:Disconnect()
-        if fovCircle then fovCircle:Remove() end
-        if targetIndicator then targetIndicator:Remove() end
+        if renderStepped then
+            renderStepped:Disconnect()
+        end
+        if fovCircle then 
+            fovCircle:Remove()
+            fovCircle = nil
+        end
+        if targetIndicator then 
+            targetIndicator:Remove()
+            targetIndicator = nil
+        end
     end)
+end
+
+-- Limpiar al morir o cambiar de personaje
+LocalPlayer.CharacterRemoving:Connect(cleanUp)
+LocalPlayer.CharacterAdded:Connect(function()
+    cleanUp()
+    pcall(createVisuals)
 end)
+
+-- Limpiar al salir del juego (solo si es posible en el cliente)
+if game:IsLoaded() then
+    game.OnClose = cleanUp
+end
