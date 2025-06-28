@@ -5,11 +5,14 @@ local aimbotEnabled = false
 local megAimbEnabled = false
 local fov = 60
 local maxDistance = 800
-local highlightedEnemies = {}  -- Ahora almacena [enemigo] = highlight 
+local highlightedEnemies = {}
+local lastTeleportTime = 0
+local teleportCooldown = 0.2
 
 -- Función para crear un Highlight en el enemigo
 local function highlightEnemy(enemy)
-    if highlightedEnemies[enemy] then return end  -- Evitar duplicados
+    if not enemy.Character then return end
+    if highlightedEnemies[enemy] then return end
     
     local highlight = Instance.new("Highlight")
     highlight.Parent = enemy.Character
@@ -43,7 +46,7 @@ local function checkEnemies()
     for _, enemy in ipairs(game.Players:GetPlayers()) do
         if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart") then
             local enemyPosition = enemy.Character.HumanoidRootPart.Position
-            local distance = (playerPosition - enemyPosition).magnitude
+            local distance = (playerPosition - enemyPosition).Magnitude
             
             -- Verificar el ángulo del FOV
             local directionToEnemy = (enemyPosition - playerPosition).Unit
@@ -60,13 +63,32 @@ local function checkEnemies()
                 unhighlightEnemy(enemy)
             end
         else
-            unhighlightEnemy(enemy)  -- Limpiar si el enemigo no es válido
+            unhighlightEnemy(enemy)
         end
     end
 
-    -- Teletransportar al enemigo más cercano
+    -- Teletransportar al enemigo más cercano con ajustes de posición
     if closestEnemy and closestEnemy.Character and closestEnemy.Character:FindFirstChild("HumanoidRootPart") then
-        closestEnemy.Character.HumanoidRootPart.CFrame = playerCharacter.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+        local now = tick()
+        
+        -- Cooldown para evitar detección
+        if now - lastTeleportTime >= teleportCooldown then
+            lastTeleportTime = now
+            
+            -- Calcular posición óptima para impacto de balas
+            local playerCFrame = playerCharacter.HumanoidRootPart.CFrame
+            local offset = playerCFrame.LookVector * -5 + Vector3.new(0, 1, 0)
+            
+            -- Ajustar posición para sincronización de red
+            closestEnemy.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+            closestEnemy.Character.HumanoidRootPart.CFrame = playerCFrame + offset
+            
+            -- Forzar actualización de la cámara
+            workspace.CurrentCamera.CFrame = CFrame.lookAt(
+                workspace.CurrentCamera.CFrame.Position,
+                closestEnemy.Character.HumanoidRootPart.Position
+            )
+        end
     end
 end
 
@@ -103,6 +125,11 @@ end
 function disableMegaaimb()
     megAimbEnabled = false
     aimbotEnabled = false
+    -- Limpiar highlights al desactivar
+    for enemy, highlight in pairs(highlightedEnemies) do
+        highlight:Destroy()
+    end
+    highlightedEnemies = {}
     print("MegaAim desactivado")
 end
 
