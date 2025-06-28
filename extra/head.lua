@@ -1,101 +1,112 @@
 local players = game:GetService("Players")
+local debris = game:GetService("Debris")
 
 -- Función para cambiar el tamaño de la cabeza y hacerla transparente
 local function expandHead(player)
     if player == players.LocalPlayer then return end -- No aplicar al jugador local
 
-    local character = player.Character or player.CharacterAdded:Wait() -- Esperar hasta que el personaje esté disponible
-    local head = character:FindFirstChild("Head")
-    if head then
-        -- Guardar el tamaño original de la cabeza
-        if not head:FindFirstChild("OriginalSize") then
-            local originalSize = Instance.new("Vector3Value")
-            originalSize.Name = "OriginalSize"
-            originalSize.Value = head.Size
-            originalSize.Parent = head
-        end
-
-        -- Cambiar el tamaño de la cabeza
-        head.Size = Vector3.new(10, 10, 10) -- Ajusta el tamaño a un valor más grande
-        head.Transparency = 0.5 -- 0 es opaco, 1 es completamente transparente
-        head.CanCollide = true -- Asegurarse de que la cabeza pueda colisionar
-
-        -- Ajustar el Mesh si existe
-        local mesh = head:FindFirstChildOfClass("SpecialMesh")
-        if mesh then
-            mesh.Scale = Vector3.new(10, 10, 10)
-        end
-
-        -- Asegurarse de que la cabeza esté correctamente unida al cuerpo
-        local weld = head:FindFirstChildOfClass("Weld")
-        if not weld then
-            weld = Instance.new("Weld")
-            weld.Part0 = head
-            weld.Part1 = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-            weld.C0 = CFrame.new(0, 1.5, 0)
-            weld.Parent = head
-        end
+    local character = player.Character or player.CharacterAdded:Wait()
+    local head = character:WaitForChild("Head")
+    
+    -- Guardar el tamaño original
+    if not head:FindFirstChild("OriginalSize") then
+        local originalSize = Instance.new("Vector3Value")
+        originalSize.Name = "OriginalSize"
+        originalSize.Value = head.Size
+        originalSize.Parent = head
     end
 
-    -- Conectar el evento de muerte para expandir la cabeza de nuevo al reaparecer
+    -- Aumentar tamaño y transparencia
+    head.Size = Vector3.new(10, 10, 10)
+    head.Transparency = 0.5
+    head.CanCollide = true
+
+    -- Ajustar Mesh
+    local mesh = head:FindFirstChildOfClass("SpecialMesh")
+    if mesh then
+        mesh.Scale = Vector3.new(10, 10, 10)
+    end
+
+    -- Crear fuerzas para simular expansión física
+    local bodyPos = Instance.new("BodyPosition")
+    bodyPos.Position = head.Position
+    bodyPos.MaxForce = Vector3.new(10000, 10000, 10000)
+    bodyPos.P = 10000
+    bodyPos.Parent = head
+
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(10000, 10000, 10000)
+    bodyGyro.P = 10000
+    bodyGyro.Parent = head
+
+    -- Conectar evento de muerte
     local humanoid = character:WaitForChild("Humanoid")
     humanoid.Died:Connect(function()
-        humanoid:WaitForChild("HealthChanged") -- Esperar a que cambie la salud antes de destruir el personaje
-        wait(0.1) -- Esperar un momento para dar tiempo a que el personaje se elimine
-        player.CharacterAdded:Wait() -- Esperar a que aparezca un nuevo personaje
-        expandHead(player) -- Expandir la cabeza del nuevo personaje
+        -- 1. Crear explosión al morir
+        local explosion = Instance.new("Explosion")
+        explosion.Position = head.Position
+        explosion.BlastRadius = 15
+        explosion.BlastPressure = 1000000
+        explosion.DestroyJointRadiusPercent = 0
+        explosion.ExplosionType = Enum.ExplosionType.NoCraters
+        explosion.Parent = workspace
+
+        -- 2. Eliminar fuerzas físicas
+        bodyPos:Destroy()
+        bodyGyro:Destroy()
+
+        -- 3. Restaurar cabeza en el nuevo personaje
+        player.CharacterAdded:Wait()
+        wait(0.5) -- Esperar a que el personaje se estabilice
+        expandHead(player)
     end)
 end
 
--- Función para activar la expansión de la cabeza
-function activateHeadExpand()
-    for _, player in pairs(players:GetPlayers()) do
-        expandHead(player)
-    end
-end
-
--- Función para desactivar la expansión de la cabeza
+-- Función para desactivar la expansión (actualizada)
 function disableHeadExpand()
     for _, player in pairs(players:GetPlayers()) do
         local character = player.Character
         if character and character:FindFirstChild("Head") then
             local head = character.Head
+            
+            -- Destruir fuerzas físicas
+            for _, obj in ipairs(head:GetChildren()) do
+                if obj:IsA("BodyPosition") or obj:IsA("BodyGyro") then
+                    obj:Destroy()
+                end
+            end
+            
+            -- Restaurar tamaño original
             local originalSize = head:FindFirstChild("OriginalSize")
             if originalSize then
-                head.Size = originalSize.Value -- Restablecer tamaño a los valores originales
-                head.Transparency = 0 -- Hacerla opaca
-                head.CanCollide = true -- Restaurar la colisión
-
-                -- Ajustar el Mesh si existe
+                head.Size = originalSize.Value
+                head.Transparency = 0
+                
                 local mesh = head:FindFirstChildOfClass("SpecialMesh")
                 if mesh then
                     mesh.Scale = Vector3.new(1, 1, 1)
                 end
-
-                originalSize:Destroy() -- Eliminar el valor original
+                
+                originalSize:Destroy()
             end
         end
     end
 end
 
--- Conectar a los eventos de jugador
+-- Conectar eventos de jugadores
 players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
+    player.CharacterAdded:Connect(function()
         expandHead(player)
     end)
 end)
 
--- Aplicar la función a los jugadores que ya están en el juego
+-- Aplicar a jugadores existentes
 for _, player in pairs(players:GetPlayers()) do
-    if player ~= players.LocalPlayer then -- Asegúrate de no aplicar a ti mismo
-        player.CharacterAdded:Connect(function(character)
-            expandHead(player)
-        end)
-        -- También expande la cabeza de los jugadores existentes
+    if player ~= players.LocalPlayer then
         expandHead(player)
     end
 end
 
--- Asignar las funciones a las variables globales
-_G.activateHeadExpand = activateHeadExpand
+-- Funciones globales
+_G.activateHeadExpand = expandHead
 _G.disableHeadExpand = disableHeadExpand
