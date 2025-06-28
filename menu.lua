@@ -656,15 +656,17 @@ ExtraButton.MouseButton1Click:Connect(function()
     WelcomeFrame.Visible = false
 end)
 
+-- En tu script del menú principal
 AimbotButton.MouseButton1Click:Connect(function()
-    aimEnabled = not aimEnabled -- Cambiar el estado del aimbot
+    aimEnabled = not aimEnabled
+    
     if aimEnabled then
         AimbotButton.Text = "Anarchy aimb: On"
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/refs/heads/main/combat/aimbot.lua"))()
-        _G.enableAimbot() -- Activar el Aimbot
+        _G.enableAimbot() -- Activa el aimbot
     else
         AimbotButton.Text = "Anarchy aimb: Off"
-        _G.disableAimbot() -- Desactivar el Aimbot
+        _G.disableAimbot() -- Desactiva el aimbot
     end
 end)
 
