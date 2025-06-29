@@ -1,9 +1,21 @@
--- teleportMenu.lua (versión completa y corregida)
+-- teleportMenu.lua (versión final corregida y optimizada)
 
 local TeleportMenuAPI = {
     active = false,
     screenGui = nil
 }
+
+local function getSafeCFrame(model)
+    if model.PrimaryPart then
+        return model.PrimaryPart.CFrame
+    end
+    for _, part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") then
+            return part.CFrame
+        end
+    end
+    return nil
+end
 
 local function showTeleportMenu()
     if TeleportMenuAPI.active then
@@ -14,7 +26,7 @@ local function showTeleportMenu()
     local player = game.Players.LocalPlayer
     local playerGui = player:WaitForChild("PlayerGui")
     
-    -- Limpiar GUI existente si hay
+    -- Limpiar GUI existente
     if TeleportMenuAPI.screenGui then
         TeleportMenuAPI.screenGui:Destroy()
         TeleportMenuAPI.screenGui = nil
@@ -250,9 +262,11 @@ local function showTeleportMenu()
                 {BackgroundTransparency = 0.8}
             ):Play()
             
-            -- Teletransporte
+            -- Teletransporte seguro
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.CFrame = position
+                pcall(function()
+                    player.Character.HumanoidRootPart.CFrame = position
+                end)
             end
         end)
         
@@ -262,37 +276,43 @@ local function showTeleportMenu()
     -- Actualizar la lista de contenedores
     local function updateContainerList(filter)
         for _, child in pairs(containerList:GetChildren()) do
-            if child:IsA("TextButton") then
+            if child:IsA("TextButton") or child:IsA("TextLabel") then
                 child:Destroy()
             end
         end
 
         local offset = 0
-        -- Asegurarse de que la ruta a los contenedores es correcta
         local containerFolder = workspace:FindFirstChild("Interactable")
-        if containerFolder then
-            containerFolder = containerFolder:FindFirstChild("Containers")
-        end
+        containerFolder = containerFolder and containerFolder:FindFirstChild("Containers") or workspace:FindFirstChild("Containers")
         
         if containerFolder then
             for _, container in pairs(containerFolder:GetChildren()) do
-                if container:IsA("Model") and container.Name ~= "HumanoidRootPart" then
+                if container:IsA("Model") then
+                    local position = getSafeCFrame(container)
+                    if not position then
+                        warn("No se pudo obtener posición para: "..container.Name)
+                        continue
+                    end
+                    
                     if not filter or string.find(container.Name:lower(), filter:lower()) then
-                        local position = container.PrimaryPart and container.PrimaryPart.CFrame or container:GetModelCFrame()
                         local button = createTeleportButton(container.Name, position, containerList, offset)
                         offset = offset + 55
                     end
                 end
             end
-        else
-            -- Si no se encuentra la carpeta, mostrar un mensaje
+        end
+        
+        -- Mostrar mensaje si no hay contenedores
+        if offset == 0 then
             local message = Instance.new("TextLabel")
             message.Size = UDim2.new(1, 0, 0, 50)
             message.Text = "No se encontraron contenedores"
             message.TextColor3 = Color3.fromRGB(200, 200, 200)
             message.BackgroundTransparency = 1
             message.Parent = containerList
+            offset = offset + 55
         end
+        
         containerList.CanvasSize = UDim2.new(0, 0, 0, offset)
     end
 
@@ -372,3 +392,6 @@ end
 TeleportMenuAPI.isActive = function()
     return TeleportMenuAPI.active
 end
+
+-- IMPORTANTE: Retornar la API para que funcione con el loader
+return TeleportMenuAPI
