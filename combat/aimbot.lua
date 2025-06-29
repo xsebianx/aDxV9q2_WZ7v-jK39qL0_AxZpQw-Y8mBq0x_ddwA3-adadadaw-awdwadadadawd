@@ -197,10 +197,6 @@ local function aimbotLoop()
     end
 end
 
--- Inicializar el sistema
-createVisuals()
-renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
-
 -- Sistema de limpieza
 local function cleanUp()
     if fovCircle then 
@@ -222,24 +218,29 @@ local function cleanUp()
     positionHistory = {}
 end
 
--- Limpieza al cambiar de personaje o salir
-LocalPlayer.CharacterRemoving:Connect(cleanUp)
-game:BindToClose(cleanUp)
-
 -- Retorno para integración con el hub
 return {
     activate = function()
         if not renderStepped then
             createVisuals()
             renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
+            
+            -- Conexiones de limpieza solo cuando se activa
+            LocalPlayer.CharacterRemoving:Connect(cleanUp)
+            
+            -- Conexión para cuando el jugador abandona el juego (solución para cliente)
+            game:GetService("CoreGui").DescendantRemoving:Connect(function(descendant)
+                if descendant == script then
+                    cleanUp()
+                end
+            end)
+            
             print("Aimbot activado")
         end
     end,
     
     deactivate = function()
         if renderStepped then
-            renderStepped:Disconnect()
-            renderStepped = nil
             cleanUp()
             print("Aimbot desactivado")
         end
