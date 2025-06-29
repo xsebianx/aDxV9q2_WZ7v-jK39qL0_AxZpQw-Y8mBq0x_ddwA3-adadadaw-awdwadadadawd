@@ -45,9 +45,13 @@ end
 
 -- Crear elementos del crosshair simplificado
 local function createCrosshair()
-    -- Limpiar elementos existentes
-    for _, drawing in ipairs(crosshairLines) do
-        drawing:Remove()
+    -- Limpiar elementos existentes solo si ya existen
+    if #crosshairLines > 0 then
+        for _, drawing in ipairs(crosshairLines) do
+            if drawing then
+                drawing:Remove()
+            end
+        end
     end
     crosshairLines = {}
     
@@ -61,6 +65,9 @@ local function createCrosshair()
     
     -- Punto central simple
     if config.showCenterDot then
+        if centerDot then
+            centerDot:Remove()
+        end
         centerDot = Drawing.new("Circle")
         centerDot.Thickness = 1
         centerDot.Radius = 1.5
@@ -85,25 +92,38 @@ local function updateCrosshair()
     local gap = config.gap
     local size = config.size
     
+    -- Asegurarse de que todas las líneas existen
+    if #crosshairLines < 4 then
+        createCrosshair()
+    end
+    
     -- Línea horizontal izquierda
-    crosshairLines[1].From = Vector2.new(centerX - gap - size, centerY)
-    crosshairLines[1].To = Vector2.new(centerX - gap, centerY)
-    crosshairLines[1].Color = color
+    if crosshairLines[1] then
+        crosshairLines[1].From = Vector2.new(centerX - gap - size, centerY)
+        crosshairLines[1].To = Vector2.new(centerX - gap, centerY)
+        crosshairLines[1].Color = color
+    end
     
     -- Línea horizontal derecha
-    crosshairLines[2].From = Vector2.new(centerX + gap, centerY)
-    crosshairLines[2].To = Vector2.new(centerX + gap + size, centerY)
-    crosshairLines[2].Color = color
+    if crosshairLines[2] then
+        crosshairLines[2].From = Vector2.new(centerX + gap, centerY)
+        crosshairLines[2].To = Vector2.new(centerX + gap + size, centerY)
+        crosshairLines[2].Color = color
+    end
     
     -- Línea vertical superior
-    crosshairLines[3].From = Vector2.new(centerX, centerY - gap - size)
-    crosshairLines[3].To = Vector2.new(centerX, centerY - gap)
-    crosshairLines[3].Color = color
+    if crosshairLines[3] then
+        crosshairLines[3].From = Vector2.new(centerX, centerY - gap - size)
+        crosshairLines[3].To = Vector2.new(centerX, centerY - gap)
+        crosshairLines[3].Color = color
+    end
     
     -- Línea vertical inferior
-    crosshairLines[4].From = Vector2.new(centerX, centerY + gap)
-    crosshairLines[4].To = Vector2.new(centerX, centerY + gap + size)
-    crosshairLines[4].Color = color
+    if crosshairLines[4] then
+        crosshairLines[4].From = Vector2.new(centerX, centerY + gap)
+        crosshairLines[4].To = Vector2.new(centerX, centerY + gap + size)
+        crosshairLines[4].Color = color
+    end
     
     -- Punto central
     if centerDot then
@@ -115,14 +135,18 @@ end
 -- API para el menú DrakHub
 local CrosshairAPI = {
     activate = function()
-        -- Activar el crosshair
-        if crosshairEnabled then return end
+        -- Solo crear si no existe o fue eliminado
+        if #crosshairLines == 0 then
+            createCrosshair()
+        end
         
+        -- Activar el crosshair
         crosshairEnabled = true
-        createCrosshair()
         
         for _, line in ipairs(crosshairLines) do
-            line.Visible = true
+            if line then
+                line.Visible = true
+            end
         end
         
         if centerDot then
@@ -137,21 +161,17 @@ local CrosshairAPI = {
     end,
     
     deactivate = function()
-        -- Desactivar el crosshair
-        if not crosshairEnabled then return end
-        
+        -- Desactivar el crosshair pero mantener los objetos
         crosshairEnabled = false
         
         for _, line in ipairs(crosshairLines) do
-            line.Visible = false
-            line:Remove()
+            if line then
+                line.Visible = false
+            end
         end
-        crosshairLines = {}
         
         if centerDot then
             centerDot.Visible = false
-            centerDot:Remove()
-            centerDot = nil
         end
         
         if renderConnection then
@@ -162,21 +182,20 @@ local CrosshairAPI = {
         return true
     end,
     
-    -- Opcional: Funciones para cambiar configuración
-    setColor = function(newColor)
-        config.color = newColor
-    end,
-    
-    setSize = function(newSize)
-        config.size = newSize
-        if crosshairEnabled then
-            createCrosshair() -- Recrear con nuevo tamaño
-            for _, line in ipairs(crosshairLines) do
-                line.Visible = true
+    -- Función para limpiar completamente (solo para cuando se desea eliminar definitivamente)
+    destroy = function()
+        CrosshairAPI.deactivate()
+        
+        for _, line in ipairs(crosshairLines) do
+            if line then
+                line:Remove()
             end
-            if centerDot then
-                centerDot.Visible = true
-            end
+        end
+        crosshairLines = {}
+        
+        if centerDot then
+            centerDot:Remove()
+            centerDot = nil
         end
     end
 }
