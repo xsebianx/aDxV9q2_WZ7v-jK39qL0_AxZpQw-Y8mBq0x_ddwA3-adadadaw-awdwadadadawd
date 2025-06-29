@@ -1,21 +1,31 @@
--- teleportMenu.lua (versión mejorada con API para el hub)
+-- teleportMenu.lua (versión completa y corregida)
 
 local TeleportMenuAPI = {
-    active = false
+    active = false,
+    screenGui = nil
 }
 
 local function showTeleportMenu()
-    if TeleportMenuAPI.active then return end
+    if TeleportMenuAPI.active then
+        return
+    end
+    
     TeleportMenuAPI.active = true
-
     local player = game.Players.LocalPlayer
-    local playerGui = player.PlayerGui
-
-    -- Crear el GUI para el menú con un diseño mejorado
+    local playerGui = player:WaitForChild("PlayerGui")
+    
+    -- Limpiar GUI existente si hay
+    if TeleportMenuAPI.screenGui then
+        TeleportMenuAPI.screenGui:Destroy()
+        TeleportMenuAPI.screenGui = nil
+    end
+    
+    -- Crear el GUI para el menú
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "TeleportMenuGui"
     screenGui.Parent = playerGui
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    TeleportMenuAPI.screenGui = screenGui
 
     -- Marco principal con diseño de neón
     local frame = Instance.new("Frame")
@@ -44,21 +54,21 @@ local function showTeleportMenu()
     uigradient.Parent = neonBorder
 
     -- Animación de neón
-    spawn(function()
+    coroutine.wrap(function()
         while neonBorder and neonBorder.Parent do
             uigradient.Offset = Vector2.new(0, 0)
             for i = 0, 1, 0.01 do
                 if not neonBorder then break end
                 uigradient.Offset = Vector2.new(0, -i)
-                wait(0.03)
+                task.wait(0.03)
             end
             for i = 0, 1, 0.01 do
                 if not neonBorder then break end
                 uigradient.Offset = Vector2.new(0, i-1)
-                wait(0.03)
+                task.wait(0.03)
             end
         end
-    end)
+    end)()
 
     -- Esquinas redondeadas
     local uicorner = Instance.new("UICorner")
@@ -121,8 +131,7 @@ local function showTeleportMenu()
     end)
     
     closeButton.MouseButton1Click:Connect(function()
-        screenGui:Destroy()
-        TeleportMenuAPI.active = false
+        TeleportMenuAPI.deactivate()
     end)
 
     -- Barra de búsqueda con estilo moderno
@@ -259,14 +268,30 @@ local function showTeleportMenu()
         end
 
         local offset = 0
-        for _, container in pairs(workspace.Interactable.Containers:GetChildren()) do
-            if container:IsA("Model") and container.Name ~= "HumanoidRootPart" then
-                if not filter or string.find(container.Name:lower(), filter:lower()) then
-                    local position = container.PrimaryPart and container.PrimaryPart.CFrame or container:GetModelCFrame()
-                    local button = createTeleportButton(container.Name, position, containerList, offset)
-                    offset = offset + 55
+        -- Asegurarse de que la ruta a los contenedores es correcta
+        local containerFolder = workspace:FindFirstChild("Interactable")
+        if containerFolder then
+            containerFolder = containerFolder:FindFirstChild("Containers")
+        end
+        
+        if containerFolder then
+            for _, container in pairs(containerFolder:GetChildren()) do
+                if container:IsA("Model") and container.Name ~= "HumanoidRootPart" then
+                    if not filter or string.find(container.Name:lower(), filter:lower()) then
+                        local position = container.PrimaryPart and container.PrimaryPart.CFrame or container:GetModelCFrame()
+                        local button = createTeleportButton(container.Name, position, containerList, offset)
+                        offset = offset + 55
+                    end
                 end
             end
+        else
+            -- Si no se encuentra la carpeta, mostrar un mensaje
+            local message = Instance.new("TextLabel")
+            message.Size = UDim2.new(1, 0, 0, 50)
+            message.Text = "No se encontraron contenedores"
+            message.TextColor3 = Color3.fromRGB(200, 200, 200)
+            message.BackgroundTransparency = 1
+            message.Parent = containerList
         end
         containerList.CanvasSize = UDim2.new(0, 0, 0, offset)
     end
@@ -323,14 +348,13 @@ local function showTeleportMenu()
     end)
 end
 
-local function hideTeleportMenu()
+TeleportMenuAPI.deactivate = function()
     if TeleportMenuAPI.active then
-        local playerGui = game.Players.LocalPlayer.PlayerGui
-        local screenGui = playerGui:FindFirstChild("TeleportMenuGui")
-        if screenGui then
-            screenGui:Destroy()
-        end
         TeleportMenuAPI.active = false
+        if TeleportMenuAPI.screenGui then
+            TeleportMenuAPI.screenGui:Destroy()
+            TeleportMenuAPI.screenGui = nil
+        end
     end
 end
 
@@ -339,8 +363,8 @@ TeleportMenuAPI.activate = function()
     showTeleportMenu()
 end
 
-TeleportMenuAPI.deactivate = function()
-    hideTeleportMenu()
+TeleportMenuAPI.isActive = function()
+    return TeleportMenuAPI.active
 end
 
 return TeleportMenuAPI
