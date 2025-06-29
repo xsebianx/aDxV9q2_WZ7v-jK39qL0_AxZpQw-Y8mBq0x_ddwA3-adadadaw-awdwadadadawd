@@ -9,6 +9,11 @@ local highlightedEnemies = {}
 local lastTeleportTime = 0
 local teleportCooldown = 0.2
 
+-- Conexiones
+local mouseButton2DownConnection
+local mouseButton2UpConnection
+local heartbeatConnection
+
 -- Evitar ejecución duplicada
 if _G.megaAimbotLoaded then return end
 _G.megaAimbotLoaded = true
@@ -108,47 +113,73 @@ local function clearAllHighlights()
     highlightedEnemies = {}
 end
 
--- Conectar el mouse derecho
-mouse.Button2Down:Connect(function()
-    if megAimbEnabled then
-        aimbotEnabled = true
+-- Conectar eventos del mouse
+local function connectMouseEvents()
+    mouseButton2DownConnection = mouse.Button2Down:Connect(function()
+        if megAimbEnabled then
+            aimbotEnabled = true
+        end
+    end)
+    
+    mouseButton2UpConnection = mouse.Button2Up:Connect(function()
+        aimbotEnabled = false
+        clearAllHighlights()
+    end)
+end
+
+-- Conectar loop principal
+local function connectHeartbeat()
+    heartbeatConnection = RunService.Heartbeat:Connect(function()
+        if aimbotEnabled and megAimbEnabled then
+            checkEnemies()
+        end
+    end)
+end
+
+-- Desconectar todos los eventos
+local function disconnectAllEvents()
+    if mouseButton2DownConnection then
+        mouseButton2DownConnection:Disconnect()
+        mouseButton2DownConnection = nil
     end
-end)
-
-mouse.Button2Up:Connect(function()
-    aimbotEnabled = false
-    clearAllHighlights()
-end)
-
--- Loop principal usando RunService
-local RunService = game:GetService("RunService")
-RunService.Heartbeat:Connect(function()
-    if aimbotEnabled and megAimbEnabled then
-        pcall(checkEnemies)  -- Ejecutar con protección contra errores
+    
+    if mouseButton2UpConnection then
+        mouseButton2UpConnection:Disconnect()
+        mouseButton2UpConnection = nil
     end
-end)
+    
+    if heartbeatConnection then
+        heartbeatConnection:Disconnect()
+        heartbeatConnection = nil
+    end
+end
 
--- API pública para el menú
+-- API para el menú
 local MegaAimbAPI = {
     activate = function()
+        if megAimbEnabled then return true end
+        
         megAimbEnabled = true
-        print("MegaAim activado")
+        aimbotEnabled = false
+        
+        -- Reiniciar conexiones
+        disconnectAllEvents()
+        connectMouseEvents()
+        connectHeartbeat()
+        
         return true
     end,
     
     deactivate = function()
+        if not megAimbEnabled then return true end
+        
         megAimbEnabled = false
         aimbotEnabled = false
         
-        -- Limpiar highlights
-        for enemy, highlight in pairs(highlightedEnemies) do
-            if highlight then
-                highlight:Destroy()
-            end
-        end
-        highlightedEnemies = {}
+        -- Limpiar y desconectar
+        clearAllHighlights()
+        disconnectAllEvents()
         
-        print("MegaAim desactivado")
         return true
     end
 }

@@ -3,15 +3,15 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
--- Configuración simplificada
+-- Configuración
 local config = {
-    size = 12,          -- Tamaño de las líneas
-    thickness = 1.5,    -- Grosor de las líneas
-    gap = 4,            -- Espacio en el centro
-    color = Color3.fromRGB(0, 255, 0),  -- Color principal
-    showCenterDot = true,-- Mostrar punto central
-    dynamicColor = true, -- Cambiar color al apuntar a jugadores
-    targetColor = Color3.fromRGB(255, 0, 0)  -- Color cuando apuntas a un jugador
+    size = 12,
+    thickness = 1.5,
+    gap = 4,
+    color = Color3.fromRGB(0, 255, 0),
+    showCenterDot = true,
+    dynamicColor = true,
+    targetColor = Color3.fromRGB(255, 0, 0)
 }
 
 -- Variables
@@ -43,19 +43,17 @@ local function getTargetPlayer()
     return nil
 end
 
--- Crear elementos del crosshair simplificado
+-- Crear elementos del crosshair
 local function createCrosshair()
-    -- Limpiar elementos existentes solo si ya existen
-    if #crosshairLines > 0 then
-        for _, drawing in ipairs(crosshairLines) do
-            if drawing then
-                drawing:Remove()
-            end
+    -- Limpiar elementos existentes
+    for _, drawing in ipairs(crosshairLines) do
+        if drawing then
+            drawing:Remove()
         end
     end
     crosshairLines = {}
     
-    -- Solo 4 líneas principales (sin contornos)
+    -- 4 líneas principales
     for i = 1, 4 do
         local line = Drawing.new("Line")
         line.Thickness = config.thickness
@@ -63,11 +61,8 @@ local function createCrosshair()
         table.insert(crosshairLines, line)
     end
     
-    -- Punto central simple
+    -- Punto central
     if config.showCenterDot then
-        if centerDot then
-            centerDot:Remove()
-        end
         centerDot = Drawing.new("Circle")
         centerDot.Thickness = 1
         centerDot.Radius = 1.5
@@ -77,7 +72,7 @@ local function createCrosshair()
     end
 end
 
--- Actualizar posición (versión simplificada)
+-- Actualizar posición
 local function updateCrosshair()
     local centerX = workspace.CurrentCamera.ViewportSize.X / 2
     local centerY = workspace.CurrentCamera.ViewportSize.Y / 2
@@ -88,11 +83,11 @@ local function updateCrosshair()
         color = config.targetColor
     end
     
-    -- Posiciones de las líneas
+    -- Posiciones
     local gap = config.gap
     local size = config.size
     
-    -- Asegurarse de que todas las líneas existen
+    -- Asegurar que las líneas existen
     if #crosshairLines < 4 then
         createCrosshair()
     end
@@ -132,15 +127,12 @@ local function updateCrosshair()
     end
 end
 
--- API para el menú DrakHub
+-- API para el menú
 local CrosshairAPI = {
     activate = function()
-        -- Solo crear si no existe o fue eliminado
-        if #crosshairLines == 0 then
-            createCrosshair()
-        end
+        if crosshairEnabled then return true end
         
-        -- Activar el crosshair
+        createCrosshair()
         crosshairEnabled = true
         
         for _, line in ipairs(crosshairLines) do
@@ -153,15 +145,17 @@ local CrosshairAPI = {
             centerDot.Visible = true
         end
         
-        if not renderConnection then
-            renderConnection = RunService.RenderStepped:Connect(updateCrosshair)
+        if renderConnection then
+            renderConnection:Disconnect()
         end
+        renderConnection = RunService.RenderStepped:Connect(updateCrosshair)
         
         return true
     end,
     
     deactivate = function()
-        -- Desactivar el crosshair pero mantener los objetos
+        if not crosshairEnabled then return true end
+        
         crosshairEnabled = false
         
         for _, line in ipairs(crosshairLines) do
@@ -180,23 +174,6 @@ local CrosshairAPI = {
         end
         
         return true
-    end,
-    
-    -- Función para limpiar completamente (solo para cuando se desea eliminar definitivamente)
-    destroy = function()
-        CrosshairAPI.deactivate()
-        
-        for _, line in ipairs(crosshairLines) do
-            if line then
-                line:Remove()
-            end
-        end
-        crosshairLines = {}
-        
-        if centerDot then
-            centerDot:Remove()
-            centerDot = nil
-        end
     end
 }
 

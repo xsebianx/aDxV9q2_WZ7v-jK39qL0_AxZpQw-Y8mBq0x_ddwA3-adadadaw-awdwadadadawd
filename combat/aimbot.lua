@@ -1,24 +1,30 @@
-local fieldOfView = 30
-local closestTarget = nil
-local fovCircle, targetIndicator
-local predictionFactor = 0.165
-local targetLockDuration = 0.5
-local lockStartTime = 0
-local smoothingFactor = 0.3
-local positionHistory = {}
-
 -- Servicios esenciales
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+
+-- Variables (se reinician en cada activación)
+local fieldOfView
+local predictionFactor
+local targetLockDuration
+local smoothingFactor
+local fovCircle, targetIndicator
 local renderStepped
+local positionHistory = {}
 
 -- Función para crear elementos visuales
 local function createVisuals()
-    if fovCircle then pcall(function() fovCircle:Remove() end) end
-    if targetIndicator then pcall(function() targetIndicator:Remove() end) end
+    -- Limpiar elementos anteriores si existen
+    if fovCircle then 
+        pcall(function() fovCircle:Remove() end)
+        fovCircle = nil
+    end
+    if targetIndicator then 
+        pcall(function() targetIndicator:Remove() end)
+        targetIndicator = nil
+    end
     
     -- Círculo de FOV
     fovCircle = Drawing.new("Circle")
@@ -138,9 +144,8 @@ end
 -- Mantener objetivo
 local function shouldKeepTarget(target)
     if not target then return false end
-    if tick() - lockStartTime < targetLockDuration then return true end
-    
     if not target.Character then return false end
+    
     local head = target.Character:FindFirstChild("Head")
     if not head then return false end
     
@@ -159,7 +164,6 @@ local function aimbotLoop()
     if not safetyCheck() then
         if fovCircle then fovCircle.Visible = false end
         if targetIndicator then targetIndicator.Visible = false end
-        closestTarget = nil
         return
     end
     
@@ -167,10 +171,7 @@ local function aimbotLoop()
     local aiming = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
     
     if aiming then
-        if not shouldKeepTarget(closestTarget) then
-            closestTarget = findClosestTarget()
-            lockStartTime = tick()
-        end
+        local closestTarget = findClosestTarget()
         
         if closestTarget then
             preciseAim(closestTarget)
@@ -193,7 +194,6 @@ local function aimbotLoop()
     else
         if fovCircle then fovCircle.Visible = false end
         if targetIndicator then targetIndicator.Visible = false end
-        closestTarget = nil
     end
 end
 
@@ -221,29 +221,21 @@ end
 -- Retorno para integración con el hub
 return {
     activate = function()
+        -- Reiniciar configuración en cada activación
+        fieldOfView = 30
+        predictionFactor = 0.165
+        targetLockDuration = 0.5
+        smoothingFactor = 0.3
+        
+        -- Solo crear conexión si no existe
         if not renderStepped then
             createVisuals()
             renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
-            
-            -- Conexiones de limpieza solo cuando se activa
-            LocalPlayer.CharacterRemoving:Connect(cleanUp)
-            
-            -- Conexión para cuando el jugador abandona el juego (solución para cliente)
-            game:GetService("CoreGui").DescendantRemoving:Connect(function(descendant)
-                if descendant == script then
-                    cleanUp()
-                end
-            end)
-            
-            print("Aimbot activado")
         end
     end,
     
     deactivate = function()
-        if renderStepped then
-            cleanUp()
-            print("Aimbot desactivado")
-        end
+        cleanUp()
     end,
     
     configure = function(options)
