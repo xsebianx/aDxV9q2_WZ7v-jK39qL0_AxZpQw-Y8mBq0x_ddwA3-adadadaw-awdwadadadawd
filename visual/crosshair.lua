@@ -20,7 +20,7 @@ local crosshairLines = {}
 local centerDot
 local renderConnection
 
--- Detectar si está apuntando a un jugador (MOVIDO ARRIBA)
+-- Detectar si está apuntando a un jugador
 local function getTargetPlayer()
     local camera = workspace.CurrentCamera
     local mousePos = UserInputService:GetMouseLocation()
@@ -112,49 +112,73 @@ local function updateCrosshair()
     end
 end
 
--- Función para activar el crosshair
-function enableCrosshair()
-    if crosshairEnabled then return end
+-- API para el menú DrakHub
+local CrosshairAPI = {
+    activate = function()
+        -- Activar el crosshair
+        if crosshairEnabled then return end
+        
+        crosshairEnabled = true
+        createCrosshair()
+        
+        for _, line in ipairs(crosshairLines) do
+            line.Visible = true
+        end
+        
+        if centerDot then
+            centerDot.Visible = true
+        end
+        
+        if not renderConnection then
+            renderConnection = RunService.RenderStepped:Connect(updateCrosshair)
+        end
+        
+        return true
+    end,
     
-    crosshairEnabled = true
-    createCrosshair()
+    deactivate = function()
+        -- Desactivar el crosshair
+        if not crosshairEnabled then return end
+        
+        crosshairEnabled = false
+        
+        for _, line in ipairs(crosshairLines) do
+            line.Visible = false
+            line:Remove()
+        end
+        crosshairLines = {}
+        
+        if centerDot then
+            centerDot.Visible = false
+            centerDot:Remove()
+            centerDot = nil
+        end
+        
+        if renderConnection then
+            renderConnection:Disconnect()
+            renderConnection = nil
+        end
+        
+        return true
+    end,
     
-    for _, line in ipairs(crosshairLines) do
-        line.Visible = true
+    -- Opcional: Funciones para cambiar configuración
+    setColor = function(newColor)
+        config.color = newColor
+    end,
+    
+    setSize = function(newSize)
+        config.size = newSize
+        if crosshairEnabled then
+            createCrosshair() -- Recrear con nuevo tamaño
+            for _, line in ipairs(crosshairLines) do
+                line.Visible = true
+            end
+            if centerDot then
+                centerDot.Visible = true
+            end
+        end
     end
-    
-    if centerDot then
-        centerDot.Visible = true
-    end
-    
-    if not renderConnection then
-        renderConnection = RunService.RenderStepped:Connect(updateCrosshair)
-    end
-end
+}
 
--- Función para desactivar el crosshair
-function disableCrosshair()
-    if not crosshairEnabled then return end
-    
-    crosshairEnabled = false
-    
-    for _, line in ipairs(crosshairLines) do
-        line.Visible = false
-        line:Remove()
-    end
-    
-    if centerDot then
-        centerDot.Visible = false
-        centerDot:Remove()
-        centerDot = nil
-    end
-    
-    if renderConnection then
-        renderConnection:Disconnect()
-        renderConnection = nil
-    end
-end
-
--- Asignar funciones globales
-_G.enableCrosshair = enableCrosshair
-_G.disableCrosshair = disableCrosshair
+return CrosshairAPI
