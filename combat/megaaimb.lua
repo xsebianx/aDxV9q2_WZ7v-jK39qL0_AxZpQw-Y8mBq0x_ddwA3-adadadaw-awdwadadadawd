@@ -115,6 +115,13 @@ end
 
 -- Conectar eventos del mouse
 local function connectMouseEvents()
+    if mouseButton2DownConnection then
+        mouseButton2DownConnection:Disconnect()
+    end
+    if mouseButton2UpConnection then
+        mouseButton2UpConnection:Disconnect()
+    end
+    
     mouseButton2DownConnection = mouse.Button2Down:Connect(function()
         if megAimbEnabled then
             aimbotEnabled = true
@@ -129,9 +136,13 @@ end
 
 -- Conectar loop principal
 local function connectHeartbeat()
+    if heartbeatConnection then
+        heartbeatConnection:Disconnect()
+    end
+    
     heartbeatConnection = RunService.Heartbeat:Connect(function()
         if aimbotEnabled and megAimbEnabled then
-            checkEnemies()
+            pcall(checkEnemies)  -- Ejecutar con protección contra errores
         end
     end)
 end
@@ -181,6 +192,10 @@ local MegaAimbAPI = {
         disconnectAllEvents()
         
         return true
+    end,
+    
+    isActive = function()
+        return megAimbEnabled
     end
 }
 
