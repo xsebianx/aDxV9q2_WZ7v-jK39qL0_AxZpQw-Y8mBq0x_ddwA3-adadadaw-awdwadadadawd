@@ -128,32 +128,39 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Función para activar el megaaimb
-function enableMegaaimb()
-    megAimbEnabled = true
-    print("MegaAim activado")
-end
-
--- Función para desactivar el megaaimb
-function disableMegaaimb()
-    megAimbEnabled = false
-    aimbotEnabled = false
-    clearAllHighlights()
-    print("MegaAim desactivado")
-end
-
--- Registrar funciones globales
-_G.enableMegaaimb = enableMegaaimb
-_G.disableMegaaimb = disableMegaaimb
-
--- Limpiar al salir del juego
-game.Players.PlayerRemoving:Connect(function(leavingPlayer)
-    if leavingPlayer == player then
-        disableMegaaimb()
+-- API pública para el menú
+local MegaAimbAPI = {
+    activate = function()
+        megAimbEnabled = true
+        print("MegaAim activado")
+        return true
+    end,
+    
+    deactivate = function()
+        megAimbEnabled = false
+        aimbotEnabled = false
+        
+        -- Limpiar highlights
+        for enemy, highlight in pairs(highlightedEnemies) do
+            if highlight then
+                highlight:Destroy()
+            end
+        end
+        highlightedEnemies = {}
+        
+        print("MegaAim desactivado")
+        return true
+    end,
+    
+    isActive = function()
+        return megAimbEnabled
+    end,
+    
+    updateSettings = function(newFov, newDistance)
+        fov = newFov or fov
+        maxDistance = newDistance or maxDistance
+        return true
     end
-end)
-
-return {
-    Enable = enableMegaaimb,
-    Disable = disableMegaaimb
 }
+
+return MegaAimbAPI
