@@ -9,10 +9,18 @@ local highlightedEnemies = {}
 local lastTeleportTime = 0
 local teleportCooldown = 0.2
 
+-- Evitar ejecución duplicada
+if _G.megaAimbotLoaded then return end
+_G.megaAimbotLoaded = true
+
 -- Función para crear un Highlight en el enemigo
 local function highlightEnemy(enemy)
-    if not enemy.Character then return end
-    if highlightedEnemies[enemy] then return end
+    if not enemy or not enemy.Character then return end
+    
+    -- Limpiar highlight existente si es necesario
+    if highlightedEnemies[enemy] then
+        highlightedEnemies[enemy]:Destroy()
+    end
     
     local highlight = Instance.new("Highlight")
     highlight.Parent = enemy.Character
@@ -34,13 +42,13 @@ local function checkEnemies()
     local closestEnemy = nil
     local closestDistance = maxDistance + 1
     local playerCharacter = player.Character
-    local camera = workspace.CurrentCamera
     
     if not (playerCharacter and playerCharacter:FindFirstChild("HumanoidRootPart")) then 
         return 
     end
     
     local playerPosition = playerCharacter.HumanoidRootPart.Position
+    local camera = workspace.CurrentCamera
     local cameraDirection = camera.CFrame.LookVector
     
     for _, enemy in ipairs(game.Players:GetPlayers()) do
@@ -67,37 +75,37 @@ local function checkEnemies()
         end
     end
 
-    -- Teletransportar al enemigo más cercano con ajustes de posición (FRENTE AL JUGADOR)
+    -- Teletransportar al enemigo más cercano
     if closestEnemy and closestEnemy.Character and closestEnemy.Character:FindFirstChild("HumanoidRootPart") then
         local now = tick()
         
-        -- Cooldown para evitar detección
         if now - lastTeleportTime >= teleportCooldown then
             lastTeleportTime = now
             
-            -- CALCULAR POSICIÓN FRENTE AL JUGADOR
             local playerCFrame = playerCharacter.HumanoidRootPart.CFrame
-            local lookVector = playerCFrame.LookVector  -- Dirección hacia donde mira el jugador
+            local lookVector = playerCFrame.LookVector
             
-            -- Posicionar 5 unidades frente al jugador y 1 unidad arriba
+            -- Posicionar 5 unidades frente al jugador
             local teleportPosition = playerCFrame.Position + (lookVector * 5) + Vector3.new(0, 1, 0)
             
-            -- Crear nuevo CFrame manteniendo la rotación original del enemigo
-            local enemyRotation = closestEnemy.Character.HumanoidRootPart.CFrame - closestEnemy.Character.HumanoidRootPart.CFrame.Position
-            local newCFrame = CFrame.new(teleportPosition) * enemyRotation
+            -- Orientar al enemigo hacia el jugador
+            local newCFrame = CFrame.new(teleportPosition, playerCharacter.HumanoidRootPart.Position)
             
-            -- Aplicar posición y resetear velocidad
             closestEnemy.Character.HumanoidRootPart.CFrame = newCFrame
             closestEnemy.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
             closestEnemy.Character.HumanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
-            
-            -- Forzar al enemigo a mirar hacia el jugador para facilitar el disparo
-            closestEnemy.Character.HumanoidRootPart.CFrame = CFrame.new(
-                teleportPosition,
-                playerCharacter.HumanoidRootPart.Position
-            )
         end
     end
+end
+
+-- Limpiar todos los highlights
+local function clearAllHighlights()
+    for enemy, highlight in pairs(highlightedEnemies) do
+        if highlight then
+            highlight:Destroy()
+        end
+    end
+    highlightedEnemies = {}
 end
 
 -- Conectar el mouse derecho
@@ -109,39 +117,43 @@ end)
 
 mouse.Button2Up:Connect(function()
     aimbotEnabled = false
-    -- Limpiar todos los highlights
-    for enemy, highlight in pairs(highlightedEnemies) do
-        highlight:Destroy()
-    end
-    highlightedEnemies = {}
+    clearAllHighlights()
 end)
 
 -- Loop principal usando RunService
 local RunService = game:GetService("RunService")
 RunService.Heartbeat:Connect(function()
     if aimbotEnabled and megAimbEnabled then
-        checkEnemies()
+        pcall(checkEnemies)  -- Ejecutar con protección contra errores
     end
 end)
 
--- Al final de megaaimb.lua, añade:
+-- Función para activar el megaaimb
 function enableMegaaimb()
     megAimbEnabled = true
     print("MegaAim activado")
 end
 
+-- Función para desactivar el megaaimb
 function disableMegaaimb()
     megAimbEnabled = false
     aimbotEnabled = false
-    
-    -- Limpiar highlights
-    for enemy, highlight in pairs(highlightedEnemies) do
-        highlight:Destroy()
-    end
-    highlightedEnemies = {}
-    
+    clearAllHighlights()
     print("MegaAim desactivado")
 end
 
+-- Registrar funciones globales
 _G.enableMegaaimb = enableMegaaimb
 _G.disableMegaaimb = disableMegaaimb
+
+-- Limpiar al salir del juego
+game.Players.PlayerRemoving:Connect(function(leavingPlayer)
+    if leavingPlayer == player then
+        disableMegaaimb()
+    end
+end)
+
+return {
+    Enable = enableMegaaimb,
+    Disable = disableMegaaimb
+}
