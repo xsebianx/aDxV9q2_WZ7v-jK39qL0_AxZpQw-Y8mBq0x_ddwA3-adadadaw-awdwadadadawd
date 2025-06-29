@@ -348,6 +348,17 @@ local function showTeleportMenu()
     end)
 end
 
+TeleportMenuAPI.activate = function()
+    if not TeleportMenuAPI.active then
+        showTeleportMenu()
+    else
+        -- Si ya está activo, solo traer al frente
+        if TeleportMenuAPI.screenGui then
+            TeleportMenuAPI.screenGui.Enabled = true
+        end
+    end
+end
+
 TeleportMenuAPI.deactivate = function()
     if TeleportMenuAPI.active then
         TeleportMenuAPI.active = false
@@ -358,13 +369,6 @@ TeleportMenuAPI.deactivate = function()
     end
 end
 
--- API para el hub
-TeleportMenuAPI.activate = function()
-    showTeleportMenu()
-end
-
 TeleportMenuAPI.isActive = function()
     return TeleportMenuAPI.active
 end
-
-return TeleportMenuAPI
