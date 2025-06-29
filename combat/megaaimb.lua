@@ -9,6 +9,9 @@ local highlightedEnemies = {}
 local lastTeleportTime = 0
 local teleportCooldown = 0.2
 
+-- Obtener servicios necesarios
+local RunService = game:GetService("RunService")
+
 -- Conexiones
 local mouseButton2DownConnection
 local mouseButton2UpConnection
