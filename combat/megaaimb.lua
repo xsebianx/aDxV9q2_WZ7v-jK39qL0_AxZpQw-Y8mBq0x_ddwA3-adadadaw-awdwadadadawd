@@ -150,16 +150,6 @@ local MegaAimbAPI = {
         
         print("MegaAim desactivado")
         return true
-    end,
-    
-    isActive = function()
-        return megAimbEnabled
-    end,
-    
-    updateSettings = function(newFov, newDistance)
-        fov = newFov or fov
-        maxDistance = newDistance or maxDistance
-        return true
     end
 }
 
