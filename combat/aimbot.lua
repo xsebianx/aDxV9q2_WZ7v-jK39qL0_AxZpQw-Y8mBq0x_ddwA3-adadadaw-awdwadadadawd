@@ -6,8 +6,6 @@ local targetLockDuration = 0.5
 local lockStartTime = 0
 local smoothingFactor = 0.3
 local positionHistory = {}
-local aimbotEnabled = false
-local renderStepped = nil
 
 -- Servicios esenciales
 local UserInputService = game:GetService("UserInputService")
@@ -15,12 +13,14 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local renderStepped
 
 -- Función para crear elementos visuales
 local function createVisuals()
     if fovCircle then pcall(function() fovCircle:Remove() end) end
     if targetIndicator then pcall(function() targetIndicator:Remove() end) end
     
+    -- Círculo de FOV
     fovCircle = Drawing.new("Circle")
     fovCircle.Visible = false
     fovCircle.Thickness = 1
@@ -30,6 +30,7 @@ local function createVisuals()
     fovCircle.Filled = false
     fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     
+    -- Indicador de objetivo
     targetIndicator = Drawing.new("Circle")
     targetIndicator.Visible = false
     targetIndicator.Thickness = 2
@@ -155,13 +156,14 @@ end
 
 -- Función principal del aimbot
 local function aimbotLoop()
-    if not aimbotEnabled or not safetyCheck() then
+    if not safetyCheck() then
         if fovCircle then fovCircle.Visible = false end
         if targetIndicator then targetIndicator.Visible = false end
         closestTarget = nil
         return
     end
     
+    -- Solo activar cuando se presiona el botón derecho
     local aiming = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
     
     if aiming then
@@ -195,6 +197,10 @@ local function aimbotLoop()
     end
 end
 
+-- Inicializar el sistema
+createVisuals()
+renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
+
 -- Sistema de limpieza
 local function cleanUp()
     if fovCircle then 
@@ -211,35 +217,49 @@ local function cleanUp()
         renderStepped:Disconnect()
         renderStepped = nil
     end
+    
+    -- Limpiar historial de posiciones
+    positionHistory = {}
 end
 
--- Funciones para control externo
-function enableAimbot()
-    if not renderStepped then
-        createVisuals()
-        renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
-        aimbotEnabled = true
-        return true
-    end
-    return false
-end
-
-function disableAimbot()
-    if renderStepped then
-        renderStepped:Disconnect()
-        renderStepped = nil
-        cleanUp()
-        aimbotEnabled = false
-        return true
-    end
-    return false
-end
-
--- Registro global
-_G.enableAimbot = enableAimbot
-_G.disableAimbot = disableAimbot
-_G.getAimbotStatus = function() return aimbotEnabled end
-
--- Limpieza al cambiar de personaje
+-- Limpieza al cambiar de personaje o salir
 LocalPlayer.CharacterRemoving:Connect(cleanUp)
 game:BindToClose(cleanUp)
+
+-- Retorno para integración con el hub
+return {
+    activate = function()
+        if not renderStepped then
+            createVisuals()
+            renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
+            print("Aimbot activado")
+        end
+    end,
+    
+    deactivate = function()
+        if renderStepped then
+            renderStepped:Disconnect()
+            renderStepped = nil
+            cleanUp()
+            print("Aimbot desactivado")
+        end
+    end,
+    
+    configure = function(options)
+        if options.fieldOfView then
+            fieldOfView = options.fieldOfView
+            if fovCircle then
+                fovCircle.Radius = fieldOfView
+            end
+        end
+        if options.smoothingFactor then
+            smoothingFactor = options.smoothingFactor
+        end
+        if options.predictionFactor then
+            predictionFactor = options.predictionFactor
+        end
+        if options.targetLockDuration then
+            targetLockDuration = options.targetLockDuration
+        end
+    end
+}
