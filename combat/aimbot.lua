@@ -13,6 +13,18 @@ local smoothingFactor
 local fovCircle, targetIndicator
 local renderStepped
 local positionHistory = {}
+local currentTarget = nil
+local targetLockTime = 0
+local recentTargets = {}
+
+-- Configuración visual
+local visualSettings = {
+    showFovCircle = true,
+    showTargetIndicator = true,
+    fovCircleThickness = 0.5,
+    fovCircleTransparency = 0.5,
+    indicatorType = "cross"  -- "circle" o "cross"
+}
 
 -- Función para crear elementos visuales
 local function createVisuals()
@@ -22,30 +34,55 @@ local function createVisuals()
         fovCircle = nil
     end
     if targetIndicator then 
-        pcall(function() targetIndicator:Remove() end)
+        if targetIndicator.Remove then
+            pcall(function() targetIndicator:Remove() end)
+        else
+            for _, element in pairs(targetIndicator) do
+                pcall(function() element:Remove() end)
+            end
+        end
         targetIndicator = nil
     end
     
-    -- Círculo de FOV
-    fovCircle = Drawing.new("Circle")
-    fovCircle.Visible = false
-    fovCircle.Thickness = 1
-    fovCircle.Transparency = 0.7
-    fovCircle.Radius = fieldOfView
-    fovCircle.Color = Color3.fromRGB(255, 50, 50)
-    fovCircle.Filled = false
-    fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    -- Círculo de FOV (más discreto)
+    if visualSettings.showFovCircle then
+        fovCircle = Drawing.new("Circle")
+        fovCircle.Visible = false
+        fovCircle.Thickness = visualSettings.fovCircleThickness
+        fovCircle.Transparency = visualSettings.fovCircleTransparency
+        fovCircle.Radius = fieldOfView
+        fovCircle.Color = Color3.fromRGB(255, 50, 50)
+        fovCircle.Filled = false
+        fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    end
     
-    -- Indicador de objetivo
-    targetIndicator = Drawing.new("Circle")
-    targetIndicator.Visible = false
-    targetIndicator.Thickness = 2
-    targetIndicator.Radius = 8
-    targetIndicator.Color = Color3.fromRGB(50, 255, 50)
-    targetIndicator.Filled = false
+    -- Indicador de objetivo (cruz en lugar de círculo)
+    if visualSettings.showTargetIndicator then
+        if visualSettings.indicatorType == "cross" then
+            targetIndicator = {
+                horizontal = Drawing.new("Line"),
+                vertical = Drawing.new("Line")
+            }
+            
+            targetIndicator.horizontal.Visible = false
+            targetIndicator.horizontal.Thickness = 1
+            targetIndicator.horizontal.Color = Color3.fromRGB(50, 255, 50)
+            
+            targetIndicator.vertical.Visible = false
+            targetIndicator.vertical.Thickness = 1
+            targetIndicator.vertical.Color = Color3.fromRGB(50, 255, 50)
+        else
+            targetIndicator = Drawing.new("Circle")
+            targetIndicator.Visible = false
+            targetIndicator.Thickness = 1
+            targetIndicator.Radius = 4
+            targetIndicator.Color = Color3.fromRGB(50, 255, 50)
+            targetIndicator.Filled = false
+        end
+    end
 end
 
--- Verificación de visibilidad
+-- Verificación de visibilidad (mejorada)
 local function isVisible(targetPart)
     if not targetPart then return false end
     
@@ -56,17 +93,39 @@ local function isVisible(targetPart)
     
     local origin = Camera.CFrame.Position
     local direction = (targetPart.Position - origin).Unit
+    local distance = (targetPart.Position - origin).Magnitude
     
-    local raycastResult = workspace:Raycast(origin, direction * 1000, raycastParams)
-    return raycastResult and raycastResult.Instance:IsDescendantOf(targetPart.Parent)
+    local raycastResult = workspace:Raycast(origin, direction * distance, raycastParams)
+    return raycastResult == nil or raycastResult.Instance:IsDescendantOf(targetPart.Parent)
 end
 
--- Encontrar objetivo más cercano
-local function findClosestTarget()
+-- Sistema de prioridad de objetivos
+local function getTargetPriority(target)
+    -- Priorizar objetivos que ya hemos estado siguiendo
+    if recentTargets[target] then
+        return 2
+    end
+    
+    -- Priorizar objetivos cercanos
+    local distance = (target.Character.Head.Position - Camera.CFrame.Position).Magnitude
+    if distance < 50 then
+        return 1
+    end
+    
+    return 0
+end
+
+-- Encontrar objetivo más cercano (con estabilidad)
+local function findStableTarget()
     local bestTarget = nil
     local minAngle = math.rad(fieldOfView)
-    local shortestDistance = math.huge
+    local bestScore = -math.huge
     local cameraDir = Camera.CFrame.LookVector
+    
+    -- Primero intentar mantener el objetivo actual si es válido
+    if currentTarget and shouldKeepTarget(currentTarget) then
+        return currentTarget
+    end
     
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
@@ -78,10 +137,26 @@ local function findClosestTarget()
                 local angle = math.acos(cameraDir:Dot(directionToTarget))
                 local distance = (head.Position - Camera.CFrame.Position).Magnitude
                 
-                if angle < minAngle and distance < shortestDistance and isVisible(head) then
-                    shortestDistance = distance
-                    bestTarget = player
+                if angle < minAngle and isVisible(head) then
+                    local score = (1 / distance) * 100 + getTargetPriority(player)
+                    
+                    if score > bestScore then
+                        bestScore = score
+                        bestTarget = player
+                    end
                 end
+            end
+        end
+    end
+    
+    -- Actualizar historial de objetivos
+    if bestTarget then
+        recentTargets[bestTarget] = tick()
+        
+        -- Limpiar objetivos antiguos
+        for target, time in pairs(recentTargets) do
+            if tick() - time > 5 then -- 5 segundos de retención
+                recentTargets[target] = nil
             end
         end
     end
@@ -141,10 +216,9 @@ local function safetyCheck()
     return humanoid and humanoid.Health > 0 and not UserInputService:GetFocusedTextBox()
 end
 
--- Mantener objetivo
+-- Mantener objetivo (mejorado con tiempo mínimo de bloqueo)
 local function shouldKeepTarget(target)
-    if not target then return false end
-    if not target.Character then return false end
+    if not target or not target.Character then return false end
     
     local head = target.Character:FindFirstChild("Head")
     if not head then return false end
@@ -152,18 +226,59 @@ local function shouldKeepTarget(target)
     local humanoid = target.Character:FindFirstChild("Humanoid")
     if not humanoid or humanoid.Health <= 0 then return false end
     
+    -- Mantener el objetivo durante al menos el tiempo de bloqueo
+    if tick() - targetLockTime < targetLockDuration then
+        return true
+    end
+    
     local cameraDir = Camera.CFrame.LookVector
     local directionToTarget = (head.Position - Camera.CFrame.Position).Unit
     local angle = math.acos(cameraDir:Dot(directionToTarget))
     
-    return angle < math.rad(fieldOfView) and isVisible(head)
+    return angle < math.rad(fieldOfView * 1.2) and isVisible(head) -- 20% de margen adicional
 end
 
--- Función principal del aimbot
+-- Actualizar indicador visual
+local function updateTargetIndicator(target)
+    if not targetIndicator or not visualSettings.showTargetIndicator then return end
+    
+    local head = target.Character:FindFirstChild("Head")
+    if not head then return end
+    
+    local screenPos = Camera:WorldToViewportPoint(head.Position)
+    if not screenPos then return end
+    
+    local pos = Vector2.new(screenPos.X, screenPos.Y)
+    
+    if visualSettings.indicatorType == "cross" then
+        local size = 6
+        
+        targetIndicator.horizontal.Visible = true
+        targetIndicator.horizontal.From = Vector2.new(pos.X - size, pos.Y)
+        targetIndicator.horizontal.To = Vector2.new(pos.X + size, pos.Y)
+        
+        targetIndicator.vertical.Visible = true
+        targetIndicator.vertical.From = Vector2.new(pos.X, pos.Y - size)
+        targetIndicator.vertical.To = Vector2.new(pos.X, pos.Y + size)
+    else
+        targetIndicator.Visible = true
+        targetIndicator.Position = pos
+    end
+end
+
+-- Función principal del aimbot (mejorada)
 local function aimbotLoop()
     if not safetyCheck() then
         if fovCircle then fovCircle.Visible = false end
-        if targetIndicator then targetIndicator.Visible = false end
+        if targetIndicator then
+            if visualSettings.indicatorType == "cross" then
+                targetIndicator.horizontal.Visible = false
+                targetIndicator.vertical.Visible = false
+            else
+                targetIndicator.Visible = false
+            end
+        end
+        currentTarget = nil
         return
     end
     
@@ -171,33 +286,48 @@ local function aimbotLoop()
     local aiming = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
     
     if aiming then
-        local closestTarget = findClosestTarget()
+        local closestTarget = findStableTarget()
         
         if closestTarget then
+            -- Actualizar objetivo actual y tiempo de bloqueo
+            if currentTarget ~= closestTarget then
+                currentTarget = closestTarget
+                targetLockTime = tick()
+            end
+            
             preciseAim(closestTarget)
+            updateTargetIndicator(closestTarget)
+        else
+            currentTarget = nil
             if targetIndicator then
-                targetIndicator.Visible = true
-                local head = closestTarget.Character:FindFirstChild("Head")
-                if head then
-                    local screenPos = Camera:WorldToViewportPoint(head.Position)
-                    targetIndicator.Position = Vector2.new(screenPos.X, screenPos.Y)
+                if visualSettings.indicatorType == "cross" then
+                    targetIndicator.horizontal.Visible = false
+                    targetIndicator.vertical.Visible = false
+                else
+                    targetIndicator.Visible = false
                 end
             end
-        else
-            if targetIndicator then targetIndicator.Visible = false end
         end
         
-        if fovCircle then
+        if fovCircle and visualSettings.showFovCircle then
             fovCircle.Visible = true
             fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
         end
     else
+        currentTarget = nil
         if fovCircle then fovCircle.Visible = false end
-        if targetIndicator then targetIndicator.Visible = false end
+        if targetIndicator then
+            if visualSettings.indicatorType == "cross" then
+                targetIndicator.horizontal.Visible = false
+                targetIndicator.vertical.Visible = false
+            else
+                targetIndicator.Visible = false
+            end
+        end
     end
 end
 
--- Sistema de limpieza
+-- Sistema de limpieza (mejorado)
 local function cleanUp()
     if fovCircle then 
         fovCircle:Remove()
@@ -205,7 +335,12 @@ local function cleanUp()
     end
     
     if targetIndicator then 
-        targetIndicator:Remove()
+        if visualSettings.indicatorType == "cross" then
+            targetIndicator.horizontal:Remove()
+            targetIndicator.vertical:Remove()
+        else
+            targetIndicator:Remove()
+        end
         targetIndicator = nil
     end
     
@@ -214,8 +349,10 @@ local function cleanUp()
         renderStepped = nil
     end
     
-    -- Limpiar historial de posiciones
+    -- Limpiar historiales
     positionHistory = {}
+    recentTargets = {}
+    currentTarget = nil
 end
 
 -- Retorno para integración con el hub
@@ -226,6 +363,15 @@ return {
         predictionFactor = 0.165
         targetLockDuration = 0.5
         smoothingFactor = 0.3
+        
+        -- Configuración visual predeterminada
+        visualSettings = {
+            showFovCircle = true,
+            showTargetIndicator = true,
+            fovCircleThickness = 0.5,
+            fovCircleTransparency = 0.5,
+            indicatorType = "cross"
+        }
         
         -- Solo crear conexión si no existe
         if not renderStepped then
@@ -253,6 +399,20 @@ return {
         end
         if options.targetLockDuration then
             targetLockDuration = options.targetLockDuration
+        end
+        
+        -- Configuración visual
+        if options.visualSettings then
+            for key, value in pairs(options.visualSettings) do
+                if visualSettings[key] ~= nil then
+                    visualSettings[key] = value
+                end
+            end
+            
+            -- Recrear elementos visuales si es necesario
+            if options.visualSettings.indicatorType or options.visualSettings.showTargetIndicator then
+                createVisuals()
+            end
         end
     end
 }
