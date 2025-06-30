@@ -4,83 +4,77 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 
--- Variables protegidas contra errores
+-- Variables optimizadas
 local LocalPlayer = Players.LocalPlayer
-local camera = Workspace.CurrentCamera
-local ZOOM_SPEED = 3
-local MAX_ZOOM = 10
-local MIN_ZOOM = 70
-local DEFAULT_ZOOM = 70
-local currentZoom = DEFAULT_ZOOM
-local zoomSensitivityFactor = 1.0
-local predictionFactor = 0.25
-local smoothingFactor = 0.08
+local Camera = Workspace.CurrentCamera
+local predictionFactor = 0.22
+local smoothingFactor = 0.06
 local renderStepped
+local lastInputTime = 0
 local targetCache = {}
 local playerList = Players:GetPlayers()
-local lastInputTime = 0
 
--- Función segura para obtener la cámara
-local function getSafeCamera()
-    return Workspace:FindFirstChildOfClass("Camera") or Workspace.CurrentCamera
-end
-
--- Sistema de zoom corregido (dirección invertida)
-local function safeUpdateZoom(direction)
-    local success, err = pcall(function()
-        local cam = getSafeCamera()
-        if not cam then return end
-        
-        -- CORRECCIÓN: Invertir la dirección para comportamiento natural
-        local zoomDirection = direction > 0 and -1 or 1
-        currentZoom = math.clamp(currentZoom + (zoomDirection * ZOOM_SPEED), MAX_ZOOM, MIN_ZOOM)
-        
-        cam.FieldOfView = currentZoom
-        
-        -- Ajustar sensibilidad según zoom
-        zoomSensitivityFactor = math.clamp(DEFAULT_ZOOM / currentZoom, 0.5, 2.0)
-    end)
-    
-    if not success then
-        warn("[ZOOM ERROR]", err)
+-- Función ultra rápida para movimiento de mouse
+local function optimizedMouseMove(deltaX, deltaY)
+    local now = tick()
+    if now - lastInputTime > 0.016 then  -- 60 FPS máximo
+        lastInputTime = now
+        mousemoverel(deltaX, deltaY)
     end
 end
 
--- Función optimizada para movimiento del mouse con ajuste de zoom
-local function safeMouseMove(deltaX, deltaY)
-    pcall(function()
-        -- Limitar movimientos a 60 por segundo
-        local now = tick()
-        if now - lastInputTime > 0.016 then
-            lastInputTime = now
-            
-            -- Aplicar ajuste de sensibilidad por zoom
-            deltaX = deltaX * zoomSensitivityFactor
-            deltaY = deltaY * zoomSensitivityFactor
-            
-            mousemoverel(deltaX, deltaY)
+-- Sistema de predicción mejorado para cualquier distancia
+local function calculatePrecisionPrediction(hitbox)
+    if not hitbox then return nil end
+    
+    -- Predicción base (90% de los casos)
+    local basePrediction = hitbox.Position + (hitbox.AssemblyLinearVelocity * predictionFactor)
+    
+    -- Predicción para movimiento lateral rápido
+    local horizontalVelocity = Vector3.new(
+        hitbox.AssemblyLinearVelocity.X,
+        0,
+        hitbox.AssemblyLinearVelocity.Z
+    )
+    
+    if horizontalVelocity.Magnitude > 25 then
+        return basePrediction + (horizontalVelocity.Unit * 1.5)
+    end
+    
+    return basePrediction
+end
+
+-- Sistema de detección de objetivos sin límites
+local function findAnyVisiblePart(target)
+    if not target or not target.Character then return nil end
+    
+    -- Primero intentar partes prioritarias
+    for _, partName in ipairs({"Head", "HumanoidRootPart", "UpperTorso"}) do
+        local part = target.Character:FindFirstChild(partName)
+        if part then
+            return part
         end
-    end)
+    end
+    
+    -- Buscar cualquier parte visible
+    for _, part in ipairs(target.Character:GetChildren()) do
+        if part:IsA("BasePart") then
+            return part
+        end
+    end
+    
+    return nil
 end
 
--- Sistema de selección de objetivos optimizado
-local function findFastTarget()
-    local bestScore = -math.huge
-    local bestHitbox = nil
-    local cam = getSafeCamera()
-    if not cam then return nil end
-    
-    local cameraPos = cam.CFrame.Position
-    
-    -- Actualizar lista de jugadores solo si cambió
-    if #playerList ~= #Players:GetPlayers() then
-        playerList = Players:GetPlayers()
-    end
+-- Sistema de selección de objetivos sin restricciones
+local function findOptimalTarget()
+    local bestTarget = nil
+    local bestPart = nil
+    local bestDistance = math.huge
     
     for _, player in ipairs(playerList) do
         if player == LocalPlayer then continue end
         
-        -- Usar caché de personajes
         local character = targetCache[player] or player.Character
         if not character then continue end
         targetCache[player] = character
@@ -88,103 +82,57 @@ local function findFastTarget()
         local humanoid = character:FindFirstChild("Humanoid")
         if not humanoid or humanoid.Health <= 0 then continue end
         
-        -- Buscar hitbox prioritario
-        for _, hitboxName in ipairs({"Head", "HumanoidRootPart", "UpperTorso"}) do
-            local hitbox = character:FindFirstChild(hitboxName)
-            if hitbox then
-                local distance = (hitbox.Position - cameraPos).Magnitude
-                local score = 1000 / distance
-                
-                if score > bestScore then
-                    bestScore = score
-                    bestHitbox = hitbox
-                end
-                break  -- Solo un hitbox por jugador
+        local part = findAnyVisiblePart(player)
+        if part then
+            local distance = (part.Position - Camera.CFrame.Position).Magnitude
+            if distance < bestDistance then
+                bestDistance = distance
+                bestTarget = player
+                bestPart = part
             end
         end
     end
     
-    return bestHitbox
+    return bestTarget, bestPart
 end
 
--- Sistema de predicción con protección
-local function safePrediction(hitbox)
-    if not hitbox then return nil end
+-- Sistema de seguimiento pixel-perfect
+local function pixelPerfectAim()
+    local target, part = findOptimalTarget()
+    if not target or not part then return end
     
-    return pcall(function()
-        return hitbox.Position + (hitbox.AssemblyLinearVelocity * predictionFactor)
-    end)
-end
-
--- Sistema de seguimiento seguro con zoom
-local function safeAim()
-    local cam = getSafeCamera()
-    if not cam then return end
+    local predictedPos = calculatePrecisionPrediction(part)
+    if not predictedPos then return end
     
-    local hitbox = findFastTarget()
-    if not hitbox then return end
-    
-    local success, predictedPos = safePrediction(hitbox)
-    if not success or not predictedPos then return end
-    
-    local screenPos, visible = pcall(function()
-        return cam:WorldToViewportPoint(predictedPos)
-    end)
-    
-    if not success or not visible then return end
+    local screenPos = Camera:WorldToViewportPoint(predictedPos)
+    if screenPos.Z < 0 then return end  -- Detrás de la cámara
     
     local mousePos = UserInputService:GetMouseLocation()
     local targetPos = Vector2.new(screenPos.X, screenPos.Y)
     local delta = (targetPos - mousePos)
     
-    safeMouseMove(
+    optimizedMouseMove(
         delta.X * smoothingFactor,
         delta.Y * smoothingFactor
     )
 end
 
--- Manejar rueda del mouse para zoom con protección y dirección corregida
-UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseWheel then
-        -- CORRECCIÓN: Usar el valor directo sin inversión
-        safeUpdateZoom(input.Position.Y)
+-- Loop principal ultra eficiente
+local function aimbotLoop()
+    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        pixelPerfectAim()
     end
-end)
-
--- Restablecer zoom al soltar botones
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        pcall(function()
-            local cam = getSafeCamera()
-            if cam then
-                cam.FieldOfView = DEFAULT_ZOOM
-            end
-            currentZoom = DEFAULT_ZOOM
-            zoomSensitivityFactor = 1.0
-        end)
-    end
-end)
-
--- Loop principal protegido
-local function safeAimbotLoop()
-    pcall(function()
-        if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-            safeAim()
-        end
-    end)
 end
 
--- API para el hub con protección completa
+-- API simplificada para el hub
 return {
     activate = function()
-        -- Inicializar cámara
-        camera = getSafeCamera()
-        if camera then
-            camera.FieldOfView = DEFAULT_ZOOM
-        end
+        -- Configuración profesional
+        predictionFactor = 0.18   -- Predicción precisa
+        smoothingFactor = 0.04    -- Movimientos suaves pero rápidos
         
         if not renderStepped then
-            renderStepped = RunService.RenderStepped:Connect(safeAimbotLoop)
+            renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
         end
     end,
     
@@ -193,30 +141,11 @@ return {
             renderStepped:Disconnect()
             renderStepped = nil
         end
-        
-        pcall(function()
-            local cam = getSafeCamera()
-            if cam then
-                cam.FieldOfView = DEFAULT_ZOOM
-            end
-            currentZoom = DEFAULT_ZOOM
-            zoomSensitivityFactor = 1.0
-            targetCache = {}
-        end)
+        targetCache = {}
     end,
     
     configure = function(options)
         if options.predictionFactor then predictionFactor = options.predictionFactor end
         if options.smoothingFactor then smoothingFactor = options.smoothingFactor end
-        if options.zoomSpeed then ZOOM_SPEED = options.zoomSpeed end
-        if options.maxZoom then MAX_ZOOM = options.maxZoom end
-        if options.minZoom then MIN_ZOOM = options.minZoom end
-        
-        -- Corrección adicional para dirección del zoom
-        if options.invertZoomDirection then
-            ZOOM_DIRECTION_MULTIPLIER = -1
-        else
-            ZOOM_DIRECTION_MULTIPLIER = 1
-        end
     end
 }
