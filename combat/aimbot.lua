@@ -25,13 +25,16 @@ local function getSafeCamera()
     return Workspace:FindFirstChildOfClass("Camera") or Workspace.CurrentCamera
 end
 
--- Sistema de zoom con protección contra errores
+-- Sistema de zoom corregido (dirección invertida)
 local function safeUpdateZoom(direction)
     local success, err = pcall(function()
         local cam = getSafeCamera()
         if not cam then return end
         
-        currentZoom = math.clamp(currentZoom - (direction * ZOOM_SPEED), MAX_ZOOM, MIN_ZOOM)
+        -- CORRECCIÓN: Invertir la dirección para comportamiento natural
+        local zoomDirection = direction > 0 and -1 or 1
+        currentZoom = math.clamp(currentZoom + (zoomDirection * ZOOM_SPEED), MAX_ZOOM, MIN_ZOOM)
+        
         cam.FieldOfView = currentZoom
         
         -- Ajustar sensibilidad según zoom
@@ -140,9 +143,10 @@ local function safeAim()
     )
 end
 
--- Manejar rueda del mouse para zoom con protección
+-- Manejar rueda del mouse para zoom con protección y dirección corregida
 UserInputService.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseWheel then
+        -- CORRECCIÓN: Usar el valor directo sin inversión
         safeUpdateZoom(input.Position.Y)
     end
 end)
@@ -207,5 +211,12 @@ return {
         if options.zoomSpeed then ZOOM_SPEED = options.zoomSpeed end
         if options.maxZoom then MAX_ZOOM = options.maxZoom end
         if options.minZoom then MIN_ZOOM = options.minZoom end
+        
+        -- Corrección adicional para dirección del zoom
+        if options.invertZoomDirection then
+            ZOOM_DIRECTION_MULTIPLIER = -1
+        else
+            ZOOM_DIRECTION_MULTIPLIER = 1
+        end
     end
 }
