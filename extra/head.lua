@@ -10,7 +10,7 @@ local HeadAPI = {
 }
 
 -- Configuración
-local HEAD_SCALE = 3.0  -- Factor de escala para las cabezas
+local HEAD_SCALE = 6.0  -- Factor de escala para las cabezas
 local LOCAL_PLAYER = Players.LocalPlayer
 
 -- Función para aplicar el efecto de cabeza grande
