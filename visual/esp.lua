@@ -1,7 +1,8 @@
--- ESP Profesional para DrakHub Premium (Versión Corregida)
+-- ESP Profesional para DrakHub Premium (Versión Mejorada)
 local ProfessionalESP = {
     Enabled = false,
     Players = {},
+    LastUpdate = 0,  -- Para optimización de rendimiento
     Settings = {
         Boxes = true,
         Names = true,
@@ -31,6 +32,33 @@ local FontMapping = {
     [3] = Drawing.Fonts.Monospace
 }
 
+-- Función segura para evitar errores en dibujos
+local function safeSet(drawing, props)
+    pcall(function()
+        for prop, value in pairs(props) do
+            drawing[prop] = value
+        end
+    end)
+end
+
+-- Función para calcular tamaño dinámico de caja
+local function calculateDynamicSize(character, headPos)
+    local humanoid = character:FindFirstChild("Humanoid")
+    local head = character:FindFirstChild("Head")
+    
+    if not humanoid or not head then 
+        return Vector2.new(40, 65)  -- Tamaño predeterminado
+    end
+
+    -- Calcular altura real del personaje
+    local height = humanoid.HipHeight * 2 + head.Size.Y * 2
+    local width = height * 0.6  -- Proporción ancho/altura
+    
+    -- Ajustar por distancia y FOV
+    local scaleFactor = 1 / (headPos.Z * math.tan(math.rad(Camera.FieldOfView / 2)) * 2) * 1000
+    return Vector2.new(width * scaleFactor, height * scaleFactor)
+end
+
 -- Función para crear un ESP para un jugador
 function ProfessionalESP:Create(player)
     if self.Players[player] then return end
@@ -42,7 +70,7 @@ function ProfessionalESP:Create(player)
     }
     self.Players[player] = esp
 
-    -- Crear dibujos
+    -- Función interna para crear dibujos con configuración inicial
     local function createDrawing(type, props)
         local drawing = Drawing.new(type)
         for prop, value in pairs(props) do
@@ -60,26 +88,30 @@ function ProfessionalESP:Create(player)
     esp.BoxOutline = createDrawing("Square", {
         Thickness = 3,
         Color = Color3.new(0, 0, 0),
-        Filled = false
+        Filled = false,
+        ZIndex = 1
     })
 
     esp.Box = createDrawing("Square", {
         Thickness = 1,
         Color = self.Settings.EnemyColor,
-        Filled = false
+        Filled = false,
+        ZIndex = 2
     })
 
     -- Barra de salud
     esp.HealthBarOutline = createDrawing("Square", {
         Thickness = 1,
         Color = Color3.new(0, 0, 0),
-        Filled = false
+        Filled = false,
+        ZIndex = 3
     })
 
     esp.HealthBar = createDrawing("Square", {
         Thickness = 1,
         Color = Color3.new(0, 1, 0),
-        Filled = true
+        Filled = true,
+        ZIndex = 4
     })
 
     -- Textos
@@ -89,7 +121,8 @@ function ProfessionalESP:Create(player)
         Outline = true,
         OutlineColor = Color3.new(0, 0, 0),
         Color = Color3.new(1, 1, 1),
-        Font = self.Settings.Font
+        Font = self.Settings.Font,
+        ZIndex = 5
     })
 
     esp.DistanceText = createDrawing("Text", {
@@ -98,13 +131,15 @@ function ProfessionalESP:Create(player)
         Outline = true,
         OutlineColor = Color3.new(0, 0, 0),
         Color = Color3.new(1, 1, 1),
-        Font = self.Settings.Font
+        Font = self.Settings.Font,
+        ZIndex = 6
     })
 
     -- Tracer
     esp.Tracer = createDrawing("Line", {
         Thickness = 1,
-        Color = self.Settings.EnemyColor
+        Color = self.Settings.EnemyColor,
+        ZIndex = 7
     })
 
     -- Conectar eventos
@@ -125,7 +160,7 @@ function ProfessionalESP:Update(player)
     local character = player.Character
     if not character then
         for _, drawing in pairs(esp.Drawings) do
-            drawing.Visible = false
+            safeSet(drawing, {Visible = false})
         end
         return
     end
@@ -136,7 +171,7 @@ function ProfessionalESP:Update(player)
 
     if not humanoid or not head or not rootPart then 
         for _, drawing in pairs(esp.Drawings) do
-            drawing.Visible = false
+            safeSet(drawing, {Visible = false})
         end
         return
     end
@@ -147,45 +182,60 @@ function ProfessionalESP:Update(player)
 
     if not headOnScreen then
         for _, drawing in pairs(esp.Drawings) do
-            drawing.Visible = false
+            safeSet(drawing, {Visible = false})
         end
         return
     end
 
-    -- Determinar color según equipo
-    local color = self.Settings.EnemyColor
-    if self.Settings.TeamCheck and player.Team == LocalPlayer.Team then
-        color = self.Settings.AllyColor
-    end
-
-    -- Calcular tamaño de la caja
-    local scaleFactor = 1 / (headPos.Z * math.tan(math.rad(Camera.FieldOfView / 2)) * 2) * 1000
-    local width = math.floor(40 * scaleFactor)
-    local height = math.floor(65 * scaleFactor)
+    -- Calcular tamaño dinámico de la caja
+    local size = calculateDynamicSize(character, headPos)
+    local width = math.floor(size.X)
+    local height = math.floor(size.Y)
     local position = Vector2.new(headPos.X, headPos.Y) - Vector2.new(width / 2, height / 2)
 
     -- Calcular distancia
     local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
     if distance > self.Settings.MaxDistance then
         for _, drawing in pairs(esp.Drawings) do
-            drawing.Visible = false
+            safeSet(drawing, {Visible = false})
         end
         return
     end
 
+    -- Determinar color base según equipo
+    local baseColor = self.Settings.EnemyColor
+    if self.Settings.TeamCheck and player.Team == LocalPlayer.Team then
+        baseColor = self.Settings.AllyColor
+    end
+
+    -- Configuración de color por estado (solo para enemigos)
+    local boxColor = baseColor
+    if not (self.Settings.TeamCheck and player.Team == LocalPlayer.Team) then
+        local healthRatio = humanoid.Health / humanoid.MaxHealth
+        if healthRatio < 0.3 then
+            boxColor = Color3.new(1, 0.2, 0.2)  -- Rojo intenso
+        elseif healthRatio < 0.6 then
+            boxColor = Color3.new(1, 1, 0.4)    -- Amarillo
+        end
+    end
+
     -- Actualizar caja
     if self.Settings.Boxes then
-        esp.BoxOutline.Visible = true
-        esp.BoxOutline.Position = position - Vector2.new(1, 1)
-        esp.BoxOutline.Size = Vector2.new(width + 2, height + 2)
+        safeSet(esp.BoxOutline, {
+            Visible = true,
+            Position = position - Vector2.new(1, 1),
+            Size = Vector2.new(width + 2, height + 2)
+        })
         
-        esp.Box.Visible = true
-        esp.Box.Position = position
-        esp.Box.Size = Vector2.new(width, height)
-        esp.Box.Color = color
+        safeSet(esp.Box, {
+            Visible = true,
+            Position = position,
+            Size = Vector2.new(width, height),
+            Color = boxColor
+        })
     else
-        esp.BoxOutline.Visible = false
-        esp.Box.Visible = false
+        safeSet(esp.BoxOutline, {Visible = false})
+        safeSet(esp.Box, {Visible = false})
     end
 
     -- Actualizar barra de salud
@@ -194,35 +244,46 @@ function ProfessionalESP:Update(player)
         local barWidth = 4
         local barHeight = height * health
         
-        esp.HealthBarOutline.Visible = true
-        esp.HealthBarOutline.Position = position - Vector2.new(6, 0)
-        esp.HealthBarOutline.Size = Vector2.new(barWidth + 2, height + 2)
+        safeSet(esp.HealthBarOutline, {
+            Visible = true,
+            Position = position - Vector2.new(6, 0),
+            Size = Vector2.new(barWidth + 2, height + 2)
+        })
         
-        esp.HealthBar.Visible = true
-        esp.HealthBar.Position = position - Vector2.new(5, 0) + Vector2.new(0, height - barHeight)
-        esp.HealthBar.Size = Vector2.new(barWidth, barHeight)
-        esp.HealthBar.Color = Color3.new(1 - health, health, 0)
+        safeSet(esp.HealthBar, {
+            Visible = true,
+            Position = position - Vector2.new(5, 0) + Vector2.new(0, height - barHeight),
+            Size = Vector2.new(barWidth, barHeight),
+            Color = Color3.new(1 - health, health, 0)
+        })
     else
-        esp.HealthBarOutline.Visible = false
-        esp.HealthBar.Visible = false
+        safeSet(esp.HealthBarOutline, {Visible = false})
+        safeSet(esp.HealthBar, {Visible = false})
     end
 
     -- Actualizar nombre
-    esp.NameText.Visible = self.Settings.Names
-    esp.NameText.Text = player.Name
-    esp.NameText.Position = position + Vector2.new(width / 2, -self.Settings.TextSize - 2)
-    esp.NameText.Color = color
+    safeSet(esp.NameText, {
+        Visible = self.Settings.Names,
+        Text = player.Name,
+        Position = position + Vector2.new(width / 2, -self.Settings.TextSize - 2),
+        Color = baseColor
+    })
 
     -- Actualizar distancia
-    esp.DistanceText.Visible = self.Settings.Distance
-    esp.DistanceText.Text = string.format("[%d]", distance)
-    esp.DistanceText.Position = position + Vector2.new(width / 2, height + 2)
+    safeSet(esp.DistanceText, {
+        Visible = self.Settings.Distance,
+        Text = string.format("[%d]", distance),
+        Position = position + Vector2.new(width / 2, height + 2),
+        Color = baseColor
+    })
 
     -- Actualizar tracer
-    esp.Tracer.Visible = self.Settings.Tracers
-    esp.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-    esp.Tracer.To = Vector2.new(rootPos.X, rootPos.Y)
-    esp.Tracer.Color = color
+    safeSet(esp.Tracer, {
+        Visible = self.Settings.Tracers,
+        From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y),
+        To = Vector2.new(rootPos.X, rootPos.Y),
+        Color = baseColor
+    })
 end
 
 -- Eliminar ESP de un jugador
@@ -236,7 +297,7 @@ function ProfessionalESP:Remove(player)
         
         -- Eliminar dibujos
         for _, drawing in pairs(esp.Drawings) do
-            drawing:Remove()
+            pcall(function() drawing:Remove() end)
         end
         
         self.Players[player] = nil
@@ -271,9 +332,13 @@ function ProfessionalESP:Toggle(state)
             self:Remove(player)
         end)
         
-        -- Loop de actualización
-        self.UpdateLoop = RunService.RenderStepped:Connect(function()
-            self:UpdateAll()
+        -- Loop de actualización optimizado
+        self.UpdateLoop = RunService.RenderStepped:Connect(function(deltaTime)
+            self.LastUpdate = self.LastUpdate + deltaTime
+            if self.LastUpdate >= 0.1 then  -- Actualizar 10 veces/segundo
+                self:UpdateAll()
+                self.LastUpdate = 0
+            end
         end)
     else
         -- Desconectar eventos
