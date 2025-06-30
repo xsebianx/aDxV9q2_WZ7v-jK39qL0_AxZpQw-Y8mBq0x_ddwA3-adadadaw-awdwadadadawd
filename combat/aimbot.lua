@@ -10,7 +10,7 @@ local fieldOfView
 local predictionFactor
 local targetLockDuration
 local smoothingFactor
-local fovCircle, targetIndicator
+local fovCircle
 local renderStepped
 local positionHistory = {}
 local currentTarget = nil
@@ -20,10 +20,8 @@ local recentTargets = {}
 -- Configuración visual
 local visualSettings = {
     showFovCircle = true,
-    showTargetIndicator = true,
     fovCircleThickness = 0.5,
-    fovCircleTransparency = 0.5,
-    indicatorType = "cross"  -- "circle" o "cross"
+    fovCircleTransparency = 0.5
 }
 
 -- Función para crear elementos visuales
@@ -32,16 +30,6 @@ local function createVisuals()
     if fovCircle then 
         pcall(function() fovCircle:Remove() end)
         fovCircle = nil
-    end
-    if targetIndicator then 
-        if type(targetIndicator) == "table" then
-            for _, element in pairs(targetIndicator) do
-                pcall(function() element:Remove() end)
-            end
-        elseif targetIndicator.Remove then
-            pcall(function() targetIndicator:Remove() end)
-        end
-        targetIndicator = nil
     end
     
     -- Círculo de FOV (más discreto)
@@ -54,31 +42,6 @@ local function createVisuals()
         fovCircle.Color = Color3.fromRGB(255, 50, 50)
         fovCircle.Filled = false
         fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-    end
-    
-    -- Indicador de objetivo (cruz en lugar de círculo)
-    if visualSettings.showTargetIndicator then
-        if visualSettings.indicatorType == "cross" then
-            targetIndicator = {
-                horizontal = Drawing.new("Line"),
-                vertical = Drawing.new("Line")
-            }
-            
-            targetIndicator.horizontal.Visible = false
-            targetIndicator.horizontal.Thickness = 1
-            targetIndicator.horizontal.Color = Color3.fromRGB(50, 255, 50)
-            
-            targetIndicator.vertical.Visible = false
-            targetIndicator.vertical.Thickness = 1
-            targetIndicator.vertical.Color = Color3.fromRGB(50, 255, 50)
-        else
-            targetIndicator = Drawing.new("Circle")
-            targetIndicator.Visible = false
-            targetIndicator.Thickness = 1
-            targetIndicator.Radius = 4
-            targetIndicator.Color = Color3.fromRGB(50, 255, 50)
-            targetIndicator.Filled = false
-        end
     end
 end
 
@@ -242,50 +205,10 @@ local function safetyCheck()
     return humanoid and humanoid.Health > 0 and not UserInputService:GetFocusedTextBox()
 end
 
--- Actualizar indicador visual
-local function updateTargetIndicator(target)
-    if not targetIndicator or not visualSettings.showTargetIndicator then return end
-    
-    local head = target.Character:FindFirstChild("Head")
-    if not head then return end
-    
-    local screenPos = Camera:WorldToViewportPoint(head.Position)
-    if not screenPos then return end
-    
-    local pos = Vector2.new(screenPos.X, screenPos.Y)
-    
-    if visualSettings.indicatorType == "cross" then
-        local size = 6
-        
-        targetIndicator.horizontal.Visible = true
-        targetIndicator.horizontal.From = Vector2.new(pos.X - size, pos.Y)
-        targetIndicator.horizontal.To = Vector2.new(pos.X + size, pos.Y)
-        
-        targetIndicator.vertical.Visible = true
-        targetIndicator.vertical.From = Vector2.new(pos.X, pos.Y - size)
-        targetIndicator.vertical.To = Vector2.new(pos.X, pos.Y + size)
-    else
-        targetIndicator.Visible = true
-        targetIndicator.Position = pos
-    end
-end
-
 -- Función principal del aimbot (mejorada)
 local function aimbotLoop()
     if not safetyCheck() then
         if fovCircle then fovCircle.Visible = false end
-        if targetIndicator then
-            if visualSettings.indicatorType == "cross" then
-                if targetIndicator.horizontal then
-                    targetIndicator.horizontal.Visible = false
-                end
-                if targetIndicator.vertical then
-                    targetIndicator.vertical.Visible = false
-                end
-            else
-                targetIndicator.Visible = false
-            end
-        end
         currentTarget = nil
         return
     end
@@ -304,21 +227,8 @@ local function aimbotLoop()
             end
             
             preciseAim(closestTarget)
-            updateTargetIndicator(closestTarget)
         else
             currentTarget = nil
-            if targetIndicator then
-                if visualSettings.indicatorType == "cross" then
-                    if targetIndicator.horizontal then
-                        targetIndicator.horizontal.Visible = false
-                    end
-                    if targetIndicator.vertical then
-                        targetIndicator.vertical.Visible = false
-                    end
-                else
-                    targetIndicator.Visible = false
-                end
-            end
         end
         
         if fovCircle and visualSettings.showFovCircle then
@@ -328,18 +238,6 @@ local function aimbotLoop()
     else
         currentTarget = nil
         if fovCircle then fovCircle.Visible = false end
-        if targetIndicator then
-            if visualSettings.indicatorType == "cross" then
-                if targetIndicator.horizontal then
-                    targetIndicator.horizontal.Visible = false
-                end
-                if targetIndicator.vertical then
-                    targetIndicator.vertical.Visible = false
-                end
-            else
-                targetIndicator.Visible = false
-            end
-        end
     end
 end
 
@@ -348,22 +246,6 @@ local function cleanUp()
     if fovCircle then 
         fovCircle:Remove()
         fovCircle = nil
-    end
-    
-    if targetIndicator then 
-        if visualSettings.indicatorType == "cross" then
-            if targetIndicator.horizontal then
-                targetIndicator.horizontal:Remove()
-            end
-            if targetIndicator.vertical then
-                targetIndicator.vertical:Remove()
-            end
-        else
-            if targetIndicator then
-                targetIndicator:Remove()
-            end
-        end
-        targetIndicator = nil
     end
     
     if renderStepped then
@@ -389,10 +271,8 @@ return {
         -- Configuración visual predeterminada
         visualSettings = {
             showFovCircle = true,
-            showTargetIndicator = true,
             fovCircleThickness = 0.5,
-            fovCircleTransparency = 0.5,
-            indicatorType = "cross"
+            fovCircleTransparency = 0.5
         }
         
         -- Solo crear conexión si no existe
@@ -432,9 +312,7 @@ return {
             end
             
             -- Recrear elementos visuales si es necesario
-            if options.visualSettings.indicatorType or options.visualSettings.showTargetIndicator then
-                createVisuals()
-            end
+            createVisuals()
         end
     end
 }
