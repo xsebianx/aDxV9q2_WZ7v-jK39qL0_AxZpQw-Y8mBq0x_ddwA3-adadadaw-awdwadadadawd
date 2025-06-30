@@ -13,7 +13,7 @@ local ProfessionalESP = {
         EnemyColor = Color3.fromRGB(255, 50, 50),
         TextSize = 14,
         Font = 2, -- 0: UI, 1: System, 2: Plex, 3: Monospace
-        MaxDistance = 1000
+        MaxDistance = 3000
     }
 }
 
