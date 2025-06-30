@@ -5,98 +5,58 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- Variables optimizadas para rendimiento
+-- Configuración de zoom
+local ZOOM_SPEED = 3
+local MAX_ZOOM = 10
+local MIN_ZOOM = 70
+local DEFAULT_ZOOM = 70
+local currentZoom = DEFAULT_ZOOM
+local isZooming = false
+local zoomSensitivityFactor = 1.0
+
+-- Variables del aimbot (versión ligera)
 local predictionFactor = 0.25
 local smoothingFactor = 0.08
-local hitboxPriority = {"Head", "HumanoidRootPart", "UpperTorso"}
-local currentTarget = nil
-local lastAimTime = 0
-local lastInputTime = 0
-
--- Caché para cálculos recurrentes
+local renderStepped
 local targetCache = {}
 local playerList = Players:GetPlayers()
-local cameraPos = Camera.CFrame.Position
 
--- Función optimizada para movimiento del mouse
-local function optimizedMouseMove(deltaX, deltaY)
-    local now = tick()
-    -- Limitar movimientos a 60 por segundo
-    if now - lastInputTime > 0.016 then
-        lastInputTime = now
-        mousemoverel(deltaX, deltaY)
-    end
+-- Sistema de zoom suave
+local function updateZoom(direction)
+    currentZoom = math.clamp(currentZoom - (direction * ZOOM_SPEED), MAX_ZOOM, MIN_ZOOM)
+    Camera.FieldOfView = currentZoom
+    
+    -- Ajustar sensibilidad según zoom
+    zoomSensitivityFactor = math.clamp(DEFAULT_ZOOM / currentZoom, 0.5, 2.0)
 end
 
--- Verificación de visibilidad simplificada
-local function quickVisibilityCheck(part)
-    if not part then return false end
-    local origin = Camera.CFrame.Position
-    local direction = (part.Position - origin).Unit
-    local distance = (part.Position - origin).Magnitude
+-- Función optimizada para movimiento del mouse con ajuste de zoom
+local function zoomAwareMouseMove(deltaX, deltaY)
+    -- Aplicar ajuste de sensibilidad por zoom
+    deltaX = deltaX * zoomSensitivityFactor
+    deltaY = deltaY * zoomSensitivityFactor
     
-    -- Raycast rápido con filtros básicos
-    local result = workspace:Raycast(origin, direction * distance, {
-        FilterType = Enum.RaycastFilterType.Blacklist,
-        FilterDescendantsInstances = {LocalPlayer.Character},
-        IgnoreWater = true
-    })
-    
-    return not result
+    mousemoverel(deltaX, deltaY)
 end
 
--- Sistema de predicción ligero
-local function fastPrediction(hitbox)
-    return hitbox.Position + (hitbox.AssemblyLinearVelocity * predictionFactor)
-end
-
--- Selección de objetivos optimizada
-local function findFastTarget()
-    local bestScore = -math.huge
-    local bestHitbox = nil
-    cameraPos = Camera.CFrame.Position  -- Actualizar solo cuando sea necesario
+-- Sistema de predicción ligero con ajuste de zoom
+local function zoomAwarePrediction(hitbox)
+    local basePrediction = hitbox.Position + (hitbox.AssemblyLinearVelocity * predictionFactor)
     
-    -- Usar caché de jugadores para evitar llamadas costosas
-    if #playerList ~= #Players:GetPlayers() then
-        playerList = Players:GetPlayers()
+    -- Ajuste adicional para mantener precisión con zoom extremo
+    if currentZoom < 30 then
+        return basePrediction + (hitbox.AssemblyLinearVelocity * 0.05)
     end
     
-    for _, player in ipairs(playerList) do
-        if player == LocalPlayer then continue end
-        
-        -- Usar caché de personajes
-        local character = targetCache[player] or player.Character
-        if not character then continue end
-        targetCache[player] = character
-        
-        local humanoid = character:FindFirstChild("Humanoid")
-        if not humanoid or humanoid.Health <= 0 then continue end
-        
-        -- Buscar hitbox prioritario
-        for _, hitboxName in ipairs(hitboxPriority) do
-            local hitbox = character:FindFirstChild(hitboxName)
-            if hitbox then
-                local distance = (hitbox.Position - cameraPos).Magnitude
-                local score = 1000 / distance
-                
-                if score > bestScore then
-                    bestScore = score
-                    bestHitbox = hitbox
-                end
-                break  -- Solo un hitbox por jugador
-            end
-        end
-    end
-    
-    return bestHitbox
+    return basePrediction
 end
 
--- Sistema de seguimiento ultra-ligero
-local function lightAim()
+-- Sistema de seguimiento con soporte para zoom
+local function zoomAwareAim()
     local hitbox = findFastTarget()
     if not hitbox then return end
     
-    local predictedPos = fastPrediction(hitbox)
+    local predictedPos = zoomAwarePrediction(hitbox)
     local screenPos, visible = Camera:WorldToViewportPoint(predictedPos)
     
     if visible then
@@ -104,34 +64,57 @@ local function lightAim()
         local targetPos = Vector2.new(screenPos.X, screenPos.Y)
         local delta = (targetPos - mousePos)
         
-        optimizedMouseMove(
+        zoomAwareMouseMove(
             delta.X * smoothingFactor,
             delta.Y * smoothingFactor
         )
     end
 end
 
--- Loop principal optimizado
-local connection
+-- Manejar rueda del mouse para zoom
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseWheel then
+        updateZoom(input.Position.Y)
+        isZooming = true
+    end
+end)
+
+-- Restablecer zoom al soltar botones
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        Camera.FieldOfView = DEFAULT_ZOOM
+        currentZoom = DEFAULT_ZOOM
+        isZooming = false
+    end
+end)
+
+-- Loop principal con soporte para zoom
 local function aimbotLoop()
     if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-        lightAim()
+        zoomAwareAim()
     end
 end
 
--- API de alto rendimiento
+-- API para el hub
 return {
     activate = function()
-        if not connection then
-            connection = RunService.RenderStepped:Connect(aimbotLoop)
+        if not renderStepped then
+            renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
         end
     end,
     
     deactivate = function()
-        if connection then
-            connection:Disconnect()
-            connection = nil
+        if renderStepped then
+            renderStepped:Disconnect()
+            renderStepped = nil
         end
+        Camera.FieldOfView = DEFAULT_ZOOM
+        currentZoom = DEFAULT_ZOOM
         targetCache = {}
+    end,
+    
+    configure = function(options)
+        if options.predictionFactor then predictionFactor = options.predictionFactor end
+        if options.smoothingFactor then smoothingFactor = options.smoothingFactor end
     end
 }
