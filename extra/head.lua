@@ -5,8 +5,8 @@ local runService = game:GetService("RunService")
 local decorHeads = {}
 local headExpansionEnabled = true
 
--- Tamaño de cabeza aumentado (11 veces más grande)
-local HEAD_SCALE = 3
+-- Tamaño de cabeza aumentado (10 veces más grande)
+local HEAD_SCALE = 2
 
 -- Función para crear una cabeza decorativa
 local function createDecorHead(realHead)
