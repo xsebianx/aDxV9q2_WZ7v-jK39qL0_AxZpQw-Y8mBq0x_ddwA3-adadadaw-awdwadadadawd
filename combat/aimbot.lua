@@ -1,21 +1,26 @@
--- Servicios esencialesdd
+-- Servicios esenciales
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Workspace = game:GetService("Workspace")
 
--- Variables optimizadas para Estado de Anarquía
+-- Variables optimizadas para obstáculos
 local predictionFactor
 local smoothingFactor
-local hitboxPriority = {"Head", "HumanoidRootPart", "UpperTorso"}  -- Prioridad de hitboxes
+local hitboxPriority = {"Head", "HumanoidRootPart", "UpperTorso"} 
 local renderStepped
-local positionHistory = {}
 local currentTarget = nil
-local targetLock = false
 local lastAimTime = 0
+local obstacleIgnoreList = {}
+local raycastParams = RaycastParams.new()
 
--- Fallback para mousemoverel (compatible con todos los exploits)
+-- Configurar parámetros de raycast para ignorar vegetación
+raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+raycastParams.IgnoreWater = true
+
+-- Fallback para mousemoverel
 if not mousemoverel then
     mousemoverel = function(x, y)
         pcall(function()
@@ -25,7 +30,7 @@ if not mousemoverel then
     end
 end
 
--- Verificación de visibilidad específica para Estado de Anarquía
+-- Verificación de visibilidad mejorada para estructuras y vegetación
 local function isVisible(part)
     if not part then return false end
     
@@ -33,27 +38,52 @@ local function isVisible(part)
     local direction = (part.Position - origin).Unit
     local distance = (part.Position - origin).Magnitude
     
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
-    raycastParams.IgnoreWater = true
-    
-    local result = workspace:Raycast(origin, direction * distance, raycastParams)
-    
-    if result then
-        local hitPart = result.Instance
-        while hitPart do
-            if hitPart:IsDescendantOf(part.Parent) then
-                return true
-            end
-            hitPart = hitPart.Parent
+    -- Actualizar lista de objetos a ignorar
+    local ignoreList = {LocalPlayer.Character}
+    for _, obj in ipairs(obstacleIgnoreList) do
+        if obj and obj.Parent then
+            table.insert(ignoreList, obj)
         end
     end
+    raycastParams.FilterDescendantsInstances = ignoreList
     
-    return not result
+    local result = Workspace:Raycast(origin, direction * distance, raycastParams)
+    
+    -- Si hay resultado, verificar si es un obstáculo ignorable
+    if result then
+        local hitPart = result.Instance
+        
+        -- Verificar si es vegetación u objeto ignorable
+        local material = hitPart.Material
+        local isVegetation = material == Enum.Material.Grass or 
+                            material == Enum.Material.LeafyGrass or
+                            material == Enum.Material.Sand
+        
+        -- Verificar si es una estructura delgada
+        local isThinStructure = hitPart.Transparency > 0.5 or 
+                               (hitPart.Size.Magnitude < 3 and material ~= Enum.Material.Concrete)
+        
+        -- Si es vegetación o estructura delgada, considerar visible
+        if isVegetation or isThinStructure then
+            return true
+        end
+        
+        -- Verificar si es el propio jugador
+        local hitParent = hitPart.Parent
+        while hitParent do
+            if hitParent == part.Parent then
+                return true
+            end
+            hitParent = hitParent.Parent
+        end
+        
+        return false
+    end
+    
+    return true
 end
 
--- Obtener el mejor hitbox disponible (optimizado para el juego)
+-- Obtener el mejor hitbox disponible (optimizado para obstáculos)
 local function getOptimalHitbox(target)
     if not target or not target.Character then return nil end
     
@@ -84,8 +114,8 @@ local function calculatePrediction(target, hitbox)
     return hitbox.Position + (velocity * predictionFactor)
 end
 
--- Sistema de selección de objetivos para Estado de Anarquía
-local function findAnarchyTarget()
+-- Sistema de selección de objetivos para obstáculos
+local function findTargetThroughObstacles()
     local bestTarget = nil
     local bestHitbox = nil
     local bestScore = -math.huge
@@ -112,15 +142,9 @@ local function findAnarchyTarget()
                     score = score + 50
                 end
                 
-                -- Priorizar objetivos que miran hacia ti
-                local targetHead = player.Character:FindFirstChild("Head")
-                if targetHead then
-                    local targetDirection = (cameraPos - targetHead.Position).Unit
-                    local targetLook = targetHead.CFrame.LookVector
-                    local angle = math.deg(math.acos(targetLook:Dot(targetDirection)))
-                    if angle < 90 then
-                        score = score + 80  -- Bonus si el objetivo te está mirando
-                    end
+                -- Bonus por visibilidad clara (sin obstáculos)
+                if isVisible(hitbox) then
+                    score = score + 80
                 end
                 
                 if score > bestScore then
@@ -135,8 +159,8 @@ local function findAnarchyTarget()
     return bestTarget, bestHitbox
 end
 
--- Sistema de seguimiento optimizado para el juego
-local function anarchyAim(target, hitbox)
+-- Sistema de seguimiento optimizado para entornos complejos
+local function preciseAim(target, hitbox)
     if not target or not hitbox then return end
     
     local predictedPosition = calculatePrediction(target, hitbox)
@@ -145,7 +169,7 @@ local function anarchyAim(target, hitbox)
         return Camera:WorldToViewportPoint(predictedPosition)
     end)
     
-    if not success then return end
+    if not success or not screenPosition then return end
     
     local mousePos = UserInputService:GetMouseLocation()
     local targetPos = Vector2.new(screenPosition.X, screenPosition.Y)
@@ -165,7 +189,31 @@ local function anarchyAim(target, hitbox)
     )
 end
 
--- Verificación de seguridad específica
+-- Detectar y registrar obstáculos comunes
+local function detectCommonObstacles()
+    obstacleIgnoreList = {}
+    
+    -- Buscar vegetación común
+    local vegetationNames = {"Grass", "Bush", "Tree", "Foliage", "Leaves"}
+    for _, name in ipairs(vegetationNames) do
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj.Name:find(name) and obj:IsA("BasePart") then
+                table.insert(obstacleIgnoreList, obj)
+            end
+        end
+    end
+    
+    -- Buscar estructuras delgadas
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            if obj.Transparency > 0.7 or obj.Size.Magnitude < 2 then
+                table.insert(obstacleIgnoreList, obj)
+            end
+        end
+    end
+end
+
+-- Verificación de seguridad
 local function safetyCheck()
     if not LocalPlayer then return false end
     if not LocalPlayer.Character then return false end
@@ -176,51 +224,54 @@ local function safetyCheck()
     return true
 end
 
--- Loop principal optimizado
+-- Loop principal mejorado
 local function aimbotLoop()
     local success, err = pcall(function()
         if not safetyCheck() then
             currentTarget = nil
-            targetLock = false
             return
         end
         
         local aiming = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
         
         if aiming then
-            local target, hitbox = findAnarchyTarget()
+            -- Actualizar detección de obstáculos periódicamente
+            if tick() % 5 < 0.1 then
+                detectCommonObstacles()
+            end
+            
+            local target, hitbox = findTargetThroughObstacles()
             
             if target and hitbox then
                 if currentTarget ~= target then
                     currentTarget = target
-                    targetLock = false
                     lastAimTime = tick()
                 end
                 
-                anarchyAim(target, hitbox)
+                preciseAim(target, hitbox)
             else
                 currentTarget = nil
-                targetLock = false
             end
         else
             currentTarget = nil
-            targetLock = false
         end
     end)
     
     if not success then
         warn("[ANARCHY AIMBOT ERROR]", err)
         currentTarget = nil
-        targetLock = false
     end
 end
 
--- API para Estado de Anarquía
+-- API para Estado de Anarquía con obstáculos
 return {
     activate = function()
-        -- Configuración optimizada para Estado de Anarquía
-        predictionFactor = 0.22   -- Predicción media
-        smoothingFactor = 0.1     -- Suavizado equilibrado
+        -- Configuración optimizada para entornos complejos
+        predictionFactor = 0.25   -- Predicción ligeramente mayor
+        smoothingFactor = 0.08    -- Más rápido para reaccionar
+        
+        -- Detectar obstáculos iniciales
+        detectCommonObstacles()
         
         if not renderStepped then
             renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
@@ -232,9 +283,7 @@ return {
             renderStepped:Disconnect()
             renderStepped = nil
         end
-        positionHistory = {}
         currentTarget = nil
-        targetLock = false
     end,
     
     configure = function(options)
