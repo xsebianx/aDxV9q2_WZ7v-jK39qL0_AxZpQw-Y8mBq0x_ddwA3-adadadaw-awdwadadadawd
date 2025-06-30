@@ -5,12 +5,11 @@ local runService = game:GetService("RunService")
 local decorHeads = {}
 local headExpansionEnabled = true
 
--- Tamaño de cabeza aumentado (10 veces más grande)
-local HEAD_SCALE = 2
+-- Tamaño de cabeza aumentado (8 veces más grande)
+local HEAD_SCALE = 3
 
 -- Función para crear una cabeza decorativa
 local function createDecorHead(realHead)
-    -- Crear una parte esférica para la cabeza decorativa
     local decorHead = Instance.new("Part")
     decorHead.Name = "DecorHead"
     decorHead.Shape = Enum.PartType.Ball
@@ -21,56 +20,40 @@ local function createDecorHead(realHead)
     decorHead.CanCollide = false
     decorHead.CanQuery = false
     decorHead.CanTouch = false
-    decorHead.Anchored = true  -- Importante para no afectar la física
+    decorHead.Anchored = false
     
     -- Crear un punto de unión para seguir la cabeza real
     local attachment = Instance.new("Attachment")
     attachment.Parent = realHead
     
-    -- Usar un AlignPosition para seguir la cabeza sin física
-    local alignPos = Instance.new("AlignPosition")
-    alignPos.Attachment0 = attachment
-    alignPos.RigidityEnabled = true
-    alignPos.MaxForce = 10000
-    alignPos.Responsiveness = 200
-    alignPos.Parent = decorHead
-    
-    -- Añadir un resaltado para mejor visibilidad
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "HeadHighlight"
-    highlight.FillColor = Color3.new(1, 0.5, 0)
-    highlight.FillTransparency = 0.7
-    highlight.OutlineColor = Color3.new(1, 1, 0)
-    highlight.OutlineTransparency = 0.3
-    highlight.Parent = decorHead
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = realHead
+    weld.Part1 = decorHead
+    weld.Parent = decorHead
     
     decorHead.Parent = workspace
     
-    return decorHead, attachment, alignPos, highlight
+    return decorHead, attachment, weld
 end
 
 -- Función para aplicar la expansión de cabeza
 local function applyHeadExpansion(character)
     if not character then return end
     
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid then return end
-    
-    local realHead = character:FindFirstChild("Head")
-    if not realHead then return end
+    local humanoid = character:WaitForChild("Humanoid")
+    local realHead = character:WaitForChild("Head")
     
     -- Si ya tenemos una cabeza decorativa, no crear otra
     if decorHeads[realHead] then return end
     
     -- Crear cabeza decorativa
-    local decorHead, attachment, alignPos, highlight = createDecorHead(realHead)
+    local decorHead, attachment, weld = createDecorHead(realHead)
     
     -- Guardar referencia
     decorHeads[realHead] = {
         decorHead = decorHead,
         attachment = attachment,
-        alignPos = alignPos,
-        highlight = highlight,
+        weld = weld,
         humanoid = humanoid
     }
     
@@ -117,14 +100,6 @@ local function handleHeadExpansion(player)
     if player == players.LocalPlayer then return end
     
     local function setupCharacter(character)
-        if not character then return end
-        
-        -- Esperar a que el personaje esté completamente cargado
-        local humanoid = character:FindFirstChild("Humanoid")
-        if not humanoid then
-            character:WaitForChild("Humanoid", 3)
-        end
-        
         if headExpansionEnabled then
             applyHeadExpansion(character)
         end
@@ -147,9 +122,6 @@ function disableHeadExpand()
             restoreHead(player.Character)
         end
     end
-    
-    -- Limpiar datos
-    decorHeads = {}
 end
 
 -- Función para activar la expansión
