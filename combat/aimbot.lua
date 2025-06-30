@@ -34,12 +34,12 @@ local function createVisuals()
         fovCircle = nil
     end
     if targetIndicator then 
-        if targetIndicator.Remove then
-            pcall(function() targetIndicator:Remove() end)
-        else
+        if type(targetIndicator) == "table" then
             for _, element in pairs(targetIndicator) do
                 pcall(function() element:Remove() end)
             end
+        elseif targetIndicator.Remove then
+            pcall(function() targetIndicator:Remove() end)
         end
         targetIndicator = nil
     end
@@ -99,8 +99,34 @@ local function isVisible(targetPart)
     return raycastResult == nil or raycastResult.Instance:IsDescendantOf(targetPart.Parent)
 end
 
+-- Mantener objetivo (mejorado con tiempo mínimo de bloqueo)
+local function shouldKeepTarget(target)
+    if not target or not target.Character then return false end
+    
+    local head = target.Character:FindFirstChild("Head")
+    if not head then return false end
+    
+    local humanoid = target.Character:FindFirstChild("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then return false end
+    
+    -- Mantener el objetivo durante al menos el tiempo de bloqueo
+    if tick() - targetLockTime < targetLockDuration then
+        return true
+    end
+    
+    local cameraDir = Camera.CFrame.LookVector
+    local directionToTarget = (head.Position - Camera.CFrame.Position).Unit
+    local angle = math.acos(cameraDir:Dot(directionToTarget))
+    
+    return angle < math.rad(fieldOfView * 1.2) and isVisible(head) -- 20% de margen adicional
+end
+
 -- Sistema de prioridad de objetivos
 local function getTargetPriority(target)
+    if not target or not target.Character or not target.Character.Head then
+        return -math.huge
+    end
+    
     -- Priorizar objetivos que ya hemos estado siguiendo
     if recentTargets[target] then
         return 2
@@ -115,7 +141,7 @@ local function getTargetPriority(target)
     return 0
 end
 
--- Encontrar objetivo más cercano (con estabilidad)
+-- Encontrar objetivo más cercano (con estabilidad) - CORRECCIÓN APLICADA
 local function findStableTarget()
     local bestTarget = nil
     local minAngle = math.rad(fieldOfView)
@@ -216,28 +242,6 @@ local function safetyCheck()
     return humanoid and humanoid.Health > 0 and not UserInputService:GetFocusedTextBox()
 end
 
--- Mantener objetivo (mejorado con tiempo mínimo de bloqueo)
-local function shouldKeepTarget(target)
-    if not target or not target.Character then return false end
-    
-    local head = target.Character:FindFirstChild("Head")
-    if not head then return false end
-    
-    local humanoid = target.Character:FindFirstChild("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then return false end
-    
-    -- Mantener el objetivo durante al menos el tiempo de bloqueo
-    if tick() - targetLockTime < targetLockDuration then
-        return true
-    end
-    
-    local cameraDir = Camera.CFrame.LookVector
-    local directionToTarget = (head.Position - Camera.CFrame.Position).Unit
-    local angle = math.acos(cameraDir:Dot(directionToTarget))
-    
-    return angle < math.rad(fieldOfView * 1.2) and isVisible(head) -- 20% de margen adicional
-end
-
 -- Actualizar indicador visual
 local function updateTargetIndicator(target)
     if not targetIndicator or not visualSettings.showTargetIndicator then return end
@@ -272,8 +276,12 @@ local function aimbotLoop()
         if fovCircle then fovCircle.Visible = false end
         if targetIndicator then
             if visualSettings.indicatorType == "cross" then
-                targetIndicator.horizontal.Visible = false
-                targetIndicator.vertical.Visible = false
+                if targetIndicator.horizontal then
+                    targetIndicator.horizontal.Visible = false
+                end
+                if targetIndicator.vertical then
+                    targetIndicator.vertical.Visible = false
+                end
             else
                 targetIndicator.Visible = false
             end
@@ -301,8 +309,12 @@ local function aimbotLoop()
             currentTarget = nil
             if targetIndicator then
                 if visualSettings.indicatorType == "cross" then
-                    targetIndicator.horizontal.Visible = false
-                    targetIndicator.vertical.Visible = false
+                    if targetIndicator.horizontal then
+                        targetIndicator.horizontal.Visible = false
+                    end
+                    if targetIndicator.vertical then
+                        targetIndicator.vertical.Visible = false
+                    end
                 else
                     targetIndicator.Visible = false
                 end
@@ -318,8 +330,12 @@ local function aimbotLoop()
         if fovCircle then fovCircle.Visible = false end
         if targetIndicator then
             if visualSettings.indicatorType == "cross" then
-                targetIndicator.horizontal.Visible = false
-                targetIndicator.vertical.Visible = false
+                if targetIndicator.horizontal then
+                    targetIndicator.horizontal.Visible = false
+                end
+                if targetIndicator.vertical then
+                    targetIndicator.vertical.Visible = false
+                end
             else
                 targetIndicator.Visible = false
             end
@@ -336,10 +352,16 @@ local function cleanUp()
     
     if targetIndicator then 
         if visualSettings.indicatorType == "cross" then
-            targetIndicator.horizontal:Remove()
-            targetIndicator.vertical:Remove()
+            if targetIndicator.horizontal then
+                targetIndicator.horizontal:Remove()
+            end
+            if targetIndicator.vertical then
+                targetIndicator.vertical:Remove()
+            end
         else
-            targetIndicator:Remove()
+            if targetIndicator then
+                targetIndicator:Remove()
+            end
         end
         targetIndicator = nil
     end
