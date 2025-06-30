@@ -10,13 +10,19 @@ local HeadAPI = {
     scaledPlayers = {}
 }
 
--- Configuración
-local HEAD_SCALE = 7.0  -- Factor de escala para las cabezas
-local LOCAL_PLAYER = Players.LocalPlayer
-local DAMAGE_COLOR = Color3.fromRGB(255, 100, 100)  -- Color más brilloso al recibir daño
-local BASE_COLOR = Color3.fromRGB(255, 0, 0)        -- Color base rojo permanente
+-- CONFIGURACIÓN PERSONALIZABLE
+local HEAD_SCALE = 7.0                 -- Tamaño de la cabeza (7x más grande)
+local BASE_COLOR = Color3.fromRGB(255, 0, 0)        -- Color rojo permanente
+local DAMAGE_COLOR = Color3.fromRGB(255, 200, 200)  -- Color de daño (rojo claro)
+local HEAD_TRANSPARENCY = 0.3           -- Transparencia de la cabeza
+local HEAD_MATERIAL = Enum.Material.Neon -- Material de la cabeza
+local DAMAGE_COOLDOWN = 0.2             -- Tiempo entre efectos de daño (segundos)
+local STABILIZATION_DELAY = 0.5         -- Tiempo de espera después de spawn
 
--- Función para expandir la cabeza real hacia arriba
+-- Variables internas
+local LOCAL_PLAYER = Players.LocalPlayer
+
+-- Función para expandir la cabeza hacia arriba
 local function expandRealHead(player)
     if not player or player == LOCAL_PLAYER then return end
     if not player.Character then return end
@@ -28,31 +34,43 @@ local function expandRealHead(player)
     
     if not head or not humanoid or not rootPart then return end
     
-    -- Guardar tamaño original y propiedades
+    -- Guardar propiedades originales
     local originalSize = head.Size
     local originalCFrame = head.CFrame
     local originalTransparency = head.Transparency
+    local originalMaterial = head.Material
+    local originalColor = head.Color
     
-    -- Calcular nueva posición (crecer hacia arriba)
-    local offset = (originalSize.Y * HEAD_SCALE - originalSize.Y) * 0.5
-    local newPosition = head.Position + Vector3.new(0, offset, 0)
+    -- Calcular nueva posición (crecimiento hacia arriba)
+    local currentTopPosition = head.Position + Vector3.new(0, originalSize.Y/2, 0)
+    local newSize = originalSize * HEAD_SCALE
+    local newBottomPosition = currentTopPosition - Vector3.new(0, newSize.Y/2, 0)
     
-    -- Aplicar expansión hacia arriba
-    head.Size = originalSize * HEAD_SCALE
-    head.CFrame = CFrame.new(newPosition) * (head.CFrame - head.Position)
+    -- Aplicar expansión
+    head.Size = newSize
+    head.CFrame = CFrame.new(newBottomPosition) * (originalCFrame - originalCFrame.Position)
     
-    -- Configurar propiedades visuales (color rojo permanente)
-    head.Transparency = 0.3
-    head.Material = Enum.Material.Neon
+    -- Configurar propiedades visuales
+    head.Transparency = HEAD_TRANSPARENCY
+    head.Material = HEAD_MATERIAL
     head.Color = BASE_COLOR
+    
+    -- Desactivar colisiones innecesarias
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") and part ~= head then
+            pcall(function()
+                part.CanCollide = false
+            end)
+        end
+    end
     
     -- Guardar referencia para restaurar
     HeadAPI.scaledPlayers[player] = {
         originalSize = originalSize,
         originalCFrame = originalCFrame,
         originalTransparency = originalTransparency,
-        originalMaterial = head.Material,
-        originalColor = head.Color
+        originalMaterial = originalMaterial,
+        originalColor = originalColor
     }
     
     -- Efecto visual al recibir daño
@@ -60,7 +78,7 @@ local function expandRealHead(player)
     local damageConnection
     damageConnection = head.Touched:Connect(function(part)
         if not HeadAPI.active then return end
-        if tick() - lastDamageTime < 0.2 then return end
+        if tick() - lastDamageTime < DAMAGE_COOLDOWN then return end
         
         lastDamageTime = tick()
         
@@ -74,7 +92,7 @@ local function expandRealHead(player)
         
         if head and head.Parent then
             TweenService:Create(head, TweenInfo.new(0.2), {
-                Color = BASE_COLOR  -- Siempre regresa al color rojo base
+                Color = BASE_COLOR
             }):Play()
         end
     end)
@@ -94,6 +112,15 @@ local function restoreHead(player)
         head.Transparency = data.originalTransparency
         head.Material = data.originalMaterial
         head.Color = data.originalColor
+        
+        -- Restaurar colisiones
+        for _, part in ipairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                pcall(function()
+                    part.CanCollide = true
+                end)
+            end
+        end
     end
     
     HeadAPI.scaledPlayers[player] = nil
@@ -110,7 +137,7 @@ local function handleCharacterAdded(player, character)
     if not HeadAPI.active then return end
     
     character:WaitForChild("Head", 5)
-    task.wait(0.5)  -- Espera adicional para asegurar estabilidad
+    task.wait(STABILIZATION_DELAY)  -- Espera para asegurar estabilidad
     
     if character:FindFirstChild("Head") then
         expandRealHead(player)
