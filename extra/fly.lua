@@ -3,41 +3,42 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local torso = character:WaitForChild("HumanoidRootPart")
 
-local flySpeed = 18  -- Velocidad segura
+local flySpeed = 18
 local flying = false
 local flyConnection
-local originalGravity = workspace.Gravity
-local lastPosition = torso.Position
+local lastValidPosition = torso.Position
+local safeHeight = 5  -- Altura máxima segura sobre el suelo
 
--- Sistema de movimiento compatible con la replicación
+-- Sistema de vuelo que mantiene posición válida
 local function startFlying()
     if flying then return end
     flying = true
     
-    -- Guardar estado inicial
-    originalGravity = workspace.Gravity
-    lastPosition = torso.Position
+    -- Guardar última posición válida
+    lastValidPosition = torso.Position
     
-    -- Reducción gradual de gravedad
-    for i = 1, 10 do
-        workspace.Gravity = originalGravity * (1 - i/10)
-        task.wait(0.03)
-    end
+    -- Crear un punto de anclaje seguro
+    local anchor = Instance.new("Part")
+    anchor.Anchored = true
+    anchor.CanCollide = false
+    anchor.Transparency = 1
+    anchor.Size = Vector3.new(1, 1, 1)
+    anchor.Position = lastValidPosition
+    anchor.Parent = workspace
     
-    -- Sistema de movimiento autorizado
-    flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if not flying then return end
+    flyConnection = game:GetService("RunService").Heartbeat:Connect(function(dt)
+        if not flying or not torso then return end
         
-        -- Obtener inputs de movimiento
+        -- Calcular nueva posición basada en inputs
         local camera = workspace.CurrentCamera
         local moveDirection = Vector3.new()
-        local verticalInput = 0
         
+        -- Movimiento relativo a la cámara (sin vertical)
         if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
-            moveDirection = moveDirection + camera.CFrame.LookVector
+            moveDirection = moveDirection + (camera.CFrame.LookVector * Vector3.new(1,0,1)).Unit
         end
         if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
-            moveDirection = moveDirection - camera.CFrame.LookVector
+            moveDirection = moveDirection - (camera.CFrame.LookVector * Vector3.new(1,0,1)).Unit
         end
         if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
             moveDirection = moveDirection - camera.CFrame.RightVector
@@ -45,70 +46,72 @@ local function startFlying()
         if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
             moveDirection = moveDirection + camera.CFrame.RightVector
         end
+        
+        -- Movimiento vertical independiente
+        local verticalMove = 0
         if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
-            verticalInput = 0.7
-        end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
-            verticalInput = -0.7
-        end
-        
-        -- Calcular nueva posición
-        local newPosition = torso.Position + 
-            moveDirection.Unit * flySpeed * 0.03 +
-            Vector3.new(0, verticalInput * flySpeed * 0.03, 0)
-        
-        -- Limitar distancia desde última posición válida
-        if (newPosition - lastPosition).Magnitude > 5 then
-            newPosition = lastPosition + (newPosition - lastPosition).Unit * 5
+            verticalMove = 1
+        elseif game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
+            verticalMove = -1
         end
         
-        -- Aplicar movimiento autorizado
-        torso.CFrame = CFrame.new(newPosition)
-        lastPosition = newPosition
+        -- Actualizar posición del anclaje
+        anchor.Position = anchor.Position + 
+            moveDirection * flySpeed * dt +
+            Vector3.new(0, verticalMove * flySpeed * dt, 0)
         
-        -- Replicar movimiento natural
-        humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        -- Mantener altura segura sobre el suelo
+        local ray = Ray.new(anchor.Position, Vector3.new(0, -100, 0))
+        local hit, position = workspace:FindPartOnRay(ray, character)
+        
+        if hit then
+            local groundHeight = position.Y
+            if anchor.Position.Y > groundHeight + safeHeight then
+                anchor.Position = Vector3.new(
+                    anchor.Position.X,
+                    groundHeight + safeHeight,
+                    anchor.Position.Z
+                )
+            end
+        end
+        
+        -- Mover personaje suavemente hacia el anclaje
+        torso.CFrame = torso.CFrame:Lerp(
+            CFrame.new(anchor.Position) * CFrame.Angles(0, camera.CFrame.Y, 0),
+            0.5
+        )
+        
+        -- Actualizar última posición válida
+        lastValidPosition = anchor.Position
     end)
-    
-    -- Simular replicación legítima
-    local function safeReplicate()
-        while flying do
-            -- Usar el sistema de replicación del juego
-            game:GetService("ReplicatedStorage").Connections.CharacterReplicator:FireServer(
-                "UpdatePosition",
-                torso.Position,
-                torso.CFrame
-            )
-            task.wait(0.1)
-        end
-    end
-    coroutine.wrap(safeReplicate)()
 end
 
 local function stopFlying()
     if not flying then return end
     flying = false
     
-    -- Restaurar gravedad gradualmente
-    for i = 1, 10 do
-        workspace.Gravity = originalGravity * (i/10)
-        task.wait(0.03)
-    end
-    
-    -- Desconectar sistema de vuelo
+    -- Desconectar el vuelo
     if flyConnection then
         flyConnection:Disconnect()
     end
     
-    -- Aterrizaje seguro
-    local ray = Ray.new(torso.Position, Vector3.new(0, -50, 0))
+    -- Encontrar posición segura para aterrizar
+    local ray = Ray.new(torso.Position, Vector3.new(0, -100, 0))
     local hit, position = workspace:FindPartOnRay(ray, character)
+    
     if hit then
-        -- Replicar aterrizaje válido
-        game:GetService("ReplicatedStorage").Connections.RemoteFunction:InvokeServer(
-            "SafeTeleport",
-            position + Vector3.new(0, 3, 0)
-        )
+        -- Mover a posición segura
+        torso.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
+    else
+        -- Volver a la última posición válida
+        torso.CFrame = CFrame.new(lastValidPosition)
+    end
+    
+    -- Eliminar anclaje
+    for _, obj in ipairs(workspace:GetChildren()) do
+        if obj.Name == "FlightAnchor" then
+            obj:Destroy()
+        end
     end
     
     -- Restaurar estado normal
