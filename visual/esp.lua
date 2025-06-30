@@ -1,4 +1,4 @@
--- ESP Profesional para DrakHub Premium (Versión Corregida)
+-- ESP Profesional para DrakHub Premium (Versión Mejorada)
 local ProfessionalESP = {
     Enabled = false,
     Players = {},
@@ -20,6 +20,7 @@ local ProfessionalESP = {
 -- Servicios
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -117,6 +118,24 @@ function ProfessionalESP:Create(player)
     end
 end
 
+-- Verificar si el jugador está apuntando con un arma
+function ProfessionalESP:IsAiming()
+    if not LocalPlayer.Character then return false end
+    
+    -- Verificar si tiene un arma equipada
+    local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+    if not tool then return false end
+    
+    -- Verificar si el arma tiene un estado de apuntado
+    local aimState = tool:FindFirstChild("Aim")
+    if aimState and aimState.Value then
+        return true
+    end
+    
+    -- Verificar si está presionando el botón derecho
+    return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+end
+
 -- Actualizar ESP para un jugador
 function ProfessionalESP:Update(player)
     local esp = self.Players[player]
@@ -159,7 +178,7 @@ function ProfessionalESP:Update(player)
     end
 
     -- Calcular tamaño de la caja
-    local scaleFactor = 1 / (headPos.Z * math.tan(math.rad(Camera.FieldOfView / 2)) * 2) * 1000
+    local scaleFactor = 1 / (headPos.Z * math.tan(math.rad(Camera.FieldOfView / 2)) * 1000
     local width = math.floor(40 * scaleFactor)
     local height = math.floor(65 * scaleFactor)
     local position = Vector2.new(headPos.X, headPos.Y) - Vector2.new(width / 2, height / 2)
@@ -173,16 +192,22 @@ function ProfessionalESP:Update(player)
         return
     end
 
+    -- Verificar si el jugador está apuntando
+    local isAiming = self:IsAiming()
+    local fadeFactor = isAiming and 0.3 or 1.0  -- Factor de transparencia
+    
     -- Actualizar caja
     if self.Settings.Boxes then
         esp.BoxOutline.Visible = true
         esp.BoxOutline.Position = position - Vector2.new(1, 1)
         esp.BoxOutline.Size = Vector2.new(width + 2, height + 2)
+        esp.BoxOutline.Transparency = fadeFactor
         
         esp.Box.Visible = true
         esp.Box.Position = position
         esp.Box.Size = Vector2.new(width, height)
         esp.Box.Color = color
+        esp.Box.Transparency = fadeFactor
     else
         esp.BoxOutline.Visible = false
         esp.Box.Visible = false
@@ -197,32 +222,37 @@ function ProfessionalESP:Update(player)
         esp.HealthBarOutline.Visible = true
         esp.HealthBarOutline.Position = position - Vector2.new(6, 0)
         esp.HealthBarOutline.Size = Vector2.new(barWidth + 2, height + 2)
+        esp.HealthBarOutline.Transparency = fadeFactor
         
         esp.HealthBar.Visible = true
         esp.HealthBar.Position = position - Vector2.new(5, 0) + Vector2.new(0, height - barHeight)
         esp.HealthBar.Size = Vector2.new(barWidth, barHeight)
         esp.HealthBar.Color = Color3.new(1 - health, health, 0)
+        esp.HealthBar.Transparency = fadeFactor
     else
         esp.HealthBarOutline.Visible = false
         esp.HealthBar.Visible = false
     end
 
     -- Actualizar nombre
-    esp.NameText.Visible = self.Settings.Names
+    esp.NameText.Visible = self.Settings.Names and not isAiming  -- Ocultar nombre al apuntar
     esp.NameText.Text = player.Name
     esp.NameText.Position = position + Vector2.new(width / 2, -self.Settings.TextSize - 2)
     esp.NameText.Color = color
+    esp.NameText.Transparency = fadeFactor
 
     -- Actualizar distancia
-    esp.DistanceText.Visible = self.Settings.Distance
+    esp.DistanceText.Visible = self.Settings.Distance and not isAiming  -- Ocultar distancia al apuntar
     esp.DistanceText.Text = string.format("[%d]", distance)
     esp.DistanceText.Position = position + Vector2.new(width / 2, height + 2)
+    esp.DistanceText.Transparency = fadeFactor
 
     -- Actualizar tracer
     esp.Tracer.Visible = self.Settings.Tracers
     esp.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
     esp.Tracer.To = Vector2.new(rootPos.X, rootPos.Y)
     esp.Tracer.Color = color
+    esp.Tracer.Transparency = fadeFactor
 end
 
 -- Eliminar ESP de un jugador
