@@ -1,4 +1,4 @@
--- teleportMenu.lua (versión final corregida y optimizada)
+-- teleportMenu.lua (versión final corregida y optimizada para DrakHub)
 
 local TeleportMenuAPI = {
     active = false,
