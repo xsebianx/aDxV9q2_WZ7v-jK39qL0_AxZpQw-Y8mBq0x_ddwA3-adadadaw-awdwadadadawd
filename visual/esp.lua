@@ -1,24 +1,19 @@
--- ESP Profesional para DrakHub Premium
+-- ESP Profesional para DrakHub Premium (Versión Corregida)
 local ProfessionalESP = {
     Enabled = false,
     Players = {},
-    NPCs = {},
-    Objects = {},
     Settings = {
         Boxes = true,
-        BoxType = "2D", -- "2D" o "3D"
         Names = true,
         HealthBars = true,
         Tracers = true,
         Distance = true,
-        TeamCheck = true, -- Mostrar enemigos en rojo
+        TeamCheck = true,
         AllyColor = Color3.fromRGB(0, 255, 0),
         EnemyColor = Color3.fromRGB(255, 50, 50),
-        NPCColor = Color3.fromRGB(255, 255, 0),
-        ObjectColor = Color3.fromRGB(100, 150, 255),
-        MaxDistance = 1000, -- Distancia máxima de renderizado
         TextSize = 14,
-        Font = Enum.Font.GothamBold
+        Font = 2, -- 0: UI, 1: System, 2: Plex, 3: Monospace
+        MaxDistance = 1000
     }
 }
 
@@ -27,6 +22,14 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+
+-- Mapeo de fuentes numéricas
+local FontMapping = {
+    [0] = Drawing.Fonts.UI,
+    [1] = Drawing.Fonts.System,
+    [2] = Drawing.Fonts.Plex,
+    [3] = Drawing.Fonts.Monospace
+}
 
 -- Función para crear un ESP para un jugador
 function ProfessionalESP:Create(player)
@@ -43,52 +46,46 @@ function ProfessionalESP:Create(player)
     local function createDrawing(type, props)
         local drawing = Drawing.new(type)
         for prop, value in pairs(props) do
-            drawing[prop] = value
+            if prop == "Font" then
+                drawing[prop] = FontMapping[value] or FontMapping[2] -- Default to Plex
+            else
+                drawing[prop] = value
+            end
         end
         table.insert(esp.Drawings, drawing)
         return drawing
     end
 
+    -- Caja
     esp.BoxOutline = createDrawing("Square", {
         Thickness = 3,
         Color = Color3.new(0, 0, 0),
-        Transparency = 1,
         Filled = false
     })
 
     esp.Box = createDrawing("Square", {
         Thickness = 1,
-        Color = Color3.new(1, 1, 1),
-        Transparency = 1,
+        Color = self.Settings.EnemyColor,
         Filled = false
     })
 
-    esp.HealthBarOutline = createDrawing("Line", {
-        Thickness = 3,
-        Color = Color3.new(0, 0, 0),
-        Transparency = 1
-    })
-
-    esp.HealthBar = createDrawing("Line", {
+    -- Barra de salud
+    esp.HealthBarOutline = createDrawing("Square", {
         Thickness = 1,
-        Color = Color3.new(1, 1, 1),
-        Transparency = 1
+        Color = Color3.new(0, 0, 0),
+        Filled = false
     })
 
-    esp.HealthText = createDrawing("Text", {
-        Text = "",
-        Size = self.Settings.TextSize,
-        Center = true,
-        Outline = true,
-        OutlineColor = Color3.new(0, 0, 0),
-        Color = Color3.new(1, 1, 1),
-        Font = self.Settings.Font
+    esp.HealthBar = createDrawing("Square", {
+        Thickness = 1,
+        Color = Color3.new(0, 1, 0),
+        Filled = true
     })
 
+    -- Textos
     esp.NameText = createDrawing("Text", {
         Text = player.Name,
         Size = self.Settings.TextSize,
-        Center = true,
         Outline = true,
         OutlineColor = Color3.new(0, 0, 0),
         Color = Color3.new(1, 1, 1),
@@ -98,34 +95,26 @@ function ProfessionalESP:Create(player)
     esp.DistanceText = createDrawing("Text", {
         Text = "",
         Size = self.Settings.TextSize,
-        Center = true,
         Outline = true,
         OutlineColor = Color3.new(0, 0, 0),
         Color = Color3.new(1, 1, 1),
         Font = self.Settings.Font
     })
 
+    -- Tracer
     esp.Tracer = createDrawing("Line", {
         Thickness = 1,
-        Color = Color3.new(1, 1, 1),
-        Transparency = 1
+        Color = self.Settings.EnemyColor
     })
 
     -- Conectar eventos
-    esp.Connections.CharacterAdded = player.CharacterAdded:Connect(function(character)
+    esp.Connections.CharacterAdded = player.CharacterAdded:Connect(function()
         self:Update(player)
     end)
 
-    esp.Connections.HumanoidChanged = player.CharacterAdded:Connect(function(character)
-        local humanoid = character:WaitForChild("Humanoid")
-        if humanoid then
-            esp.Connections.HealthChanged = humanoid.HealthChanged:Connect(function()
-                self:Update(player)
-            end)
-        end
-    end)
-
-    self:Update(player)
+    if player.Character then
+        self:Update(player)
+    end
 end
 
 -- Actualizar ESP para un jugador
@@ -145,7 +134,12 @@ function ProfessionalESP:Update(player)
     local head = character:FindFirstChild("Head")
     local rootPart = character:FindFirstChild("HumanoidRootPart")
 
-    if not humanoid or not head or not rootPart then return end
+    if not humanoid or not head or not rootPart then 
+        for _, drawing in pairs(esp.Drawings) do
+            drawing.Visible = false
+        end
+        return
+    end
 
     -- Calcular posición en pantalla
     local headPos, headOnScreen = Camera:WorldToViewportPoint(head.Position)
@@ -165,12 +159,19 @@ function ProfessionalESP:Update(player)
     end
 
     -- Calcular tamaño de la caja
-    local headOffset = Vector2.new(0, 20)
-    local rootOffset = Vector2.new(0, -30)
     local scaleFactor = 1 / (headPos.Z * math.tan(math.rad(Camera.FieldOfView / 2)) * 2) * 1000
     local width = math.floor(40 * scaleFactor)
     local height = math.floor(65 * scaleFactor)
-    local position = Vector2.new(headPos.X, headPos.Y) - Vector2.new(width / 2, height / 2) - headOffset
+    local position = Vector2.new(headPos.X, headPos.Y) - Vector2.new(width / 2, height / 2)
+
+    -- Calcular distancia
+    local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
+    if distance > self.Settings.MaxDistance then
+        for _, drawing in pairs(esp.Drawings) do
+            drawing.Visible = false
+        end
+        return
+    end
 
     -- Actualizar caja
     if self.Settings.Boxes then
@@ -190,51 +191,38 @@ function ProfessionalESP:Update(player)
     -- Actualizar barra de salud
     if self.Settings.HealthBars then
         local health = humanoid.Health / humanoid.MaxHealth
+        local barWidth = 4
         local barHeight = height * health
-        local barPosition = position + Vector2.new(-6, height - barHeight)
-
+        
         esp.HealthBarOutline.Visible = true
-        esp.HealthBarOutline.From = barPosition - Vector2.new(1, 0)
-        esp.HealthBarOutline.To = barPosition + Vector2.new(0, barHeight) - Vector2.new(1, 0)
+        esp.HealthBarOutline.Position = position - Vector2.new(6, 0)
+        esp.HealthBarOutline.Size = Vector2.new(barWidth + 2, height + 2)
         
         esp.HealthBar.Visible = true
-        esp.HealthBar.From = barPosition
-        esp.HealthBar.To = barPosition + Vector2.new(0, barHeight)
+        esp.HealthBar.Position = position - Vector2.new(5, 0) + Vector2.new(0, height - barHeight)
+        esp.HealthBar.Size = Vector2.new(barWidth, barHeight)
         esp.HealthBar.Color = Color3.new(1 - health, health, 0)
-        
-        esp.HealthText.Visible = true
-        esp.HealthText.Text = tostring(math.floor(humanoid.Health))
-        esp.HealthText.Position = barPosition - Vector2.new(10, 0)
     else
         esp.HealthBarOutline.Visible = false
         esp.HealthBar.Visible = false
-        esp.HealthText.Visible = false
     end
 
     -- Actualizar nombre
     esp.NameText.Visible = self.Settings.Names
     esp.NameText.Text = player.Name
     esp.NameText.Position = position + Vector2.new(width / 2, -self.Settings.TextSize - 2)
+    esp.NameText.Color = color
 
     -- Actualizar distancia
-    if self.Settings.Distance then
-        local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
-        esp.DistanceText.Visible = true
-        esp.DistanceText.Text = string.format("%d studs", distance)
-        esp.DistanceText.Position = position + Vector2.new(width / 2, height + 2)
-    else
-        esp.DistanceText.Visible = false
-    end
+    esp.DistanceText.Visible = self.Settings.Distance
+    esp.DistanceText.Text = string.format("[%d]", distance)
+    esp.DistanceText.Position = position + Vector2.new(width / 2, height + 2)
 
     -- Actualizar tracer
-    if self.Settings.Tracers then
-        esp.Tracer.Visible = true
-        esp.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-        esp.Tracer.To = Vector2.new(rootPos.X, rootPos.Y)
-        esp.Tracer.Color = color
-    else
-        esp.Tracer.Visible = false
-    end
+    esp.Tracer.Visible = self.Settings.Tracers
+    esp.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+    esp.Tracer.To = Vector2.new(rootPos.X, rootPos.Y)
+    esp.Tracer.Color = color
 end
 
 -- Eliminar ESP de un jugador
@@ -306,16 +294,6 @@ function ProfessionalESP:Toggle(state)
     end
 end
 
--- Actualizar configuraciones
-function ProfessionalESP:UpdateSettings(settings)
-    for setting, value in pairs(settings) do
-        if self.Settings[setting] ~= nil then
-            self.Settings[setting] = value
-        end
-    end
-    self:UpdateAll()
-end
-
 -- API para integrar con DrakHub
 return {
     activate = function()
@@ -325,6 +303,10 @@ return {
         ProfessionalESP:Toggle(false)
     end,
     updateSettings = function(settings)
-        ProfessionalESP:UpdateSettings(settings)
+        for k, v in pairs(settings) do
+            if ProfessionalESP.Settings[k] ~= nil then
+                ProfessionalESP.Settings[k] = v
+            end
+        end
     end
 }
