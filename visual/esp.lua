@@ -1,207 +1,330 @@
--- esp.lua (Versión mejorada con limpieza garantizada)
-
--- Configuración
-local SETTINGS = {
-    DEFAULT_COLOR = Color3.fromRGB(255, 0, 0),
-    MAX_DISTANCE = 2000,
-    TEXT_SIZE = 14
+-- ESP Profesional para DrakHub Premium
+local ProfessionalESP = {
+    Enabled = false,
+    Players = {},
+    NPCs = {},
+    Objects = {},
+    Settings = {
+        Boxes = true,
+        BoxType = "2D", -- "2D" o "3D"
+        Names = true,
+        HealthBars = true,
+        Tracers = true,
+        Distance = true,
+        TeamCheck = true, -- Mostrar enemigos en rojo
+        AllyColor = Color3.fromRGB(0, 255, 0),
+        EnemyColor = Color3.fromRGB(255, 50, 50),
+        NPCColor = Color3.fromRGB(255, 255, 0),
+        ObjectColor = Color3.fromRGB(100, 150, 255),
+        MaxDistance = 1000, -- Distancia máxima de renderizado
+        TextSize = 14,
+        Font = Enum.Font.GothamBold
+    }
 }
 
 -- Servicios
-local RUN_SERVICE = game:GetService("RunService")
-local PLAYERS = game:GetService("Players")
-local CAMERA = workspace.CurrentCamera
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
--- Variables
-local LOCAL_PLAYER = PLAYERS.LocalPlayer
-local ESP_ENABLED = false
-local ESP_CACHE = {}
-local DRAWINGS_REGISTRY = {} -- Registro global de todos los objetos Drawing
+-- Función para crear un ESP para un jugador
+function ProfessionalESP:Create(player)
+    if self.Players[player] then return end
 
--- Función para crear objetos Drawing con registro
-local function createDrawing(type, properties)
-    local drawing = Drawing.new(type)
-    for prop, value in pairs(properties) do
-        drawing[prop] = value
-    end
-    table.insert(DRAWINGS_REGISTRY, drawing)
-    return drawing
-end
-
--- Función para limpiar TODOS los objetos Drawing
-local function cleanAllDrawings()
-    for _, drawing in ipairs(DRAWINGS_REGISTRY) do
-        pcall(function()
-            if drawing and typeof(drawing) == "userdata" then
-                drawing:Remove()
-            end
-        end)
-    end
-    DRAWINGS_REGISTRY = {}
-    ESP_CACHE = {}
-end
-
--- Crear ESP para un jugador
-local function createPlayerESP(player)
-    if ESP_CACHE[player] then return end
-    
-    local drawings = {
-        box = createDrawing("Square", {
-            Thickness = 1,
-            Filled = false,
-            Color = SETTINGS.DEFAULT_COLOR,
-            Visible = false,
-            ZIndex = 2
-        }),
-        
-        boxOutline = createDrawing("Square", {
-            Thickness = 3,
-            Filled = false,
-            Color = Color3.new(0, 0, 0),
-            Visible = false,
-            ZIndex = 1
-        }),
-        
-        name = createDrawing("Text", {
-            Color = Color3.new(1, 1, 1),
-            Size = SETTINGS.TEXT_SIZE,
-            Center = true,
-            Outline = true,
-            Visible = false
-        }),
-        
-        health = createDrawing("Text", {
-            Color = Color3.new(0, 1, 0),
-            Size = SETTINGS.TEXT_SIZE,
-            Center = true,
-            Outline = true,
-            Visible = false
-        }),
-        
-        distance = createDrawing("Text", {
-            Color = Color3.new(1, 1, 0),
-            Size = SETTINGS.TEXT_SIZE,
-            Center = true,
-            Outline = true,
-            Visible = false
-        })
+    local esp = {
+        Player = player,
+        Connections = {},
+        Drawings = {}
     }
-    
-    ESP_CACHE[player] = drawings
+    self.Players[player] = esp
+
+    -- Crear dibujos
+    local function createDrawing(type, props)
+        local drawing = Drawing.new(type)
+        for prop, value in pairs(props) do
+            drawing[prop] = value
+        end
+        table.insert(esp.Drawings, drawing)
+        return drawing
+    end
+
+    esp.BoxOutline = createDrawing("Square", {
+        Thickness = 3,
+        Color = Color3.new(0, 0, 0),
+        Transparency = 1,
+        Filled = false
+    })
+
+    esp.Box = createDrawing("Square", {
+        Thickness = 1,
+        Color = Color3.new(1, 1, 1),
+        Transparency = 1,
+        Filled = false
+    })
+
+    esp.HealthBarOutline = createDrawing("Line", {
+        Thickness = 3,
+        Color = Color3.new(0, 0, 0),
+        Transparency = 1
+    })
+
+    esp.HealthBar = createDrawing("Line", {
+        Thickness = 1,
+        Color = Color3.new(1, 1, 1),
+        Transparency = 1
+    })
+
+    esp.HealthText = createDrawing("Text", {
+        Text = "",
+        Size = self.Settings.TextSize,
+        Center = true,
+        Outline = true,
+        OutlineColor = Color3.new(0, 0, 0),
+        Color = Color3.new(1, 1, 1),
+        Font = self.Settings.Font
+    })
+
+    esp.NameText = createDrawing("Text", {
+        Text = player.Name,
+        Size = self.Settings.TextSize,
+        Center = true,
+        Outline = true,
+        OutlineColor = Color3.new(0, 0, 0),
+        Color = Color3.new(1, 1, 1),
+        Font = self.Settings.Font
+    })
+
+    esp.DistanceText = createDrawing("Text", {
+        Text = "",
+        Size = self.Settings.TextSize,
+        Center = true,
+        Outline = true,
+        OutlineColor = Color3.new(0, 0, 0),
+        Color = Color3.new(1, 1, 1),
+        Font = self.Settings.Font
+    })
+
+    esp.Tracer = createDrawing("Line", {
+        Thickness = 1,
+        Color = Color3.new(1, 1, 1),
+        Transparency = 1
+    })
+
+    -- Conectar eventos
+    esp.Connections.CharacterAdded = player.CharacterAdded:Connect(function(character)
+        self:Update(player)
+    end)
+
+    esp.Connections.HumanoidChanged = player.CharacterAdded:Connect(function(character)
+        local humanoid = character:WaitForChild("Humanoid")
+        if humanoid then
+            esp.Connections.HealthChanged = humanoid.HealthChanged:Connect(function()
+                self:Update(player)
+            end)
+        end
+    end)
+
+    self:Update(player)
 end
 
 -- Actualizar ESP para un jugador
-local function updatePlayerESP(player, drawings)
+function ProfessionalESP:Update(player)
+    local esp = self.Players[player]
+    if not esp then return end
+
     local character = player.Character
-    if not character then return end
-    
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return end
-    
-    local success, viewportPoint = pcall(function()
-        return CAMERA:WorldToViewportPoint(humanoidRootPart.Position)
-    end)
-    
-    if not success then return end
-    
-    local position = Vector2.new(viewportPoint.X, viewportPoint.Y)
-    local visible = viewportPoint.Z > 0
-    local depth = viewportPoint.Z
-    
-    -- Actualizar visibilidad
-    for _, drawing in pairs(drawings) do
-        drawing.Visible = visible and depth <= SETTINGS.MAX_DISTANCE and ESP_ENABLED
+    if not character then
+        for _, drawing in pairs(esp.Drawings) do
+            drawing.Visible = false
+        end
+        return
     end
-    
-    if not drawings.box.Visible then return end
-    
-    -- Cálculos de posición y tamaño
-    local scaleFactor = 1 / (depth * math.tan(math.rad(CAMERA.FieldOfView / 2)) * 2) * 1000
-    local width = math.round(4 * scaleFactor)
-    local height = math.round(5 * scaleFactor)
-    local x, y = math.round(position.X), math.round(position.Y)
-    
-    -- Actualizar dibujos
-    drawings.box.Size = Vector2.new(width, height)
-    drawings.box.Position = Vector2.new(x - width/2, y - height/2)
-    
-    drawings.boxOutline.Size = drawings.box.Size
-    drawings.boxOutline.Position = drawings.box.Position
-    
-    drawings.name.Text = player.Name
-    drawings.name.Position = Vector2.new(x, y - height/2 - 15)
-    
+
     local humanoid = character:FindFirstChild("Humanoid")
-    if humanoid then
-        drawings.health.Text = "HP: " .. math.floor(humanoid.Health)
-        drawings.health.Position = Vector2.new(x, y - height/2 - 30)
+    local head = character:FindFirstChild("Head")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+    if not humanoid or not head or not rootPart then return end
+
+    -- Calcular posición en pantalla
+    local headPos, headOnScreen = Camera:WorldToViewportPoint(head.Position)
+    local rootPos = Camera:WorldToViewportPoint(rootPart.Position)
+
+    if not headOnScreen then
+        for _, drawing in pairs(esp.Drawings) do
+            drawing.Visible = false
+        end
+        return
     end
-    
-    local distance = (LOCAL_PLAYER.Character.HumanoidRootPart.Position - humanoidRootPart.Position).Magnitude
-    drawings.distance.Text = "Dist: " .. string.format("%.1f", distance)
-    drawings.distance.Position = Vector2.new(x, y + height/2 + 10)
+
+    -- Determinar color según equipo
+    local color = self.Settings.EnemyColor
+    if self.Settings.TeamCheck and player.Team == LocalPlayer.Team then
+        color = self.Settings.AllyColor
+    end
+
+    -- Calcular tamaño de la caja
+    local headOffset = Vector2.new(0, 20)
+    local rootOffset = Vector2.new(0, -30)
+    local scaleFactor = 1 / (headPos.Z * math.tan(math.rad(Camera.FieldOfView / 2)) * 2) * 1000
+    local width = math.floor(40 * scaleFactor)
+    local height = math.floor(65 * scaleFactor)
+    local position = Vector2.new(headPos.X, headPos.Y) - Vector2.new(width / 2, height / 2) - headOffset
+
+    -- Actualizar caja
+    if self.Settings.Boxes then
+        esp.BoxOutline.Visible = true
+        esp.BoxOutline.Position = position - Vector2.new(1, 1)
+        esp.BoxOutline.Size = Vector2.new(width + 2, height + 2)
+        
+        esp.Box.Visible = true
+        esp.Box.Position = position
+        esp.Box.Size = Vector2.new(width, height)
+        esp.Box.Color = color
+    else
+        esp.BoxOutline.Visible = false
+        esp.Box.Visible = false
+    end
+
+    -- Actualizar barra de salud
+    if self.Settings.HealthBars then
+        local health = humanoid.Health / humanoid.MaxHealth
+        local barHeight = height * health
+        local barPosition = position + Vector2.new(-6, height - barHeight)
+
+        esp.HealthBarOutline.Visible = true
+        esp.HealthBarOutline.From = barPosition - Vector2.new(1, 0)
+        esp.HealthBarOutline.To = barPosition + Vector2.new(0, barHeight) - Vector2.new(1, 0)
+        
+        esp.HealthBar.Visible = true
+        esp.HealthBar.From = barPosition
+        esp.HealthBar.To = barPosition + Vector2.new(0, barHeight)
+        esp.HealthBar.Color = Color3.new(1 - health, health, 0)
+        
+        esp.HealthText.Visible = true
+        esp.HealthText.Text = tostring(math.floor(humanoid.Health))
+        esp.HealthText.Position = barPosition - Vector2.new(10, 0)
+    else
+        esp.HealthBarOutline.Visible = false
+        esp.HealthBar.Visible = false
+        esp.HealthText.Visible = false
+    end
+
+    -- Actualizar nombre
+    esp.NameText.Visible = self.Settings.Names
+    esp.NameText.Text = player.Name
+    esp.NameText.Position = position + Vector2.new(width / 2, -self.Settings.TextSize - 2)
+
+    -- Actualizar distancia
+    if self.Settings.Distance then
+        local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
+        esp.DistanceText.Visible = true
+        esp.DistanceText.Text = string.format("%d studs", distance)
+        esp.DistanceText.Position = position + Vector2.new(width / 2, height + 2)
+    else
+        esp.DistanceText.Visible = false
+    end
+
+    -- Actualizar tracer
+    if self.Settings.Tracers then
+        esp.Tracer.Visible = true
+        esp.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+        esp.Tracer.To = Vector2.new(rootPos.X, rootPos.Y)
+        esp.Tracer.Color = color
+    else
+        esp.Tracer.Visible = false
+    end
 end
 
 -- Eliminar ESP de un jugador
-local function removePlayerESP(player)
-    if not ESP_CACHE[player] then return end
-    
-    for _, drawing in pairs(ESP_CACHE[player]) do
-        pcall(function()
-            if drawing then drawing:Remove() end
-        end)
+function ProfessionalESP:Remove(player)
+    local esp = self.Players[player]
+    if esp then
+        -- Desconectar eventos
+        for _, conn in pairs(esp.Connections) do
+            conn:Disconnect()
+        end
+        
+        -- Eliminar dibujos
+        for _, drawing in pairs(esp.Drawings) do
+            drawing:Remove()
+        end
+        
+        self.Players[player] = nil
     end
-    
-    ESP_CACHE[player] = nil
 end
 
--- Inicializar ESP
-local function initializeESP()
-    -- Limpiar cualquier ESP previo
-    cleanAllDrawings()
-    
-    -- Crear ESP para jugadores existentes
-    for _, player in PLAYERS:GetPlayers() do
-        if player ~= LOCAL_PLAYER then
-            createPlayerESP(player)
-        end
+-- Actualizar todos los ESPs
+function ProfessionalESP:UpdateAll()
+    for player in pairs(self.Players) do
+        self:Update(player)
     end
+end
+
+-- Alternar ESP
+function ProfessionalESP:Toggle(state)
+    self.Enabled = state
     
-    -- Conexiones
-    PLAYERS.PlayerAdded:Connect(function(player)
-        if player ~= LOCAL_PLAYER then
-            createPlayerESP(player)
-        end
-    end)
-    
-    PLAYERS.PlayerRemoving:Connect(function(player)
-        removePlayerESP(player)
-    end)
-    
-    -- Bucle de actualización
-    RUN_SERVICE:BindToRenderStep("ESP_Update", Enum.RenderPriority.Camera.Value, function()
-        if not ESP_ENABLED then return end
-        
-        for player, drawings in pairs(ESP_CACHE) do
-            if player and player.Parent then
-                updatePlayerESP(player, drawings)
-            else
-                removePlayerESP(player)
+    if state then
+        -- Iniciar ESP para todos los jugadores
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                self:Create(player)
             end
         end
-    end)
+        
+        -- Conectar eventos para nuevos jugadores
+        self.PlayerAdded = Players.PlayerAdded:Connect(function(player)
+            self:Create(player)
+        end)
+        
+        self.PlayerRemoving = Players.PlayerRemoving:Connect(function(player)
+            self:Remove(player)
+        end)
+        
+        -- Loop de actualización
+        self.UpdateLoop = RunService.RenderStepped:Connect(function()
+            self:UpdateAll()
+        end)
+    else
+        -- Desconectar eventos
+        if self.PlayerAdded then
+            self.PlayerAdded:Disconnect()
+        end
+        if self.PlayerRemoving then
+            self.PlayerRemoving:Disconnect()
+        end
+        if self.UpdateLoop then
+            self.UpdateLoop:Disconnect()
+        end
+        
+        -- Eliminar todos los ESPs
+        for player in pairs(self.Players) do
+            self:Remove(player)
+        end
+    end
 end
 
--- Funciones globales
-_G.enableESP = function()
-    ESP_ENABLED = true
-    initializeESP()
+-- Actualizar configuraciones
+function ProfessionalESP:UpdateSettings(settings)
+    for setting, value in pairs(settings) do
+        if self.Settings[setting] ~= nil then
+            self.Settings[setting] = value
+        end
+    end
+    self:UpdateAll()
 end
 
-_G.disableESP = function()
-    ESP_ENABLED = false
-    cleanAllDrawings()
-end
-
--- Inicialización segura
-pcall(initializeESP)
+-- API para integrar con DrakHub
+return {
+    activate = function()
+        ProfessionalESP:Toggle(true)
+    end,
+    deactivate = function()
+        ProfessionalESP:Toggle(false)
+    end,
+    updateSettings = function(settings)
+        ProfessionalESP:UpdateSettings(settings)
+    end
+}
