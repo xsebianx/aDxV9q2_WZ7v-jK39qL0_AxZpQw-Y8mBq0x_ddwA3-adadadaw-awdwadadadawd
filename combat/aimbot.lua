@@ -8,53 +8,100 @@ local Camera = workspace.CurrentCamera
 -- Variables avanzadas
 local predictionFactor
 local smoothingFactor
-local fovCircle
+local pingAdjustment
 local renderStepped
 local positionHistory = {}
 local currentTarget = nil
 local targetLockTime = 0
 local recentTargets = {}
-local pingAdjustment = 0.15  -- Ajuste para compensar ping
 
--- Sistema de predicción mejorado (para larga distancia)
+-- Fallback para mousemoverel
+if not mousemoverel then
+    mousemoverel = function(x, y)
+        local mouse = LocalPlayer:GetMouse()
+        local pos = Vector2.new(mouse.X + x, mouse.Y + y)
+        pcall(function()
+            mouse:MoveTo(pos.X, pos.Y)
+        end)
+    end
+end
+
+-- Verificación de visibilidad mejorada
+local function isVisible(part)
+    if not part then return false end
+    
+    local origin = Camera.CFrame.Position
+    local direction = (part.Position - origin).Unit
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+    raycastParams.IgnoreWater = true
+    
+    local result = workspace:Raycast(origin, direction * 1000, raycastParams)
+    
+    if result then
+        local hitPart = result.Instance
+        while hitPart and hitPart ~= workspace do
+            if hitPart:IsDescendantOf(part.Parent) then
+                return true
+            end
+            hitPart = hitPart.Parent
+        end
+    end
+    
+    return not result
+end
+
+-- Sistema de predicción profesional para larga distancia
 local function calculateAdvancedPrediction(target, distance)
     if not target or not target.Character then return nil end
     local head = target.Character:FindFirstChild("Head")
     if not head then return nil end
     
+    -- Inicializar historial
     if not positionHistory[target] then positionHistory[target] = {} end
     
-    -- Registro histórico de movimientos
+    -- Registrar posición y velocidad actual
     table.insert(positionHistory[target], {
         position = head.Position,
-        velocity = (head.AssemblyLinearVelocity * Vector3.new(1, 0, 1)),  -- Ignorar movimiento vertical
+        velocity = head.AssemblyLinearVelocity,
         time = tick()
     })
     
-    -- Mantener solo datos relevantes
+    -- Mantener solo los últimos 5 registros
     while #positionHistory[target] > 5 do
         table.remove(positionHistory[target], 1)
     end
     
-    -- Calcular velocidad promedio vectorial
+    -- Calcular velocidad promedio
     local avgVelocity = Vector3.new(0, 0, 0)
+    local validSamples = 0
+    
     for i = 2, #positionHistory[target] do
-        avgVelocity = avgVelocity + positionHistory[target][i].velocity
+        local sample = positionHistory[target][i]
+        if sample.velocity.Magnitude > 0 then
+            avgVelocity = avgVelocity + sample.velocity
+            validSamples = validSamples + 1
+        end
     end
-    avgVelocity = avgVelocity / (#positionHistory[target] - 1)
     
-    -- Factor de predicción dinámico (mayor a larga distancia)
-    local dynamicPrediction = predictionFactor * (1 + math.log(distance/100 + 1))
+    if validSamples == 0 then
+        return head.Position
+    end
     
-    -- Tiempo estimado de viaje (basado en velocidad de bala hipotética)
-    local bulletSpeed = 5000  -- m/s (ajustar según juego)
-    local timeToTarget = distance / bulletSpeed
+    avgVelocity = avgVelocity / validSamples
     
-    -- Predicción final con compensación de ping
-    return head.Position + (avgVelocity * (dynamicPrediction + timeToTarget + pingAdjustment))
+    -- Factor dinámico basado en distancia
+    local dynamicFactor = predictionFactor * (1 + distance / 500)
+    
+    -- Compensación de ping
+    local pingComp = pingAdjustment
+    
+    -- Predicción final
+    return head.Position + (avgVelocity * dynamicFactor) + (avgVelocity * pingComp)
 end
 
--- Sistema de selección de objetivos mejorado
+-- Sistema profesional de selección de objetivos
 local function findProfessionalTarget()
     local bestTarget = nil
     local bestScore = -math.huge
@@ -67,14 +114,20 @@ local function findProfessionalTarget()
             
             if humanoid and humanoid.Health > 0 and head then
                 local distance = (head.Position - cameraPos).Magnitude
+                local isTargetVisible = isVisible(head)
                 
-                -- Priorizar objetivos visibles y lejanos
-                if isVisible(head) then
-                    local score = (distance > 350) and 2.0 or 1.0  -- Bonus para objetivos lejanos
+                if isTargetVisible then
+                    -- Priorizar objetivos a larga distancia
+                    local score = distance > 350 and 2.0 or 1.0
                     
-                    -- Bonus adicional si el objetivo está moviéndose
-                    if head.AssemblyLinearVelocity.Magnitude > 5 then
+                    -- Bonus por movimiento rápido
+                    if head.AssemblyLinearVelocity.Magnitude > 10 then
                         score = score * 1.5
+                    end
+                    
+                    -- Bonus por ser objetivo reciente
+                    if recentTargets[player] then
+                        score = score * 1.2
                     end
                     
                     if score > bestScore then
@@ -86,12 +139,24 @@ local function findProfessionalTarget()
         end
     end
     
+    -- Actualizar historial reciente
+    if bestTarget then
+        recentTargets[bestTarget] = tick()
+        
+        -- Limpiar objetivos antiguos
+        for target, time in pairs(recentTargets) do
+            if tick() - time > 10 then
+                recentTargets[target] = nil
+            end
+        end
+    end
+    
     return bestTarget
 end
 
 -- Seguimiento ultrasuave para precisión profesional
 local function professionalAim(target)
-    if not target then return end
+    if not target or not target.Character then return end
     local head = target.Character:FindFirstChild("Head")
     if not head then return end
     
@@ -100,17 +165,20 @@ local function professionalAim(target)
     
     if not predictedPosition then return end
     
-    local targetScreenPos, onScreen = Camera:WorldToViewportPoint(predictedPosition)
-    if not onScreen then return end
+    local success, targetScreenPos, onScreen = pcall(function()
+        return Camera:WorldToViewportPoint(predictedPosition)
+    end)
+    
+    if not success or not onScreen then return end
     
     local mousePos = UserInputService:GetMouseLocation()
     local targetPos = Vector2.new(targetScreenPos.X, targetScreenPos.Y)
     local delta = targetPos - mousePos
     
-    -- Suavizado adaptativo (más suave a larga distancia)
+    -- Suavizado adaptativo para larga distancia
     local dynamicSmoothing = smoothingFactor
     if distance > 300 then
-        dynamicSmoothing = smoothingFactor * (1 + distance/1000)
+        dynamicSmoothing = smoothingFactor * (0.8 + distance/800)
     end
     
     mousemoverel(
@@ -119,29 +187,57 @@ local function professionalAim(target)
     )
 end
 
--- Configuración profesional
+-- Verificación de seguridad reforzada
+local function safetyCheck()
+    if not LocalPlayer or not LocalPlayer.Character then 
+        return false 
+    end
+    
+    local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then
+        return false
+    end
+    
+    if UserInputService:GetFocusedTextBox() then
+        return false
+    end
+    
+    return true
+end
+
+-- Función principal del aimbot con gestión de errores
+local function aimbotLoop()
+    local success, err = pcall(function()
+        if not safetyCheck() then
+            currentTarget = nil
+            return
+        end
+        
+        if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+            currentTarget = findProfessionalTarget()
+            if currentTarget then
+                professionalAim(currentTarget)
+            end
+        else
+            currentTarget = nil
+        end
+    end)
+    
+    if not success then
+        warn("[AIMBOT ERROR]", err)
+    end
+end
+
+-- API para integración con el hub
 return {
     activate = function()
-        predictionFactor = 0.22  -- Más alto para larga distancia
-        smoothingFactor = 0.15   -- Más preciso
-        pingAdjustment = 0.18    -- Mayor compensación de ping
+        -- Configuración profesional para Visera EXFIL
+        predictionFactor = 0.24   -- Aumentado para larga distancia
+        smoothingFactor = 0.12    -- Precisión profesional
+        pingAdjustment = 0.18     -- Compensación de ping
         
         if not renderStepped then
-            renderStepped = RunService.RenderStepped:Connect(function()
-                if not safetyCheck() then
-                    currentTarget = nil
-                    return
-                end
-                
-                if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-                    currentTarget = findProfessionalTarget()
-                    if currentTarget then
-                        professionalAim(currentTarget)
-                    end
-                else
-                    currentTarget = nil
-                end
-            end)
+            renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
         end
     end,
     
@@ -151,6 +247,8 @@ return {
             renderStepped = nil
         end
         positionHistory = {}
+        recentTargets = {}
+        currentTarget = nil
     end,
     
     configure = function(options)
