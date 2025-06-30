@@ -14,6 +14,71 @@ local lastInputTime = 0
 local targetCache = {}
 local playerList = Players:GetPlayers()
 
+-- Sistema de notificación visual
+local notificationGui = nil
+local notificationLabel = nil
+local lastTarget = nil
+local notificationTime = 0
+
+-- Crear la notificación
+local function createNotification()
+    if notificationGui then return end
+    
+    notificationGui = Instance.new("ScreenGui")
+    notificationGui.Name = "AimbotNotification"
+    notificationGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    notificationGui.ResetOnSpawn = false
+    notificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    notificationLabel = Instance.new("TextLabel")
+    notificationLabel.Name = "TargetIndicator"
+    notificationLabel.Text = "OBJETIVO VISIBLE"
+    notificationLabel.TextColor3 = Color3.new(0, 1, 0)  -- Verde brillante
+    notificationLabel.Font = Enum.Font.GothamBold
+    notificationLabel.TextSize = 16
+    notificationLabel.TextStrokeColor3 = Color3.new(0, 0.2, 0)
+    notificationLabel.TextStrokeTransparency = 0.5
+    notificationLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+    notificationLabel.BackgroundTransparency = 0.7
+    notificationLabel.BorderSizePixel = 0
+    notificationLabel.Size = UDim2.new(0, 150, 0, 30)
+    notificationLabel.Position = UDim2.new(0.5, -75, 0.01, 0)  -- Parte superior, centrado
+    notificationLabel.Visible = false
+    notificationLabel.Parent = notificationGui
+    
+    -- Esquinas redondeadas
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = notificationLabel
+    
+    -- Icono de confirmación
+    local icon = Instance.new("ImageLabel")
+    icon.Name = "Icon"
+    icon.Image = "rbxassetid://3926305904"  -- Icono de Roblox
+    icon.ImageRectOffset = Vector2.new(964, 324)
+    icon.ImageRectSize = Vector2.new(36, 36)
+    icon.Size = UDim2.new(0, 20, 0, 20)
+    icon.Position = UDim2.new(0, 5, 0.5, -10)
+    icon.BackgroundTransparency = 1
+    icon.ImageColor3 = Color3.new(0, 1, 0)  -- Verde
+    icon.Parent = notificationLabel
+end
+
+-- Actualizar notificación
+local function updateNotification(target)
+    if not notificationLabel then return end
+    
+    if target and target ~= lastTarget then
+        notificationLabel.Visible = true
+        notificationLabel.Text = "OBJETIVO VISIBLE"
+        notificationTime = tick()
+    elseif not target and notificationLabel.Visible and (tick() - notificationTime > 0.3) then
+        notificationLabel.Visible = false
+    end
+    
+    lastTarget = target
+end
+
 -- Función ultra rápida para movimiento de mouse
 local function optimizedMouseMove(deltaX, deltaY)
     local now = tick()
@@ -23,38 +88,9 @@ local function optimizedMouseMove(deltaX, deltaY)
     end
 end
 
--- Sistema de predicción mejorado para cualquier distancia
-local function calculatePrecisionPrediction(hitbox)
-    if not hitbox then return nil end
-    
-    -- Predicción base (90% de los casos)
-    local basePrediction = hitbox.Position + (hitbox.AssemblyLinearVelocity * predictionFactor)
-    
-    -- Predicción para movimiento lateral rápido
-    local horizontalVelocity = Vector3.new(
-        hitbox.AssemblyLinearVelocity.X,
-        0,
-        hitbox.AssemblyLinearVelocity.Z
-    )
-    
-    if horizontalVelocity.Magnitude > 25 then
-        return basePrediction + (horizontalVelocity.Unit * 1.5)
-    end
-    
-    return basePrediction
-end
-
--- Sistema de detección de objetivos sin límites
+-- Sistema de detección de objetivos
 local function findAnyVisiblePart(target)
     if not target or not target.Character then return nil end
-    
-    -- Primero intentar partes prioritarias
-    for _, partName in ipairs({"Head", "HumanoidRootPart", "UpperTorso"}) do
-        local part = target.Character:FindFirstChild(partName)
-        if part then
-            return part
-        end
-    end
     
     -- Buscar cualquier parte visible
     for _, part in ipairs(target.Character:GetChildren()) do
@@ -66,7 +102,7 @@ local function findAnyVisiblePart(target)
     return nil
 end
 
--- Sistema de selección de objetivos sin restricciones
+-- Sistema de selección de objetivos
 local function findOptimalTarget()
     local bestTarget = nil
     local bestPart = nil
@@ -96,14 +132,16 @@ local function findOptimalTarget()
     return bestTarget, bestPart
 end
 
--- Sistema de seguimiento pixel-perfect
+-- Sistema de seguimiento
 local function pixelPerfectAim()
     local target, part = findOptimalTarget()
+    
+    -- Actualizar notificación
+    updateNotification(target)
+    
     if not target or not part then return end
     
-    local predictedPos = calculatePrecisionPrediction(part)
-    if not predictedPos then return end
-    
+    local predictedPos = part.Position + (part.AssemblyLinearVelocity * predictionFactor)
     local screenPos = Camera:WorldToViewportPoint(predictedPos)
     if screenPos.Z < 0 then return end  -- Detrás de la cámara
     
@@ -117,19 +155,24 @@ local function pixelPerfectAim()
     )
 end
 
--- Loop principal ultra eficiente
+-- Loop principal
 local function aimbotLoop()
     if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
         pixelPerfectAim()
+    else
+        updateNotification(nil)
     end
 end
 
--- API simplificada para el hub
+-- API para el hub
 return {
     activate = function()
         -- Configuración profesional
-        predictionFactor = 0.18   -- Predicción precisa
-        smoothingFactor = 0.04    -- Movimientos suaves pero rápidos
+        predictionFactor = 0.18
+        smoothingFactor = 0.04
+        
+        -- Crear notificación
+        createNotification()
         
         if not renderStepped then
             renderStepped = RunService.RenderStepped:Connect(aimbotLoop)
@@ -141,6 +184,14 @@ return {
             renderStepped:Disconnect()
             renderStepped = nil
         end
+        
+        -- Eliminar notificación
+        if notificationGui then
+            notificationGui:Destroy()
+            notificationGui = nil
+            notificationLabel = nil
+        end
+        
         targetCache = {}
     end,
     
