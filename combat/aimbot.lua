@@ -1,4 +1,4 @@
--- Servicios esencialesss
+-- Servicios esenciales
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -9,17 +9,15 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local predictionFactor = 0.18
-local smoothingFactor = 0.04
+local minTargetDistance = 5  -- Distancia mínima para evitar autoapuntado
 local renderStepped
-local targetCache = {}
-local playerList = Players:GetPlayers()
 local headOffset = Vector3.new(0, 0.2, 0)  -- Compensación para apuntar a la cabeza
 
--- Sistema de notificación visual
+-- Sistema de notificación visual mejorado
 local notificationGui = nil
-local notificationLabel = nil
+local notificationFrame = nil
 
--- Crear la notificación
+-- Crear notificación elegante
 local function createNotification()
     if notificationGui then return end
     
@@ -29,67 +27,88 @@ local function createNotification()
     notificationGui.ResetOnSpawn = false
     notificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    notificationLabel = Instance.new("TextLabel")
-    notificationLabel.Name = "TargetIndicator"
-    notificationLabel.Text = "OBJETIVO VISIBLE"
-    notificationLabel.TextColor3 = Color3.new(0, 1, 0)  -- Verde brillante
-    notificationLabel.Font = Enum.Font.GothamBlack
-    notificationLabel.TextSize = 18
-    notificationLabel.TextStrokeColor3 = Color3.new(0, 0.2, 0)
-    notificationLabel.TextStrokeTransparency = 0.3
-    notificationLabel.BackgroundTransparency = 1
-    notificationLabel.Size = UDim2.new(0, 200, 0, 40)
-    notificationLabel.Position = UDim2.new(0.5, -100, 0.02, 0)  -- Parte superior, centrado
-    notificationLabel.Visible = false
-    notificationLabel.Parent = notificationGui
+    notificationFrame = Instance.new("Frame")
+    notificationFrame.Name = "NotificationFrame"
+    notificationFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+    notificationFrame.BackgroundTransparency = 0.7
+    notificationFrame.BorderSizePixel = 0
+    notificationFrame.Size = UDim2.new(0, 180, 0, 30)
+    notificationFrame.Position = UDim2.new(0.5, -90, 0.02, 0)
+    notificationFrame.Visible = false
+    notificationFrame.Parent = notificationGui
     
-    -- Efecto de brillo
-    local glow = Instance.new("UIGradient")
-    glow.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.new(0, 1, 0)),
-        ColorSequenceKeypoint.new(0.5, Color3.new(0.5, 1, 0.5)),
-        ColorSequenceKeypoint.new(1, Color3.new(0, 1, 0))
-    })
-    glow.Transparency = NumberSequence.new(0.5)
-    glow.Rotation = 90
-    glow.Parent = notificationLabel
+    -- Esquinas redondeadas
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = notificationFrame
+    
+    -- Borde fino
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.new(0, 1, 0)
+    stroke.Thickness = 1
+    stroke.Parent = notificationFrame
+    
+    -- Icono de objetivo
+    local icon = Instance.new("ImageLabel")
+    icon.Name = "Icon"
+    icon.Image = "rbxassetid://3926307971"
+    icon.ImageRectOffset = Vector2.new(324, 364)
+    icon.ImageRectSize = Vector2.new(36, 36)
+    icon.Size = UDim2.new(0, 20, 0, 20)
+    icon.Position = UDim2.new(0, 5, 0.5, -10)
+    icon.BackgroundTransparency = 1
+    icon.ImageColor3 = Color3.new(0, 1, 0)
+    icon.Parent = notificationFrame
+    
+    -- Texto elegante
+    local label = Instance.new("TextLabel")
+    label.Name = "Label"
+    label.Text = "OBJETIVO VISIBLE"
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.Font = Enum.Font.GothamMedium
+    label.TextSize = 14
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(0, 120, 1, 0)
+    label.Position = UDim2.new(0, 30, 0, 0)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = notificationFrame
 end
 
 -- Actualizar notificación
 local function updateNotification(visible)
-    if not notificationLabel then return end
-    notificationLabel.Visible = visible
+    if not notificationFrame then return end
+    notificationFrame.Visible = visible
 end
 
--- Sistema avanzado de predicción de cabeza
+-- Sistema avanzado de predicción de cabeza con protección
 local function predictHeadPosition(target)
-    if not target or not target.Character then return nil end
+    if not target or target == LocalPlayer then return nil end
     
-    local head = target.Character:FindFirstChild("Head")
+    local character = target.Character
+    if not character then return nil end
+    
+    local head = character:FindFirstChild("Head")
     if not head then return nil end
     
-    -- Calcular velocidad real (incluyendo movimiento del mouse del objetivo)
+    -- Calcular distancia al jugador local
+    local distance = (head.Position - Camera.CFrame.Position).Magnitude
+    if distance < minTargetDistance then return nil end  -- Evitar autoapuntado
+    
+    -- Calcular velocidad real
     local velocity = head.AssemblyLinearVelocity
     
-    -- Predecir posición futura con compensación de ping
-    local pingCompensation = 0.15  -- 150ms
-    return head.Position + (velocity * (predictionFactor + pingCompensation)) + headOffset
+    -- Predecir posición futura
+    return head.Position + (velocity * predictionFactor) + headOffset
 end
 
--- Sistema de seguimiento directo a la cabeza
-local function directHeadAim()
+-- Sistema de seguimiento mejorado
+local function precisionAim()
     local bestTarget = nil
     local bestHeadPos = nil
-    local minDistance = math.huge
+    local minScreenDistance = math.huge
     
-    for _, player in ipairs(playerList) do
+    for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
-        
-        local character = player.Character
-        if not character then continue end
-        
-        local humanoid = character:FindFirstChild("Humanoid")
-        if not humanoid or humanoid.Health <= 0 then continue end
         
         local headPos = predictHeadPosition(player)
         if not headPos then continue end
@@ -99,57 +118,33 @@ local function directHeadAim()
         
         -- Calcular distancia desde el centro de la pantalla
         local mousePos = UserInputService:GetMouseLocation()
-        local centerDist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+        local screenDistance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
         
-        if centerDist < minDistance then
-            minDistance = centerDist
+        if screenDistance < minScreenDistance then
+            minScreenDistance = screenDistance
             bestTarget = player
             bestHeadPos = headPos
         end
     end
     
-    return bestTarget, bestHeadPos
-end
-
--- Movimiento de mouse ultra rápido y preciso
-local function rapidMouseMove(targetPos)
-    if not targetPos then return end
+    -- Actualizar notificación
+    updateNotification(bestTarget ~= nil)
     
-    local screenPos = Camera:WorldToViewportPoint(targetPos)
-    if screenPos.Z < 0 then return end
+    if not bestTarget or not bestHeadPos then return end
     
+    -- Realizar el movimiento del mouse
+    local screenPos = Camera:WorldToViewportPoint(bestHeadPos)
     local mousePos = UserInputService:GetMouseLocation()
     local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
     local delta = (targetScreenPos - mousePos)
     
-    -- Movimiento directo (sin suavizado) para máxima velocidad
-    mousemoverel(delta.X, delta.Y)
+    mousemoverel(delta.X * 0.7, delta.Y * 0.7)  -- Movimiento directo pero controlado
 end
 
--- Sistema de seguimiento adaptativo
-local function adaptiveAim()
-    local target, headPos = directHeadAim()
-    
-    -- Actualizar notificación
-    updateNotification(target ~= nil)
-    
-    if not target or not headPos then return end
-    
-    -- Fase 1: Movimiento rápido inicial
-    rapidMouseMove(headPos)
-    
-    -- Fase 2: Ajuste fino (opcional)
-    if (headPos - Camera.CFrame.Position).Magnitude > 50 then
-        task.wait(0.02)
-        local refinedPos = predictHeadPosition(target)
-        rapidMouseMove(refinedPos)
-    end
-end
-
--- Loop principal de alta precisión
-local function precisionLoop()
+-- Loop principal estable
+local function stableLoop()
     if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-        adaptiveAim()
+        precisionAim()
     else
         updateNotification(false)
     end
@@ -160,13 +155,12 @@ return {
     activate = function()
         -- Configuración profesional
         predictionFactor = 0.15
-        smoothingFactor = 0.01
         
         -- Crear notificación
         createNotification()
         
         if not renderStepped then
-            renderStepped = RunService.RenderStepped:Connect(precisionLoop)
+            renderStepped = RunService.RenderStepped:Connect(stableLoop)
         end
     end,
     
@@ -180,15 +174,13 @@ return {
         if notificationGui then
             notificationGui:Destroy()
             notificationGui = nil
-            notificationLabel = nil
+            notificationFrame = nil
         end
-        
-        targetCache = {}
     end,
     
     configure = function(options)
         if options.predictionFactor then predictionFactor = options.predictionFactor end
-        if options.smoothingFactor then smoothingFactor = options.smoothingFactor end
         if options.headOffset then headOffset = options.headOffset end
+        if options.minTargetDistance then minTargetDistance = options.minTargetDistance end
     end
 }
