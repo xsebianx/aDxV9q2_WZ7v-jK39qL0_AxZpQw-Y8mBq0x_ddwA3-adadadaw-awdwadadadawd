@@ -1,4 +1,4 @@
--- Head.lua - Expansión real de cabeza con hitbox funcional
+-- Head.lua - Expansión de cabeza sin afectar animaciones
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -15,59 +15,67 @@ local HEAD_SCALE = 10.0  -- Factor de escala para las cabezas
 local LOCAL_PLAYER = Players.LocalPlayer
 local DAMAGE_COLOR = Color3.fromRGB(255, 0, 0)  -- Color al recibir daño
 
--- Función para expandir la cabeza real
-local function expandRealHead(player)
+-- Función para expandir la cabeza sin afectar animaciones
+local function expandHead(player)
     if not player or player == LOCAL_PLAYER then return end
     if not player.Character then return end
     
     local head = player.Character:FindFirstChild("Head")
     if not head then return end
     
-    -- Guardar tamaño original
-    local originalSize = head.Size
-    local originalTransparency = head.Transparency
+    -- Clonar la cabeza para mantener animaciones intactas
+    local headClone = head:Clone()
+    headClone.Name = "BigHeadClone"
+    headClone.Size = head.Size * HEAD_SCALE
+    headClone.Transparency = 0.3
+    headClone.Material = Enum.Material.Neon
+    headClone.Color = Color3.fromRGB(255, 50, 50)
+    headClone.CanCollide = false
     
-    -- Aplicar expansión
-    head.Size = head.Size * HEAD_SCALE
+    -- Ocultar la cabeza original pero mantenerla funcional
+    head.Transparency = 1
+    head.Name = "OriginalHeadHidden"
     
-    -- Configurar propiedades visuales
-    head.Transparency = 0.3
-    head.Material = Enum.Material.Neon
-    head.Color = Color3.fromRGB(255, 50, 50)
-    
-    -- Guardar referencia para restaurar
-    HeadAPI.scaledPlayers[player] = {
-        originalSize = originalSize,
-        originalTransparency = originalTransparency,
-        originalMaterial = head.Material,
-        originalColor = head.Color
-    }
+    -- Posicionar y parentear el clon
+    headClone.Parent = player.Character
+    local weld = Instance.new("Weld")
+    weld.Part0 = head
+    weld.Part1 = headClone
+    weld.C0 = CFrame.new()
+    weld.Parent = headClone
     
     -- Efecto visual al recibir daño
     local lastDamageTime = 0
     local damageConnection
     damageConnection = head.Touched:Connect(function(part)
         if not HeadAPI.active then return end
-        if tick() - lastDamageTime < 0.2 then return end  -- Prevenir destellos rápidos
+        if tick() - lastDamageTime < 0.2 then return end
         
         lastDamageTime = tick()
         
-        -- Destello de daño
-        local tween = TweenService:Create(head, TweenInfo.new(0.1), {
+        -- Destello de daño en el clon
+        local tween = TweenService:Create(headClone, TweenInfo.new(0.1), {
             Color = DAMAGE_COLOR
         })
         tween:Play()
         
         tween.Completed:Wait()
         
-        if head and head.Parent then
-            TweenService:Create(head, TweenInfo.new(0.2), {
+        if headClone and headClone.Parent then
+            TweenService:Create(headClone, TweenInfo.new(0.2), {
                 Color = Color3.fromRGB(255, 50, 50)
             }):Play()
         end
     end)
     
-    table.insert(HeadAPI.connections, damageConnection)
+    -- Guardar referencia para restaurar
+    HeadAPI.scaledPlayers[player] = {
+        originalHead = head,
+        headClone = headClone,
+        originalTransparency = head.Transparency,
+        originalName = head.Name,
+        damageConnection = damageConnection
+    }
 end
 
 -- Restaura la cabeza a su estado normal
@@ -75,12 +83,20 @@ local function restoreHead(player)
     local data = HeadAPI.scaledPlayers[player]
     if not data then return end
     
-    local head = player.Character and player.Character:FindFirstChild("Head")
-    if head then
-        head.Size = data.originalSize
-        head.Transparency = data.originalTransparency
-        head.Material = data.originalMaterial
-        head.Color = data.originalColor
+    -- Restaurar cabeza original
+    if data.originalHead and data.originalHead.Parent then
+        data.originalHead.Transparency = data.originalTransparency
+        data.originalHead.Name = data.originalName
+    end
+    
+    -- Eliminar clon
+    if data.headClone and data.headClone.Parent then
+        data.headClone:Destroy()
+    end
+    
+    -- Desconectar eventos
+    if data.damageConnection then
+        pcall(data.damageConnection.Disconnect, data.damageConnection)
     end
     
     HeadAPI.scaledPlayers[player] = nil
@@ -89,7 +105,7 @@ end
 -- Maneja nuevos jugadores
 local function handlePlayerAdded(player)
     if not HeadAPI.active then return end
-    expandRealHead(player)
+    expandHead(player)
 end
 
 -- Maneja cambio de personaje
@@ -101,7 +117,7 @@ local function handleCharacterAdded(player, character)
     task.wait(0.5)  -- Espera adicional para asegurar estabilidad
     
     if character:FindFirstChild("Head") then
-        expandRealHead(player)
+        expandHead(player)
     end
 end
 
@@ -114,7 +130,7 @@ function HeadAPI.activate()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LOCAL_PLAYER then
             if player.Character then
-                expandRealHead(player)
+                expandHead(player)
             end
             
             -- Conectar evento para cambio de personaje
