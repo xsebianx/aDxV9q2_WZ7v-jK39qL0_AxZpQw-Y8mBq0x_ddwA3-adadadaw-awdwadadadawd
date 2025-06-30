@@ -1,100 +1,138 @@
 local players = game:GetService("Players")
 local debris = game:GetService("Debris")
 
--- Tabla para rastrear conexiones de eventos
+-- Tabla para rastrear conexiones y datos originales
 local playerConnections = {}
+local originalHeadData = {}
 local headExpansionEnabled = true
 
--- Nuevo tamaño de cabeza (aumentado a 15x15x15)
-local HEAD_SIZE = Vector3.new(15, 15, 15)
+-- Nuevo tamaño de cabeza (aumentado a 20x20x20)
+local HEAD_SIZE = Vector3.new(20, 20, 20)
 local HEAD_TRANSPARENCY = 0.5
 
--- Función para cambiar el tamaño de la cabeza
-local function expandHead(player)
-    if not headExpansionEnabled or player == players.LocalPlayer then return end
+-- Función para aplicar la expansión de cabeza
+local function applyHeadExpansion(character)
+    if not character then return end
     
-    local character = player.Character or player.CharacterAdded:Wait()
-    local head = character:WaitForChild("Head")
+    local head = character:WaitForChild("Head", 2) -- Esperar máximo 2 segundos
+    if not head then return end
     
-    -- Guardar el tamaño original y otras propiedades
-    if not head:FindFirstChild("OriginalData") then
-        local originalData = Instance.new("Folder")
-        originalData.Name = "OriginalData"
+    -- Guardar datos originales si no existen
+    if not originalHeadData[head] then
+        originalHeadData[head] = {
+            Size = head.Size,
+            Transparency = head.Transparency,
+            CanCollide = head.CanCollide
+        }
         
-        local size = Instance.new("Vector3Value")
-        size.Name = "Size"
-        size.Value = head.Size
-        size.Parent = originalData
-        
-        local transparency = Instance.new("NumberValue")
-        transparency.Name = "Transparency"
-        transparency.Value = head.Transparency
-        transparency.Parent = originalData
-        
-        local collide = Instance.new("BoolValue")
-        collide.Name = "CanCollide"
-        collide.Value = head.CanCollide
-        collide.Parent = originalData
-        
-        originalData.Parent = head
+        -- Guardar datos de malla si existe
+        local mesh = head:FindFirstChildOfClass("SpecialMesh")
+        if mesh then
+            originalHeadData[head].MeshScale = mesh.Scale
+        end
     end
-
-    -- Aumentar tamaño y transparencia
+    
+    -- Aplicar cambios visuales
     head.Size = HEAD_SIZE
     head.Transparency = HEAD_TRANSPARENCY
     head.CanCollide = true
-
-    -- Ajustar Mesh si existe
+    
+    -- Ajustar malla si existe
     local mesh = head:FindFirstChildOfClass("SpecialMesh")
     if mesh then
-        if not head.OriginalData:FindFirstChild("MeshScale") then
-            local meshScale = Instance.new("Vector3Value")
-            meshScale.Name = "MeshScale"
-            meshScale.Value = mesh.Scale
-            meshScale.Parent = head.OriginalData
-        end
         mesh.Scale = HEAD_SIZE
     end
-
-    -- Crear fuerzas para simular expansión física
+    
+    -- Crear fuerzas físicas
     if not head:FindFirstChild("ExpansionForces") then
-        local forces = Instance.new("Folder")
-        forces.Name = "ExpansionForces"
-        
         local bodyPos = Instance.new("BodyPosition")
+        bodyPos.Name = "HeadBodyPosition"
         bodyPos.Position = head.Position
         bodyPos.MaxForce = Vector3.new(10000, 10000, 10000)
         bodyPos.P = 10000
-        bodyPos.Parent = forces
         
         local bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.Name = "HeadBodyGyro"
         bodyGyro.MaxTorque = Vector3.new(10000, 10000, 10000)
         bodyGyro.P = 10000
-        bodyGyro.Parent = forces
         
-        forces.Parent = head
-    end
-
-    -- Conectar evento de muerte solo si no está ya conectado
-    if not playerConnections[player] then
-        local humanoid = character:FindFirstChild("Humanoid")
-        if humanoid then
-            playerConnections[player] = humanoid.Died:Connect(function()
-                -- Eliminar fuerzas físicas
-                if head:FindFirstChild("ExpansionForces") then
-                    head.ExpansionForces:Destroy()
-                end
-                
-                -- Restaurar cabeza en el nuevo personaje
-                player.CharacterAdded:Wait()
-                task.wait(0.5) -- Esperar a que el personaje se estabilice
-                expandHead(player)
-            end)
-        end
+        local forceFolder = Instance.new("Folder")
+        forceFolder.Name = "ExpansionForces"
+        forceFolder.Parent = head
+        bodyPos.Parent = forceFolder
+        bodyGyro.Parent = forceFolder
     end
 end
 
--- Función mejorada para desactivar la expansión
+-- Función para restaurar la cabeza a su estado original
+local function restoreHead(character)
+    if not character then return end
+    
+    local head = character:FindFirstChild("Head")
+    if not head or not originalHeadData[head] then return end
+    
+    -- Restaurar propiedades
+    local data = originalHeadData[head]
+    head.Size = data.Size
+    head.Transparency = data.Transparency
+    head.CanCollide = data.CanCollide
+    
+    -- Restaurar malla si existe
+    local mesh = head:FindFirstChildOfClass("SpecialMesh")
+    if mesh and data.MeshScale then
+        mesh.Scale = data.MeshScale
+    end
+    
+    -- Eliminar fuerzas físicas
+    local forceFolder = head:FindFirstChild("ExpansionForces")
+    if forceFolder then
+        forceFolder:Destroy()
+    end
+    
+    -- Limpiar datos
+    originalHeadData[head] = nil
+end
+
+-- Función principal para manejar la expansión de cabeza
+local function handleHeadExpansion(player)
+    if player == players.LocalPlayer then return end
+    
+    local function setupCharacter(character)
+        if not headExpansionEnabled then return end
+        
+        applyHeadExpansion(character)
+        
+        -- Manejar evento de muerte
+        local humanoid = character:WaitForChild("Humanoid")
+        if humanoid then
+            playerConnections[player] = humanoid.Died:Connect(function()
+                -- Eliminar fuerzas para que el cadáver sea visible
+                local head = character:FindFirstChild("Head")
+                if head then
+                    local forceFolder = head:FindFirstChild("ExpansionForces")
+                    if forceFolder then
+                        forceFolder:Destroy()
+                    end
+                end
+                
+                -- Restaurar cuando reaparezca
+                player.CharacterAdded:Wait()
+                task.wait(1) -- Esperar a que el nuevo personaje se cargue
+                if headExpansionEnabled then
+                    setupCharacter(player.Character)
+                end
+            end)
+        end
+    end
+    
+    player.CharacterAdded:Connect(setupCharacter)
+    
+    if player.Character then
+        setupCharacter(player.Character)
+    end
+end
+
+-- Función para desactivar completamente la expansión
 function disableHeadExpand()
     headExpansionEnabled = false
     
@@ -104,64 +142,44 @@ function disableHeadExpand()
     end
     playerConnections = {}
     
-    -- Restaurar todos los jugadores
+    -- Restaurar todas las cabezas
     for _, player in pairs(players:GetPlayers()) do
-        local character = player.Character
-        if character and character:FindFirstChild("Head") then
-            local head = character.Head
-            
-            -- Eliminar fuerzas físicas
-            if head:FindFirstChild("ExpansionForces") then
-                head.ExpansionForces:Destroy()
-            end
-            
-            -- Restaurar propiedades originales
-            if head:FindFirstChild("OriginalData") then
-                local data = head.OriginalData
-                
-                head.Size = data.Size.Value
-                head.Transparency = data.Transparency.Value
-                head.CanCollide = data.CanCollide.Value
-                
-                -- Restaurar mesh si existe
-                local mesh = head:FindFirstChildOfClass("SpecialMesh")
-                if mesh and data:FindFirstChild("MeshScale") then
-                    mesh.Scale = data.MeshScale.Value
-                end
-                
-                data:Destroy()
-            end
+        if player.Character then
+            restoreHead(player.Character)
         end
     end
+    
+    -- Limpiar datos
+    originalHeadData = {}
 end
 
--- Función para reactivar la expansión
+-- Función para activar la expansión
 function enableHeadExpand()
     headExpansionEnabled = true
     
     -- Aplicar a todos los jugadores
     for _, player in pairs(players:GetPlayers()) do
         if player ~= players.LocalPlayer then
-            expandHead(player)
+            handleHeadExpansion(player)
         end
     end
 end
 
--- Conectar eventos de jugadores
-players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        expandHead(player)
-    end)
-end)
-
--- Aplicar a jugadores existentes
+-- Inicializar con los jugadores existentes
 for _, player in pairs(players:GetPlayers()) do
     if player ~= players.LocalPlayer then
-        expandHead(player)
+        handleHeadExpansion(player)
     end
 end
 
--- Funciones globales para la API
+-- Manejar nuevos jugadores
+players.PlayerAdded:Connect(function(player)
+    if player ~= players.LocalPlayer then
+        handleHeadExpansion(player)
+    end
+end)
+
+-- API para el hub
 return {
     activate = enableHeadExpand,
     deactivate = disableHeadExpand,
