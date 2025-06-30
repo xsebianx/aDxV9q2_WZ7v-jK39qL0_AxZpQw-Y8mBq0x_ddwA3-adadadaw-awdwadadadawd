@@ -25,27 +25,42 @@ local function startFlying()
     bv.MaxForce = Vector3.new(100000, 100000, 100000)
     bv.Parent = torso
     
-    flyConnection = game:GetService("UserInputService").InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Keyboard then
-            local direction = Vector3.new()
-            local cf = torso.CFrame
-            
-            if input.KeyCode == Enum.KeyCode.W then
-                direction = cf.LookVector
-            elseif input.KeyCode == Enum.KeyCode.S then
-                direction = -cf.LookVector
-            elseif input.KeyCode == Enum.KeyCode.A then
-                direction = -cf.RightVector
-            elseif input.KeyCode == Enum.KeyCode.D then
-                direction = cf.RightVector
-            elseif input.KeyCode == Enum.KeyCode.Space then
-                direction = Vector3.new(0, 1, 0)
-            elseif input.KeyCode == Enum.KeyCode.LeftShift then
-                direction = Vector3.new(0, -1, 0)
-            end
-            
-            bv.Velocity = direction * flySpeed
+    -- Control mejorado con movimiento relativo a la cámara
+    flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if not flying then return end
+        
+        local camera = workspace.CurrentCamera
+        local direction = Vector3.new()
+        
+        -- Movimiento relativo a la cámara
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
+            direction = direction + camera.CFrame.LookVector
         end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
+            direction = direction - camera.CFrame.LookVector
+        end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
+            direction = direction - camera.CFrame.RightVector
+        end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
+            direction = direction + camera.CFrame.RightVector
+        end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
+            direction = direction + Vector3.new(0, 1, 0)
+        end
+        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
+            direction = direction - Vector3.new(0, 1, 0)
+        end
+        
+        -- Aplicar velocidad solo si hay dirección
+        if direction.Magnitude > 0 then
+            bv.Velocity = direction.Unit * flySpeed
+        else
+            bv.Velocity = Vector3.new(0, 0, 0)
+        end
+        
+        -- Actualizar la rotación para seguir la cámara
+        bg.CFrame = camera.CFrame
     end)
 end
 
