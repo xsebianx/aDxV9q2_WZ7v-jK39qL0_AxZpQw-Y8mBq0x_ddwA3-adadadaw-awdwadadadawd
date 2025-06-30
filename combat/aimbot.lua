@@ -45,7 +45,7 @@ local function createVisuals()
     end
 end
 
--- Verificación de visibilidad (mejorada)
+-- Verificación de visibilidad (mejorada para larga distancia)
 local function isVisible(targetPart)
     if not targetPart then return false end
     
@@ -59,7 +59,19 @@ local function isVisible(targetPart)
     local distance = (targetPart.Position - origin).Magnitude
     
     local raycastResult = workspace:Raycast(origin, direction * distance, raycastParams)
-    return raycastResult == nil or raycastResult.Instance:IsDescendantOf(targetPart.Parent)
+    
+    -- Verificar si el rayo golpeó al jugador objetivo
+    if raycastResult then
+        local hitPart = raycastResult.Instance
+        while hitPart and hitPart ~= workspace do
+            if hitPart:IsDescendantOf(targetPart.Parent) then
+                return true
+            end
+            hitPart = hitPart.Parent
+        end
+    end
+    
+    return raycastResult == nil
 end
 
 -- Mantener objetivo (mejorado con tiempo mínimo de bloqueo)
@@ -77,14 +89,11 @@ local function shouldKeepTarget(target)
         return true
     end
     
-    local cameraDir = Camera.CFrame.LookVector
-    local directionToTarget = (head.Position - Camera.CFrame.Position).Unit
-    local angle = math.acos(cameraDir:Dot(directionToTarget))
-    
-    return angle < math.rad(fieldOfView * 1.2) and isVisible(head) -- 20% de margen adicional
+    -- Verificación de visibilidad mejorada
+    return isVisible(head)
 end
 
--- Sistema de prioridad de objetivos
+-- Sistema de prioridad de objetivos (mejorado para larga distancia)
 local function getTargetPriority(target)
     if not target or not target.Character or not target.Character.Head then
         return -math.huge
@@ -97,17 +106,12 @@ local function getTargetPriority(target)
     
     -- Priorizar objetivos cercanos
     local distance = (target.Character.Head.Position - Camera.CFrame.Position).Magnitude
-    if distance < 50 then
-        return 1
-    end
-    
-    return 0
+    return 1 / (distance + 0.001)  -- Evitar división por cero
 end
 
 -- Encontrar objetivo más cercano (con estabilidad) - CORRECCIÓN APLICADA
 local function findStableTarget()
     local bestTarget = nil
-    local minAngle = math.rad(fieldOfView)
     local bestScore = -math.huge
     local cameraDir = Camera.CFrame.LookVector
     
@@ -123,11 +127,14 @@ local function findStableTarget()
             
             if humanoid and humanoid.Health > 0 and head then
                 local directionToTarget = (head.Position - Camera.CFrame.Position).Unit
-                local angle = math.acos(cameraDir:Dot(directionToTarget))
-                local distance = (head.Position - Camera.CFrame.Position).Magnitude
+                local angle = math.acos(math.clamp(cameraDir:Dot(directionToTarget), -1, 1))
                 
-                if angle < minAngle and isVisible(head) then
-                    local score = (1 / distance) * 100 + getTargetPriority(player)
+                -- Convertir ángulo a grados
+                local angleDegrees = math.deg(angle)
+                
+                -- Solo considerar objetivos dentro del FOV
+                if angleDegrees < fieldOfView and isVisible(head) then
+                    local score = getTargetPriority(player)
                     
                     if score > bestScore then
                         bestScore = score
@@ -153,7 +160,7 @@ local function findStableTarget()
     return bestTarget
 end
 
--- Predicción de movimiento
+-- Predicción de movimiento (mejorada para larga distancia)
 local function predictPosition(target)
     if not target or not target.Character then return nil end
     local head = target.Character:FindFirstChild("Head")
@@ -161,12 +168,14 @@ local function predictPosition(target)
     
     if not positionHistory[target] then positionHistory[target] = {} end
     
+    local currentTime = tick()
     table.insert(positionHistory[target], {
         position = head.Position,
-        time = tick()
+        time = currentTime
     })
     
-    while #positionHistory[target] > 5 do
+    -- Mantener solo los últimos 3 puntos para evitar sobreajuste
+    while #positionHistory[target] > 3 do
         table.remove(positionHistory[target], 1)
     end
     
@@ -174,11 +183,18 @@ local function predictPosition(target)
         return head.Position
     end
     
-    local velocity = (positionHistory[target][#positionHistory[target]].position - 
-                    positionHistory[target][1].position) / 
-                    (positionHistory[target][#positionHistory[target]].time - 
-                    positionHistory[target][1].time)
+    -- Calcular velocidad basada en los últimos 2 puntos
+    local lastIndex = #positionHistory[target]
+    local prevIndex = math.max(1, lastIndex - 1)
     
+    local deltaPos = positionHistory[target][lastIndex].position - positionHistory[target][prevIndex].position
+    local deltaTime = positionHistory[target][lastIndex].time - positionHistory[target][prevIndex].time
+    
+    if deltaTime <= 0 then
+        return head.Position
+    end
+    
+    local velocity = deltaPos / deltaTime
     return head.Position + velocity * predictionFactor
 end
 
@@ -263,7 +279,7 @@ end
 return {
     activate = function()
         -- Reiniciar configuración en cada activación
-        fieldOfView = 30
+        fieldOfView = 50  -- Aumentado para mejor detección a distancia
         predictionFactor = 0.165
         targetLockDuration = 0.5
         smoothingFactor = 0.3
