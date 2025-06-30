@@ -5,10 +5,10 @@ local runService = game:GetService("RunService")
 local decorHeads = {}
 local headExpansionEnabled = true
 
--- Tamaño de cabeza aumentado (10 veces más grande)
+-- Tamaño de cabeza aumentado (11 veces más grande)
 local HEAD_SCALE = 3
 
--- Función para crear una cabeza decorativa que no interfiere con los cuerpos
+-- Función para crear una cabeza decorativa
 local function createDecorHead(realHead)
     -- Crear una parte esférica para la cabeza decorativa
     local decorHead = Instance.new("Part")
@@ -73,6 +73,18 @@ local function applyHeadExpansion(character)
         highlight = highlight,
         humanoid = humanoid
     }
+    
+    -- Hacer la cabeza real transparente
+    realHead.Transparency = 1
+    
+    -- Conectar para limpiar cuando el personaje muera
+    decorHeads[realHead].deathConnection = humanoid.Died:Connect(function()
+        if decorHeads[realHead] then
+            decorHead:Destroy()
+            attachment:Destroy()
+            decorHeads[realHead] = nil
+        end
+    end)
 end
 
 -- Función para restaurar la cabeza original
@@ -82,8 +94,14 @@ local function restoreHead(character)
     local realHead = character:FindFirstChild("Head")
     if not realHead or not decorHeads[realHead] then return end
     
+    -- Restaurar visibilidad de la cabeza real
+    realHead.Transparency = 0
+    
     -- Eliminar elementos decorativos
     local data = decorHeads[realHead]
+    if data.deathConnection then
+        data.deathConnection:Disconnect()
+    end
     if data.decorHead then
         data.decorHead:Destroy()
     end
@@ -109,15 +127,6 @@ local function handleHeadExpansion(player)
         
         if headExpansionEnabled then
             applyHeadExpansion(character)
-        end
-        
-        -- Actualizar posición de la cabeza decorativa
-        if decorHeads[character] then
-            decorHeads[character].updateConnection = runService.Heartbeat:Connect(function()
-                if decorHeads[character] and decorHeads[character].decorHead then
-                    decorHeads[character].decorHead.Position = character.Head.Position
-                end
-            end)
         end
     end
     
