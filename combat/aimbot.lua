@@ -78,6 +78,7 @@ end
 local function shouldKeepTarget(target)
     if not target or not target.Character then return false end
     
+    -- Buscar la cabeza real incluso cuando Head está activado
     local head = target.Character:FindFirstChild("Head")
     if not head then return false end
     
@@ -95,7 +96,7 @@ end
 
 -- Sistema de prioridad de objetivos (mejorado para larga distancia)
 local function getTargetPriority(target)
-    if not target or not target.Character or not target.Character.Head then
+    if not target or not target.Character or not target.Character:FindFirstChild("Head") then
         return -math.huge
     end
     
