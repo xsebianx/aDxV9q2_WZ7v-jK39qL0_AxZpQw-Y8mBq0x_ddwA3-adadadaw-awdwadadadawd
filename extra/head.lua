@@ -1,88 +1,98 @@
 local players = game:GetService("Players")
-local debris = game:GetService("Debris")
 local runService = game:GetService("RunService")
 
--- Tabla para rastrear conexiones y datos originales
-local playerConnections = {}
-local originalHeadData = {}
+-- Tabla para rastrear las cabezas decorativas
+local decorHeads = {}
 local headExpansionEnabled = true
 
--- Tamaño de cabeza aumentado (5 veces más grande)
-local HEAD_SCALE = 5
-local HEAD_TRANSPARENCY = 0.5
+-- Tamaño de cabeza aumentado (8 veces más grande)
+local HEAD_SCALE = 3
+
+-- Función para crear una cabeza decorativa
+local function createDecorHead(realHead)
+    local decorHead = Instance.new("Part")
+    decorHead.Name = "DecorHead"
+    decorHead.Shape = Enum.PartType.Ball
+    decorHead.Size = realHead.Size * HEAD_SCALE
+    decorHead.Material = Enum.Material.Neon
+    decorHead.Color = Color3.new(1, 0, 0) -- Rojo
+    decorHead.Transparency = 0.4
+    decorHead.CanCollide = false
+    decorHead.CanQuery = false
+    decorHead.CanTouch = false
+    decorHead.Anchored = false
+    
+    -- Crear un punto de unión para seguir la cabeza real
+    local attachment = Instance.new("Attachment")
+    attachment.Parent = realHead
+    
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = realHead
+    weld.Part1 = decorHead
+    weld.Parent = decorHead
+    
+    decorHead.Parent = workspace
+    
+    return decorHead, attachment, weld
+end
 
 -- Función para aplicar la expansión de cabeza
 local function applyHeadExpansion(character)
     if not character then return end
     
-    local head = character:WaitForChild("Head", 2) -- Esperar máximo 2 segundos
-    if not head then return end
+    local humanoid = character:WaitForChild("Humanoid")
+    local realHead = character:WaitForChild("Head")
     
-    -- Guardar datos originales si no existen
-    if not originalHeadData[head] then
-        originalHeadData[head] = {
-            Size = head.Size,
-            Transparency = head.Transparency,
-            CanCollide = head.CanCollide
-        }
-        
-        -- Guardar datos de malla si existe
-        local mesh = head:FindFirstChildOfClass("SpecialMesh")
-        if mesh then
-            originalHeadData[head].MeshScale = mesh.Scale
+    -- Si ya tenemos una cabeza decorativa, no crear otra
+    if decorHeads[realHead] then return end
+    
+    -- Crear cabeza decorativa
+    local decorHead, attachment, weld = createDecorHead(realHead)
+    
+    -- Guardar referencia
+    decorHeads[realHead] = {
+        decorHead = decorHead,
+        attachment = attachment,
+        weld = weld,
+        humanoid = humanoid
+    }
+    
+    -- Hacer la cabeza real transparente
+    realHead.Transparency = 1
+    
+    -- Conectar para limpiar cuando el personaje muera
+    decorHeads[realHead].deathConnection = humanoid.Died:Connect(function()
+        if decorHeads[realHead] then
+            decorHead:Destroy()
+            attachment:Destroy()
+            decorHeads[realHead] = nil
         end
-    end
-    
-    -- Aplicar cambios visuales
-    head.Size = originalHeadData[head].Size * HEAD_SCALE
-    head.Transparency = HEAD_TRANSPARENCY
-    head.CanCollide = false  -- Importante para evitar problemas físicos
-    
-    -- Ajustar malla si existe
-    local mesh = head:FindFirstChildOfClass("SpecialMesh")
-    if mesh then
-        mesh.Scale = originalHeadData[head].MeshScale * HEAD_SCALE
-    end
-    
-    -- Crear efecto visual sin fuerzas físicas
-    if not head:FindFirstChild("HeadExpansionEffect") then
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "HeadExpansionEffect"
-        highlight.FillColor = Color3.new(1, 0, 0)
-        highlight.FillTransparency = 0.7
-        highlight.OutlineColor = Color3.new(1, 1, 0)
-        highlight.OutlineTransparency = 0.3
-        highlight.Parent = head
-    end
+    end)
 end
 
--- Función para restaurar la cabeza a su estado original
+-- Función para restaurar la cabeza original
 local function restoreHead(character)
     if not character then return end
     
-    local head = character:FindFirstChild("Head")
-    if not head or not originalHeadData[head] then return end
+    local realHead = character:FindFirstChild("Head")
+    if not realHead or not decorHeads[realHead] then return end
     
-    -- Restaurar propiedades
-    local data = originalHeadData[head]
-    head.Size = data.Size
-    head.Transparency = data.Transparency
-    head.CanCollide = data.CanCollide
+    -- Restaurar visibilidad de la cabeza real
+    realHead.Transparency = 0
     
-    -- Restaurar malla si existe
-    local mesh = head:FindFirstChildOfClass("SpecialMesh")
-    if mesh and data.MeshScale then
-        mesh.Scale = data.MeshScale
+    -- Eliminar elementos decorativos
+    local data = decorHeads[realHead]
+    if data.deathConnection then
+        data.deathConnection:Disconnect()
+    end
+    if data.decorHead then
+        data.decorHead:Destroy()
+    end
+    if data.attachment then
+        data.attachment:Destroy()
     end
     
-    -- Eliminar efecto visual
-    local effect = head:FindFirstChild("HeadExpansionEffect")
-    if effect then
-        effect:Destroy()
-    end
-    
-    -- Limpiar datos
-    originalHeadData[head] = nil
+    decorHeads[realHead] = nil
 end
 
 -- Función principal para manejar la expansión de cabeza
@@ -90,18 +100,9 @@ local function handleHeadExpansion(player)
     if player == players.LocalPlayer then return end
     
     local function setupCharacter(character)
-        if not headExpansionEnabled then return end
-        
-        -- Esperar a que el personaje esté completamente cargado
-        local humanoid = character:WaitForChild("Humanoid", 3)
-        if not humanoid then return end
-        
-        applyHeadExpansion(character)
-        
-        -- Manejar evento de muerte
-        playerConnections[player] = humanoid.Died:Connect(function()
-            -- No hacer nada especial, dejar que el cuerpo se comporte normalmente
-        end)
+        if headExpansionEnabled then
+            applyHeadExpansion(character)
+        end
     end
     
     player.CharacterAdded:Connect(setupCharacter)
@@ -115,21 +116,12 @@ end
 function disableHeadExpand()
     headExpansionEnabled = false
     
-    -- Desconectar todos los eventos
-    for player, connection in pairs(playerConnections) do
-        connection:Disconnect()
-    end
-    playerConnections = {}
-    
-    -- Restaurar todas las cabezas
+    -- Restaurar todos los personajes
     for _, player in pairs(players:GetPlayers()) do
         if player.Character then
             restoreHead(player.Character)
         end
     end
-    
-    -- Limpiar datos
-    originalHeadData = {}
 end
 
 -- Función para activar la expansión
@@ -156,7 +148,7 @@ players.PlayerAdded:Connect(function(player)
     if player ~= players.LocalPlayer then
         handleHeadExpansion(player)
     end
-end)
+end
 
 -- API para el hub
 return {
