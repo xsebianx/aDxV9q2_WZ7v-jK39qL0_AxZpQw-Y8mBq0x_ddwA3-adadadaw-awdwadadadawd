@@ -1,4 +1,4 @@
--- Head.lua - Expansión real de cabeza con hitbox funcional
+-- Head.lua - Expansión real de cabeza con hitbox funcional (versión mejorada)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -11,33 +11,45 @@ local HeadAPI = {
 }
 
 -- Configuración
-local HEAD_SCALE = 5.0  -- Factor de escala para las cabezas
+local HEAD_SCALE = 7.0  -- Factor de escala para las cabezas
 local LOCAL_PLAYER = Players.LocalPlayer
-local DAMAGE_COLOR = Color3.fromRGB(255, 0, 0)  -- Color al recibir daño
+local DAMAGE_COLOR = Color3.fromRGB(255, 100, 100)  -- Color más brilloso al recibir daño
+local BASE_COLOR = Color3.fromRGB(255, 0, 0)        -- Color base rojo permanente
 
--- Función para expandir la cabeza real
+-- Función para expandir la cabeza real hacia arriba
 local function expandRealHead(player)
     if not player or player == LOCAL_PLAYER then return end
     if not player.Character then return end
     
-    local head = player.Character:FindFirstChild("Head")
-    if not head then return end
+    local character = player.Character
+    local humanoid = character:FindFirstChild("Humanoid")
+    local head = character:FindFirstChild("Head")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
     
-    -- Guardar tamaño original
+    if not head or not humanoid or not rootPart then return end
+    
+    -- Guardar tamaño original y propiedades
     local originalSize = head.Size
+    local originalCFrame = head.CFrame
     local originalTransparency = head.Transparency
     
-    -- Aplicar expansión
-    head.Size = head.Size * HEAD_SCALE
+    -- Calcular nueva posición (crecer hacia arriba)
+    local offset = (originalSize.Y * HEAD_SCALE - originalSize.Y) * 0.5
+    local newPosition = head.Position + Vector3.new(0, offset, 0)
     
-    -- Configurar propiedades visuales
+    -- Aplicar expansión hacia arriba
+    head.Size = originalSize * HEAD_SCALE
+    head.CFrame = CFrame.new(newPosition) * (head.CFrame - head.Position)
+    
+    -- Configurar propiedades visuales (color rojo permanente)
     head.Transparency = 0.3
     head.Material = Enum.Material.Neon
-    head.Color = Color3.fromRGB(255, 50, 50)
+    head.Color = BASE_COLOR
     
     -- Guardar referencia para restaurar
     HeadAPI.scaledPlayers[player] = {
         originalSize = originalSize,
+        originalCFrame = originalCFrame,
         originalTransparency = originalTransparency,
         originalMaterial = head.Material,
         originalColor = head.Color
@@ -48,7 +60,7 @@ local function expandRealHead(player)
     local damageConnection
     damageConnection = head.Touched:Connect(function(part)
         if not HeadAPI.active then return end
-        if tick() - lastDamageTime < 0.2 then return end  -- Prevenir destellos rápidos
+        if tick() - lastDamageTime < 0.2 then return end
         
         lastDamageTime = tick()
         
@@ -62,7 +74,7 @@ local function expandRealHead(player)
         
         if head and head.Parent then
             TweenService:Create(head, TweenInfo.new(0.2), {
-                Color = Color3.fromRGB(255, 50, 50)
+                Color = BASE_COLOR  -- Siempre regresa al color rojo base
             }):Play()
         end
     end)
@@ -78,6 +90,7 @@ local function restoreHead(player)
     local head = player.Character and player.Character:FindFirstChild("Head")
     if head then
         head.Size = data.originalSize
+        head.CFrame = data.originalCFrame
         head.Transparency = data.originalTransparency
         head.Material = data.originalMaterial
         head.Color = data.originalColor
@@ -96,7 +109,6 @@ end
 local function handleCharacterAdded(player, character)
     if not HeadAPI.active then return end
     
-    -- Esperar a que el personaje esté completo
     character:WaitForChild("Head", 5)
     task.wait(0.5)  -- Espera adicional para asegurar estabilidad
     
