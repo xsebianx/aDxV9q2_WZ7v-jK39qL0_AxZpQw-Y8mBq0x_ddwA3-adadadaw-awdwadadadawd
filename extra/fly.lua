@@ -6,49 +6,77 @@ local torso = character:WaitForChild("HumanoidRootPart")
 local flySpeed = 50
 local flying = false
 local flyConnection
-local bg, bv  -- Variables compartidas para ambos métodos
+local bv  -- Solo BodyVelocity para evitar detección
+
+-- Variables para el estado de las teclas
+local keysPressed = {
+    [Enum.KeyCode.W] = false,
+    [Enum.KeyCode.S] = false,
+    [Enum.KeyCode.A] = false,
+    [Enum.KeyCode.D] = false,
+    [Enum.KeyCode.Space] = false,
+    [Enum.KeyCode.LeftShift] = false
+}
 
 local function startFlying()
     if flying then return end
     flying = true
-    humanoid.PlatformStand = true
     
-    bg = Instance.new("BodyGyro")
-    bg.P = 10000
-    bg.D = 1000
-    bg.MaxTorque = Vector3.new(100000, 100000, 100000)
-    bg.CFrame = torso.CFrame
-    bg.Parent = torso
+    -- Guardar estado original para restaurar al final
+    local originalGravity = workspace.Gravity
+    local originalPlatformStand = humanoid.PlatformStand
     
+    -- Usar solo BodyVelocity para ser menos detectable
     bv = Instance.new("BodyVelocity")
     bv.Velocity = Vector3.new(0, 0, 0)
     bv.MaxForce = Vector3.new(100000, 100000, 100000)
+    bv.P = 1250  -- Suavizar movimiento
     bv.Parent = torso
     
-    -- Control mejorado con movimiento relativo a la cámara
+    -- Desactivar gravedad solo para este personaje
+    humanoid:SetAttribute("OriginalGravity", originalGravity)
+    workspace.Gravity = 0
+    
+    -- Configurar detección de teclas
+    local inputService = game:GetService("UserInputService")
+    
+    -- Registrar presión de teclas
+    local keyDownConnection = inputService.InputBegan:Connect(function(input)
+        if keysPressed[input.KeyCode] ~= nil then
+            keysPressed[input.KeyCode] = true
+        end
+    end)
+    
+    local keyUpConnection = inputService.InputEnded:Connect(function(input)
+        if keysPressed[input.KeyCode] ~= nil then
+            keysPressed[input.KeyCode] = false
+        end
+    end)
+    
+    -- Bucle de movimiento suave
     flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if not flying then return end
+        if not flying or not bv or not bv.Parent then return end
         
         local camera = workspace.CurrentCamera
         local direction = Vector3.new()
         
         -- Movimiento relativo a la cámara
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
+        if keysPressed[Enum.KeyCode.W] then
             direction = direction + camera.CFrame.LookVector
         end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
+        if keysPressed[Enum.KeyCode.S] then
             direction = direction - camera.CFrame.LookVector
         end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
+        if keysPressed[Enum.KeyCode.A] then
             direction = direction - camera.CFrame.RightVector
         end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
+        if keysPressed[Enum.KeyCode.D] then
             direction = direction + camera.CFrame.RightVector
         end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
+        if keysPressed[Enum.KeyCode.Space] then
             direction = direction + Vector3.new(0, 1, 0)
         end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
+        if keysPressed[Enum.KeyCode.LeftShift] then
             direction = direction - Vector3.new(0, 1, 0)
         end
         
@@ -58,20 +86,41 @@ local function startFlying()
         else
             bv.Velocity = Vector3.new(0, 0, 0)
         end
-        
-        -- Actualizar la rotación para seguir la cámara
-        bg.CFrame = camera.CFrame
+    end)
+    
+    -- Restaurar estado al tocar suelo
+    humanoid.StateChanged:Connect(function(_, newState)
+        if newState == Enum.HumanoidStateType.Landed then
+            stopFlying()
+        end
     end)
 end
 
 local function stopFlying()
     if not flying then return end
     flying = false
-    humanoid.PlatformStand = false
     
-    if bg then bg:Destroy() end
-    if bv then bv:Destroy() end
-    if flyConnection then flyConnection:Disconnect() end
+    -- Restaurar gravedad original
+    if humanoid:GetAttribute("OriginalGravity") then
+        workspace.Gravity = humanoid:GetAttribute("OriginalGravity")
+    else
+        workspace.Gravity = 196.2
+    end
+    
+    -- Eliminar controles de vuelo
+    if bv then
+        bv.Velocity = Vector3.new(0, 0, 0)
+        bv:Destroy()
+    end
+    
+    -- Desconectar eventos
+    if flyConnection then
+        flyConnection:Disconnect()
+    end
+    
+    -- Restablecer estado del personaje
+    humanoid.PlatformStand = false
+    humanoid:ChangeState(Enum.HumanoidStateType.Running)
 end
 
 return {
