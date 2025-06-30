@@ -1,4 +1,4 @@
--- ESP Profesional para DrakHub Premium (Versión Mejorada)
+-- ESP Profesional para DrakHub Premium (Versión Completa Corregida)
 local ProfessionalESP = {
     Enabled = false,
     Players = {},
@@ -177,8 +177,9 @@ function ProfessionalESP:Update(player)
         color = self.Settings.AllyColor
     end
 
-    -- Calcular tamaño de la caja
-    local scaleFactor = 1 / (headPos.Z * math.tan(math.rad(Camera.FieldOfView / 2)) * 1000
+    -- Calcular tamaño de la caja (CORRECCIÓN APLICADA)
+    local fovRad = math.rad(Camera.FieldOfView / 2)
+    local scaleFactor = 1 / (headPos.Z * math.tan(fovRad)) * 1000
     local width = math.floor(40 * scaleFactor)
     local height = math.floor(65 * scaleFactor)
     local position = Vector2.new(headPos.X, headPos.Y) - Vector2.new(width / 2, height / 2)
