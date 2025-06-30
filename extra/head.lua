@@ -1,13 +1,14 @@
 local players = game:GetService("Players")
 local debris = game:GetService("Debris")
+local runService = game:GetService("RunService")
 
 -- Tabla para rastrear conexiones y datos originales
 local playerConnections = {}
 local originalHeadData = {}
 local headExpansionEnabled = true
 
--- Nuevo tamaño de cabeza (aumentado a 20x20x20)
-local HEAD_SIZE = Vector3.new(20, 20, 20)
+-- Tamaño de cabeza aumentado (5 veces más grande)
+local HEAD_SCALE = 5
 local HEAD_TRANSPARENCY = 0.5
 
 -- Función para aplicar la expansión de cabeza
@@ -33,34 +34,25 @@ local function applyHeadExpansion(character)
     end
     
     -- Aplicar cambios visuales
-    head.Size = HEAD_SIZE
+    head.Size = originalHeadData[head].Size * HEAD_SCALE
     head.Transparency = HEAD_TRANSPARENCY
-    head.CanCollide = true
+    head.CanCollide = false  -- Importante para evitar problemas físicos
     
     -- Ajustar malla si existe
     local mesh = head:FindFirstChildOfClass("SpecialMesh")
     if mesh then
-        mesh.Scale = HEAD_SIZE
+        mesh.Scale = originalHeadData[head].MeshScale * HEAD_SCALE
     end
     
-    -- Crear fuerzas físicas
-    if not head:FindFirstChild("ExpansionForces") then
-        local bodyPos = Instance.new("BodyPosition")
-        bodyPos.Name = "HeadBodyPosition"
-        bodyPos.Position = head.Position
-        bodyPos.MaxForce = Vector3.new(10000, 10000, 10000)
-        bodyPos.P = 10000
-        
-        local bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.Name = "HeadBodyGyro"
-        bodyGyro.MaxTorque = Vector3.new(10000, 10000, 10000)
-        bodyGyro.P = 10000
-        
-        local forceFolder = Instance.new("Folder")
-        forceFolder.Name = "ExpansionForces"
-        forceFolder.Parent = head
-        bodyPos.Parent = forceFolder
-        bodyGyro.Parent = forceFolder
+    -- Crear efecto visual sin fuerzas físicas
+    if not head:FindFirstChild("HeadExpansionEffect") then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "HeadExpansionEffect"
+        highlight.FillColor = Color3.new(1, 0, 0)
+        highlight.FillTransparency = 0.7
+        highlight.OutlineColor = Color3.new(1, 1, 0)
+        highlight.OutlineTransparency = 0.3
+        highlight.Parent = head
     end
 end
 
@@ -83,10 +75,10 @@ local function restoreHead(character)
         mesh.Scale = data.MeshScale
     end
     
-    -- Eliminar fuerzas físicas
-    local forceFolder = head:FindFirstChild("ExpansionForces")
-    if forceFolder then
-        forceFolder:Destroy()
+    -- Eliminar efecto visual
+    local effect = head:FindFirstChild("HeadExpansionEffect")
+    if effect then
+        effect:Destroy()
     end
     
     -- Limpiar datos
@@ -100,29 +92,16 @@ local function handleHeadExpansion(player)
     local function setupCharacter(character)
         if not headExpansionEnabled then return end
         
+        -- Esperar a que el personaje esté completamente cargado
+        local humanoid = character:WaitForChild("Humanoid", 3)
+        if not humanoid then return end
+        
         applyHeadExpansion(character)
         
         -- Manejar evento de muerte
-        local humanoid = character:WaitForChild("Humanoid")
-        if humanoid then
-            playerConnections[player] = humanoid.Died:Connect(function()
-                -- Eliminar fuerzas para que el cadáver sea visible
-                local head = character:FindFirstChild("Head")
-                if head then
-                    local forceFolder = head:FindFirstChild("ExpansionForces")
-                    if forceFolder then
-                        forceFolder:Destroy()
-                    end
-                end
-                
-                -- Restaurar cuando reaparezca
-                player.CharacterAdded:Wait()
-                task.wait(1) -- Esperar a que el nuevo personaje se cargue
-                if headExpansionEnabled then
-                    setupCharacter(player.Character)
-                end
-            end)
-        end
+        playerConnections[player] = humanoid.Died:Connect(function()
+            -- No hacer nada especial, dejar que el cuerpo se comporte normalmente
+        end)
     end
     
     player.CharacterAdded:Connect(setupCharacter)
