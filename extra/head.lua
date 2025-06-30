@@ -1,7 +1,7 @@
--- Head.lua - Cabeza grande con detección de daño
+-- Head.lua - Expansión real de cabeza con hitbox funcional
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 
 -- API principal
 local HeadAPI = {
@@ -11,127 +11,98 @@ local HeadAPI = {
 }
 
 -- Configuración
-local HEAD_SCALE = 10.0
-local HEAD_ELEVATION = 8.0
+local HEAD_SCALE = 5.0  -- Factor de escala para las cabezas
 local LOCAL_PLAYER = Players.LocalPlayer
-local DAMAGE_COLOR = Color3.fromRGB(255, 0, 0)
-local DAMAGE_DURATION = 0.3
+local DAMAGE_COLOR = Color3.fromRGB(255, 0, 0)  -- Color al recibir daño
 
--- Función para crear la cabeza grande con detección de daño
-local function createFloatingHead(player)
+-- Función para expandir la cabeza real
+local function expandRealHead(player)
     if not player or player == LOCAL_PLAYER then return end
-    if HeadAPI.scaledPlayers[player] then return end
+    if not player.Character then return end
     
-    local character = player.Character
-    if not character then return end
-
-    -- Crear un contenedor para la cabeza grande
-    local headContainer = Instance.new("Part")
-    headContainer.Name = "BigHeadEffect_" .. player.UserId
-    headContainer.Size = Vector3.new(HEAD_SCALE, HEAD_SCALE, HEAD_SCALE)
-    headContainer.Shape = Enum.PartType.Ball
-    headContainer.Transparency = 0.3
-    headContainer.Material = Enum.Material.Neon
-    headContainer.Color = Color3.fromRGB(255, 50, 50)
-    headContainer.CanCollide = false
-    headContainer.Anchored = true
-    headContainer.Parent = Workspace
-
-    -- Crear un detector de daño (parte invisible más grande)
-    local damageDetector = Instance.new("Part")
-    damageDetector.Name = "HeadDamageDetector"
-    damageDetector.Size = Vector3.new(HEAD_SCALE * 1.1, HEAD_SCALE * 1.1, HEAD_SCALE * 1.1)
-    damageDetector.Transparency = 1
-    damageDetector.CanCollide = false
-    damageDetector.Anchored = true
-    damageDetector.Parent = headContainer
-
-    -- Conectar detector de daño
-    damageDetector.Touched:Connect(function(hit)
-        if not HeadAPI.active then return end
-        
-        -- Buscar la cabeza real del jugador
-        local realHead = character:FindFirstChild("Head")
-        if not realHead then return end
-        
-        -- Transferir el evento de toque a la cabeza real
-        realHead:FireServer("TakeDamage", 10) -- Ajusta el daño según sea necesario
-        
-        -- Efecto visual de daño
-        local originalColor = headContainer.Color
-        headContainer.Color = DAMAGE_COLOR
-        delay(DAMAGE_DURATION, function()
-            if headContainer and headContainer.Parent then
-                headContainer.Color = originalColor
-            end
-        end)
-    end)
-
-    -- Conectar para movimiento
-    local movementConnection
-    movementConnection = RunService.Heartbeat:Connect(function()
-        if not HeadAPI.active or not player.Character then
-            if movementConnection then movementConnection:Disconnect() end
-            return
-        end
-        
-        -- Posicionamiento seguro
-        pcall(function()
-            local rootPart = player.Character:FindFirstChild("HumanoidRootPart") or 
-                            player.Character:FindFirstChild("Torso") or 
-                            player.Character:FindFirstChild("UpperTorso")
-            
-            if rootPart then
-                -- Calcular posición estimada de la cabeza
-                local headPosition = rootPart.Position + Vector3.new(0, 3, 0)
-                headContainer.CFrame = CFrame.new(headPosition.X, headPosition.Y + HEAD_ELEVATION, headPosition.Z)
-            end
-        end)
-    end)
-
-    -- Guardar referencias
+    local head = player.Character:FindFirstChild("Head")
+    if not head then return end
+    
+    -- Guardar tamaño original
+    local originalSize = head.Size
+    local originalTransparency = head.Transparency
+    
+    -- Aplicar expansión
+    head.Size = head.Size * HEAD_SCALE
+    
+    -- Configurar propiedades visuales
+    head.Transparency = 0.3
+    head.Material = Enum.Material.Neon
+    head.Color = Color3.fromRGB(255, 50, 50)
+    
+    -- Guardar referencia para restaurar
     HeadAPI.scaledPlayers[player] = {
-        headContainer = headContainer,
-        damageDetector = damageDetector,
-        movementConnection = movementConnection
+        originalSize = originalSize,
+        originalTransparency = originalTransparency,
+        originalMaterial = head.Material,
+        originalColor = head.Color
     }
+    
+    -- Efecto visual al recibir daño
+    local lastDamageTime = 0
+    local damageConnection
+    damageConnection = head.Touched:Connect(function(part)
+        if not HeadAPI.active then return end
+        if tick() - lastDamageTime < 0.2 then return end  -- Prevenir destellos rápidos
+        
+        lastDamageTime = tick()
+        
+        -- Destello de daño
+        local tween = TweenService:Create(head, TweenInfo.new(0.1), {
+            Color = DAMAGE_COLOR
+        })
+        tween:Play()
+        
+        tween.Completed:Wait()
+        
+        if head and head.Parent then
+            TweenService:Create(head, TweenInfo.new(0.2), {
+                Color = Color3.fromRGB(255, 50, 50)
+            }):Play()
+        end
+    end)
+    
+    table.insert(HeadAPI.connections, damageConnection)
 end
 
--- Eliminar cabeza grande
-local function removeFloatingHead(player)
+-- Restaura la cabeza a su estado normal
+local function restoreHead(player)
     local data = HeadAPI.scaledPlayers[player]
     if not data then return end
     
-    pcall(function()
-        if data.headContainer and data.headContainer.Parent then
-            data.headContainer:Destroy()
-        end
-    end)
-    
-    pcall(function()
-        if data.movementConnection then
-            data.movementConnection:Disconnect()
-        end
-    end)
+    local head = player.Character and player.Character:FindFirstChild("Head")
+    if head then
+        head.Size = data.originalSize
+        head.Transparency = data.originalTransparency
+        head.Material = data.originalMaterial
+        head.Color = data.originalColor
+    end
     
     HeadAPI.scaledPlayers[player] = nil
 end
 
--- Manejar jugadores
-local function handlePlayer(player)
+-- Maneja nuevos jugadores
+local function handlePlayerAdded(player)
+    if not HeadAPI.active then return end
+    expandRealHead(player)
+end
+
+-- Maneja cambio de personaje
+local function handleCharacterAdded(player, character)
     if not HeadAPI.active then return end
     
-    -- Esperar a que el personaje exista
-    if player.Character then
-        createFloatingHead(player)
+    -- Esperar a que el personaje esté completo
+    character:WaitForChild("Head", 5)
+    task.wait(0.5)  -- Espera adicional para asegurar estabilidad
+    
+    if character:FindFirstChild("Head") then
+        expandRealHead(player)
     end
-    
-    -- Conectar para cambios de personaje
-    local charAdded = player.CharacterAdded:Connect(function()
-        createFloatingHead(player)
-    end)
-    
-    return charAdded
 end
 
 -- Activar el script
@@ -139,25 +110,23 @@ function HeadAPI.activate()
     if HeadAPI.active then return false end
     HeadAPI.active = true
     
-    -- Manejar todos los jugadores
+    -- Manejar jugadores existentes
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LOCAL_PLAYER then
-            local conn = handlePlayer(player)
-            if conn then
-                table.insert(HeadAPI.connections, conn)
+            if player.Character then
+                expandRealHead(player)
             end
+            
+            -- Conectar evento para cambio de personaje
+            local conn = player.CharacterAdded:Connect(function(char)
+                handleCharacterAdded(player, char)
+            end)
+            table.insert(HeadAPI.connections, conn)
         end
     end
     
     -- Conectar nuevos jugadores
-    local newPlayerConn = Players.PlayerAdded:Connect(function(p)
-        if p ~= LOCAL_PLAYER then
-            local conn = handlePlayer(p)
-            if conn then
-                table.insert(HeadAPI.connections, conn)
-            end
-        end
-    end)
+    local newPlayerConn = Players.PlayerAdded:Connect(handlePlayerAdded)
     table.insert(HeadAPI.connections, newPlayerConn)
     
     return true
@@ -171,12 +140,12 @@ function HeadAPI.deactivate()
     -- Desconectar eventos
     for _, conn in ipairs(HeadAPI.connections) do
         pcall(conn.Disconnect, conn)
-    end)
+    end
     HeadAPI.connections = {}
     
-    -- Eliminar todas las cabezas grandes
+    -- Restaurar todos los jugadores
     for player in pairs(HeadAPI.scaledPlayers) do
-        removeFloatingHead(player)
+        restoreHead(player)
     end
     HeadAPI.scaledPlayers = {}
     
@@ -187,7 +156,7 @@ end
 function HeadAPI.safeActivate()
     local success, err = pcall(HeadAPI.activate)
     if not success then
-        warn("[HEAD] Activation failed:", err)
+        warn("[HEAD ERROR] Activation failed:", err)
         return false
     end
     return true
@@ -196,7 +165,7 @@ end
 function HeadAPI.safeDeactivate()
     local success, err = pcall(HeadAPI.deactivate)
     if not success then
-        warn("[HEAD] Deactivation failed:", err)
+        warn("[HEAD ERROR] Deactivation failed:", err)
         return false
     end
     return true
