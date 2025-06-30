@@ -1,4 +1,4 @@
--- Head.lua - Solución definitiva sin modificar el personaje
+-- Head.lua - Solución compatible con cualquier sistema de personajes
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -16,83 +16,41 @@ local HEAD_SCALE = 10.0  -- Factor de escala para las cabezas
 local HEAD_ELEVATION = 8.0  -- Altura adicional para evitar colisiones
 local LOCAL_PLAYER = Players.LocalPlayer
 local DAMAGE_COLOR = Color3.fromRGB(255, 0, 0)  -- Color al recibir daño
-local MAX_WAIT_TIME = 3  -- Tiempo máximo de espera para la cabeza (segundos)
 
--- Función segura para obtener la posición de la cabeza
-local function safeGetHeadPosition(character)
-    if not character then return nil end
-    
-    -- Primero intentar obtener la cabeza directamente
-    local head = character:FindFirstChild("Head")
-    if head then return head.Position end
-    
-    -- Intentar obtener a través de HumanoidRootPart
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if rootPart then
-        return rootPart.Position + Vector3.new(0, 2.5, 0)  -- Posición estimada de la cabeza
-    end
-    
-    -- Último recurso: usar la posición del modelo
-    if character:IsA("Model") and character.PrimaryPart then
-        return character.PrimaryPart.Position + Vector3.new(0, 5, 0)
-    end
-    
-    return character:GetPivot().Position + Vector3.new(0, 5, 0)
-end
-
--- Función para crear la cabeza grande sin modificar el personaje
+-- Función para crear la cabeza grande sin tocar el personaje
 local function createFloatingHead(player)
     if not player or player == LOCAL_PLAYER then return end
-    if HeadAPI.scaledPlayers[player] then return end  -- Evitar duplicados
-    
-    local character = player.Character
-    if not character then return end
-    
-    -- Obtener posición de cabeza de forma segura
-    local headPosition = safeGetHeadPosition(character)
-    if not headPosition then return end
+    if HeadAPI.scaledPlayers[player] then return end
     
     -- Crear contenedor para la cabeza grande
     local headContainer = Instance.new("Part")
-    headContainer.Name = "BigHeadContainer"
-    headContainer.Size = Vector3.new(1, 1, 1)
-    headContainer.Transparency = 1
+    headContainer.Name = "BigHeadEffect_"..player.UserId
+    headContainer.Size = Vector3.new(HEAD_SCALE, HEAD_SCALE, HEAD_SCALE)
+    headContainer.Shape = Enum.PartType.Ball
+    headContainer.Transparency = 0.3
+    headContainer.Material = Enum.Material.Neon
+    headContainer.Color = Color3.fromRGB(255, 50, 50)
     headContainer.CanCollide = false
-    headContainer.Anchored = false
+    headContainer.Anchored = true
     headContainer.Parent = Workspace
     
-    -- Crear cabeza grande
-    local bigHead = Instance.new("Part")
-    bigHead.Name = "BigHeadEffect"
-    bigHead.Shape = Enum.PartType.Ball
-    bigHead.Size = Vector3.new(HEAD_SCALE, HEAD_SCALE, HEAD_SCALE)
-    bigHead.Transparency = 0.3
-    bigHead.Material = Enum.Material.Neon
-    bigHead.Color = Color3.fromRGB(255, 50, 50)
-    bigHead.CanCollide = false
-    bigHead.Parent = headContainer
-    
-    -- Posicionar inicialmente
-    headContainer.CFrame = CFrame.new(headPosition.X, headPosition.Y + HEAD_ELEVATION, headPosition.Z)
-    
-    -- Conectar para movimiento suave
+    -- Conectar para movimiento
     local movementConnection
     movementConnection = RunService.Heartbeat:Connect(function()
-        if not HeadAPI.active or not player.Character or not bigHead or not headContainer then
+        if not HeadAPI.active or not player.Character then
             if movementConnection then movementConnection:Disconnect() end
             return
         end
         
-        -- Actualizar posición de forma segura
+        -- Posicionamiento seguro sin acceder a partes específicas
         pcall(function()
-            local newPosition = safeGetHeadPosition(player.Character)
-            if newPosition then
-                -- Suavizar movimiento
-                local targetPosition = newPosition + Vector3.new(0, HEAD_ELEVATION, 0)
-                headContainer.CFrame = headContainer.CFrame:Lerp(
-                    CFrame.new(targetPosition),
-                    0.3
-                )
+            local character = player.Character
+            local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+            
+            if rootPart then
+                -- Calcular posición estimada de la cabeza
+                local headPosition = rootPart.Position + Vector3.new(0, 3, 0)
+                headContainer.CFrame = CFrame.new(headPosition.X, headPosition.Y + HEAD_ELEVATION, headPosition.Z)
             end
         end)
     end)
@@ -100,17 +58,15 @@ local function createFloatingHead(player)
     -- Guardar referencias
     HeadAPI.scaledPlayers[player] = {
         headContainer = headContainer,
-        bigHead = bigHead,
         movementConnection = movementConnection
     }
 end
 
--- Restaura todo sin tocar el personaje
+-- Eliminar cabeza grande
 local function removeFloatingHead(player)
     local data = HeadAPI.scaledPlayers[player]
     if not data then return end
     
-    -- Eliminar elementos con protección
     pcall(function()
         if data.headContainer and data.headContainer.Parent then
             data.headContainer:Destroy()
@@ -126,68 +82,66 @@ local function removeFloatingHead(player)
     HeadAPI.scaledPlayers[player] = nil
 end
 
--- Maneja nuevos jugadores con protección
-local function handlePlayerAdded(player)
-    if not HeadAPI.active then return end
-    pcall(createFloatingHead, player)
-end
-
--- Maneja cambio de personaje con protección
-local function handleCharacterAdded(player, character)
+-- Manejar jugadores
+local function handlePlayer(player)
     if not HeadAPI.active then return end
     
-    -- Esperar a que el personaje esté listo
-    pcall(function()
-        task.wait(1)  -- Espera generosa
+    -- Esperar a que el personaje exista
+    if player.Character then
+        createFloatingHead(player)
+    end
+    
+    -- Conectar para cambios de personaje
+    local charAdded = player.CharacterAdded:Connect(function()
         createFloatingHead(player)
     end)
+    
+    return charAdded
 end
 
--- Activar el script con protección completa
+-- Activar el script
 function HeadAPI.activate()
     if HeadAPI.active then return false end
     HeadAPI.active = true
     
-    -- Manejar jugadores existentes con protección
+    -- Manejar todos los jugadores
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LOCAL_PLAYER then
-            pcall(function()
-                if player.Character then
-                    createFloatingHead(player)
-                end
-                
-                -- Conectar evento para cambio de personaje
-                local conn = player.CharacterAdded:Connect(function(char)
-                    pcall(handleCharacterAdded, player, char)
-                end)
+            local conn = handlePlayer(player)
+            if conn then
                 table.insert(HeadAPI.connections, conn)
-            end)
+            end
         end
     end
     
     -- Conectar nuevos jugadores
     local newPlayerConn = Players.PlayerAdded:Connect(function(p)
-        pcall(handlePlayerAdded, p)
+        if p ~= LOCAL_PLAYER then
+            local conn = handlePlayer(p)
+            if conn then
+                table.insert(HeadAPI.connections, conn)
+            end
+        end
     end)
     table.insert(HeadAPI.connections, newPlayerConn)
     
     return true
 end
 
--- Desactivar el script con protección completa
+-- Desactivar el script
 function HeadAPI.deactivate()
     if not HeadAPI.active then return false end
     HeadAPI.active = false
     
-    -- Desconectar eventos con protección
+    -- Desconectar eventos
     for _, conn in ipairs(HeadAPI.connections) do
         pcall(conn.Disconnect, conn)
     end
     HeadAPI.connections = {}
     
-    -- Restaurar todos los jugadores con protección
+    -- Eliminar todas las cabezas grandes
     for player in pairs(HeadAPI.scaledPlayers) do
-        pcall(removeFloatingHead, player)
+        removeFloatingHead(player)
     end
     HeadAPI.scaledPlayers = {}
     
@@ -198,7 +152,7 @@ end
 function HeadAPI.safeActivate()
     local success, err = pcall(HeadAPI.activate)
     if not success then
-        warn("[HEAD CRITICAL ERROR] Activation failed:", err)
+        warn("[HEAD] Activation failed:", err)
         return false
     end
     return true
@@ -207,7 +161,7 @@ end
 function HeadAPI.safeDeactivate()
     local success, err = pcall(HeadAPI.deactivate)
     if not success then
-        warn("[HEAD CRITICAL ERROR] Deactivation failed:", err)
+        warn("[HEAD] Deactivation failed:", err)
         return false
     end
     return true
