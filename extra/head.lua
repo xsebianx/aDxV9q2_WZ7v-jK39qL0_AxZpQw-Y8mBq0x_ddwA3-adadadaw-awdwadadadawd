@@ -1,7 +1,6 @@
--- Head.lua - Solución compatible con cualquier sistema de personajes
+-- Head.lua - Cabeza grande con detección de daño
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 -- API principal
@@ -12,19 +11,23 @@ local HeadAPI = {
 }
 
 -- Configuración
-local HEAD_SCALE = 10.0  -- Factor de escala para las cabezas
-local HEAD_ELEVATION = 8.0  -- Altura adicional para evitar colisiones
+local HEAD_SCALE = 10.0
+local HEAD_ELEVATION = 8.0
 local LOCAL_PLAYER = Players.LocalPlayer
-local DAMAGE_COLOR = Color3.fromRGB(255, 0, 0)  -- Color al recibir daño
+local DAMAGE_COLOR = Color3.fromRGB(255, 0, 0)
+local DAMAGE_DURATION = 0.3
 
--- Función para crear la cabeza grande sin tocar el personaje
+-- Función para crear la cabeza grande con detección de daño
 local function createFloatingHead(player)
     if not player or player == LOCAL_PLAYER then return end
     if HeadAPI.scaledPlayers[player] then return end
     
-    -- Crear contenedor para la cabeza grande
+    local character = player.Character
+    if not character then return end
+
+    -- Crear un contenedor para la cabeza grande
     local headContainer = Instance.new("Part")
-    headContainer.Name = "BigHeadEffect_"..player.UserId
+    headContainer.Name = "BigHeadEffect_" .. player.UserId
     headContainer.Size = Vector3.new(HEAD_SCALE, HEAD_SCALE, HEAD_SCALE)
     headContainer.Shape = Enum.PartType.Ball
     headContainer.Transparency = 0.3
@@ -33,7 +36,37 @@ local function createFloatingHead(player)
     headContainer.CanCollide = false
     headContainer.Anchored = true
     headContainer.Parent = Workspace
-    
+
+    -- Crear un detector de daño (parte invisible más grande)
+    local damageDetector = Instance.new("Part")
+    damageDetector.Name = "HeadDamageDetector"
+    damageDetector.Size = Vector3.new(HEAD_SCALE * 1.1, HEAD_SCALE * 1.1, HEAD_SCALE * 1.1)
+    damageDetector.Transparency = 1
+    damageDetector.CanCollide = false
+    damageDetector.Anchored = true
+    damageDetector.Parent = headContainer
+
+    -- Conectar detector de daño
+    damageDetector.Touched:Connect(function(hit)
+        if not HeadAPI.active then return end
+        
+        -- Buscar la cabeza real del jugador
+        local realHead = character:FindFirstChild("Head")
+        if not realHead then return end
+        
+        -- Transferir el evento de toque a la cabeza real
+        realHead:FireServer("TakeDamage", 10) -- Ajusta el daño según sea necesario
+        
+        -- Efecto visual de daño
+        local originalColor = headContainer.Color
+        headContainer.Color = DAMAGE_COLOR
+        delay(DAMAGE_DURATION, function()
+            if headContainer and headContainer.Parent then
+                headContainer.Color = originalColor
+            end
+        end)
+    end)
+
     -- Conectar para movimiento
     local movementConnection
     movementConnection = RunService.Heartbeat:Connect(function()
@@ -42,10 +75,11 @@ local function createFloatingHead(player)
             return
         end
         
-        -- Posicionamiento seguro sin acceder a partes específicas
+        -- Posicionamiento seguro
         pcall(function()
-            local character = player.Character
-            local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+            local rootPart = player.Character:FindFirstChild("HumanoidRootPart") or 
+                            player.Character:FindFirstChild("Torso") or 
+                            player.Character:FindFirstChild("UpperTorso")
             
             if rootPart then
                 -- Calcular posición estimada de la cabeza
@@ -54,10 +88,11 @@ local function createFloatingHead(player)
             end
         end)
     end)
-    
+
     -- Guardar referencias
     HeadAPI.scaledPlayers[player] = {
         headContainer = headContainer,
+        damageDetector = damageDetector,
         movementConnection = movementConnection
     }
 end
@@ -136,7 +171,7 @@ function HeadAPI.deactivate()
     -- Desconectar eventos
     for _, conn in ipairs(HeadAPI.connections) do
         pcall(conn.Disconnect, conn)
-    end
+    end)
     HeadAPI.connections = {}
     
     -- Eliminar todas las cabezas grandes
