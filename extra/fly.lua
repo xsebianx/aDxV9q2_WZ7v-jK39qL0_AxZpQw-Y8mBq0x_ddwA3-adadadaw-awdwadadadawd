@@ -1,124 +1,231 @@
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local torso = character:WaitForChild("HumanoidRootPart")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local TweenService = game:GetService("TweenService")
 
-local flySpeed = 18
-local flying = false
-local flyConnection
-local lastValidPosition = torso.Position
-local safeHeight = 5  -- Altura máxima segura sobre el suelo
+-- Configuración optimizada
+local BASE_SPEED = 30
+local BOOST_SPEED = 65
+local VERTICAL_SPEED = 25
+local SMOOTHNESS = 0.2
+local BOOST_KEY = Enum.KeyCode.LeftShift
 
--- Sistema de vuelo que mantiene posición válida
-local function startFlying()
-    if flying then return end
-    flying = true
+-- Variables de estado
+local flyEnabled = false
+local isBoosting = false
+local isAscending = false
+local isDescending = false
+local flyVelocity = Vector3.new(0, 0, 0)
+local currentSpeed = BASE_SPEED
+local flightConnection = nil
+local inputConnection = nil
+local screenGui = nil
+local statusFrame = nil
+
+-- API de vuelo
+local FlyAPI = {
+    active = false,
     
-    -- Guardar última posición válida
-    lastValidPosition = torso.Position
+    activate = function(self)
+        if self.active then return end
+        self.active = true
+        flyEnabled = true
+        
+        -- Crear interfaz si no existe
+        if not screenGui then
+            screenGui = Instance.new("ScreenGui")
+            screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+            screenGui.Name = "FlightStatus"
+            screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+            statusFrame = Instance.new("Frame")
+            statusFrame.Size = UDim2.new(0, 280, 0, 80)
+            statusFrame.Position = UDim2.new(0.5, -140, 0.05, 0)
+            statusFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+            statusFrame.BackgroundTransparency = 0.25
+            statusFrame.BorderSizePixel = 0
+            statusFrame.Visible = true
+            statusFrame.Parent = screenGui
+
+            local UICorner = Instance.new("UICorner")
+            UICorner.CornerRadius = UDim.new(0, 12)
+            UICorner.Parent = statusFrame
+
+            local statusLabel = Instance.new("TextLabel")
+            statusLabel.Size = UDim2.new(1, 0, 0.3, 0)
+            statusLabel.Text = "VUELO ACTIVADO"
+            statusLabel.TextColor3 = Color3.fromRGB(80, 255, 150)
+            statusLabel.Font = Enum.Font.GothamBold
+            statusLabel.TextSize = 16
+            statusLabel.BackgroundTransparency = 1
+            statusLabel.Parent = statusFrame
+
+            local altitudeLabel = Instance.new("TextLabel")
+            altitudeLabel.Size = UDim2.new(1, 0, 0.3, 0)
+            altitudeLabel.Position = UDim2.new(0, 0, 0.3, 0)
+            altitudeLabel.Text = "ALTITUD: 0 u"
+            altitudeLabel.TextColor3 = Color3.fromRGB(180, 220, 255)
+            altitudeLabel.Font = Enum.Font.Gotham
+            altitudeLabel.TextSize = 14
+            altitudeLabel.BackgroundTransparency = 1
+            altitudeLabel.Parent = statusFrame
+
+            local controlsFrame = Instance.new("Frame")
+            controlsFrame.Size = UDim2.new(1, 0, 0.4, 0)
+            controlsFrame.Position = UDim2.new(0, 0, 0.6, 0)
+            controlsFrame.BackgroundTransparency = 1
+            controlsFrame.Parent = statusFrame
+
+            local spaceIndicator = Instance.new("TextLabel")
+            spaceIndicator.Size = UDim2.new(0.45, 0, 1, 0)
+            spaceIndicator.Text = "ESPACIO: SUBIR"
+            spaceIndicator.TextColor3 = Color3.fromRGB(150, 255, 150)
+            spaceIndicator.Font = Enum.Font.Gotham
+            spaceIndicator.TextSize = 12
+            spaceIndicator.BackgroundTransparency = 1
+            spaceIndicator.Parent = controlsFrame
+
+            local shiftIndicator = Instance.new("TextLabel")
+            shiftIndicator.Size = UDim2.new(0.45, 0, 1, 0)
+            shiftIndicator.Position = UDim2.new(0.55, 0, 0, 0)
+            shiftIndicator.Text = "SHIFT: BAJAR"
+            shiftIndicator.TextColor3 = Color3.fromRGB(255, 150, 150)
+            shiftIndicator.Font = Enum.Font.Gotham
+            shiftIndicator.TextSize = 12
+            shiftIndicator.BackgroundTransparency = 1
+            shiftIndicator.Parent = controlsFrame
+        else
+            statusFrame.Visible = true
+        end
+        
+        -- Iniciar conexiones
+        flightConnection = RunService.Heartbeat:Connect(updateFlight)
+        inputConnection = UserInputService.InputBegan:Connect(onInput)
+    end,
     
-    -- Crear un punto de anclaje seguro
-    local anchor = Instance.new("Part")
-    anchor.Anchored = true
-    anchor.CanCollide = false
-    anchor.Transparency = 1
-    anchor.Size = Vector3.new(1, 1, 1)
-    anchor.Position = lastValidPosition
-    anchor.Parent = workspace
-    
-    flyConnection = game:GetService("RunService").Heartbeat:Connect(function(dt)
-        if not flying or not torso then return end
+    deactivate = function(self)
+        if not self.active then return end
+        self.active = false
+        flyEnabled = false
         
-        -- Calcular nueva posición basada en inputs
-        local camera = workspace.CurrentCamera
-        local moveDirection = Vector3.new()
-        
-        -- Movimiento relativo a la cámara (sin vertical)
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
-            moveDirection = moveDirection + (camera.CFrame.LookVector * Vector3.new(1,0,1)).Unit
-        end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
-            moveDirection = moveDirection - (camera.CFrame.LookVector * Vector3.new(1,0,1)).Unit
-        end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
-            moveDirection = moveDirection - camera.CFrame.RightVector
-        end
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
-            moveDirection = moveDirection + camera.CFrame.RightVector
+        -- Limpiar conexiones
+        if flightConnection then
+            flightConnection:Disconnect()
+            flightConnection = nil
         end
         
-        -- Movimiento vertical independiente
-        local verticalMove = 0
-        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
-            verticalMove = 1
-        elseif game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
-            verticalMove = -1
+        if inputConnection then
+            inputConnection:Disconnect()
+            inputConnection = nil
         end
         
-        -- Actualizar posición del anclaje
-        anchor.Position = anchor.Position + 
-            moveDirection * flySpeed * dt +
-            Vector3.new(0, verticalMove * flySpeed * dt, 0)
+        -- Ocultar interfaz
+        if statusFrame then
+            statusFrame.Visible = false
+        end
         
-        -- Mantener altura segura sobre el suelo
-        local ray = Ray.new(anchor.Position, Vector3.new(0, -100, 0))
-        local hit, position = workspace:FindPartOnRay(ray, character)
-        
-        if hit then
-            local groundHeight = position.Y
-            if anchor.Position.Y > groundHeight + safeHeight then
-                anchor.Position = Vector3.new(
-                    anchor.Position.X,
-                    groundHeight + safeHeight,
-                    anchor.Position.Z
-                )
+        -- Restablecer la velocidad del personaje
+        if LocalPlayer.Character then
+            local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                rootPart.Velocity = Vector3.new(0,0,0)
             end
         end
-        
-        -- Mover personaje suavemente hacia el anclaje
-        torso.CFrame = torso.CFrame:Lerp(
-            CFrame.new(anchor.Position) * CFrame.Angles(0, camera.CFrame.Y, 0),
-            0.5
-        )
-        
-        -- Actualizar última posición válida
-        lastValidPosition = anchor.Position
-    end)
-end
-
-local function stopFlying()
-    if not flying then return end
-    flying = false
-    
-    -- Desconectar el vuelo
-    if flyConnection then
-        flyConnection:Disconnect()
     end
-    
-    -- Encontrar posición segura para aterrizar
-    local ray = Ray.new(torso.Position, Vector3.new(0, -100, 0))
-    local hit, position = workspace:FindPartOnRay(ray, character)
-    
-    if hit then
-        -- Mover a posición segura
-        torso.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
-    else
-        -- Volver a la última posición válida
-        torso.CFrame = CFrame.new(lastValidPosition)
-    end
-    
-    -- Eliminar anclaje
-    for _, obj in ipairs(workspace:GetChildren()) do
-        if obj.Name == "FlightAnchor" then
-            obj:Destroy()
-        end
-    end
-    
-    -- Restaurar estado normal
-    humanoid:ChangeState(Enum.HumanoidStateType.Running)
-end
-
-return {
-    activate = startFlying,
-    deactivate = stopFlying
 }
+
+-- Sistema de boost mejorado con variabilidad
+local function applyBoost()
+    if not isBoosting then return end
+    
+    -- Aplicar boost con variación aleatoria para evitar detección
+    local variation = math.random(-3, 3)
+    local targetSpeed = BOOST_SPEED + variation
+    
+    -- Transición suave
+    TweenService:Create(script, TweenInfo.new(0.3), {
+        currentSpeed = targetSpeed
+    }):Play()
+end
+
+-- Manejo de entrada de usuario
+local function onInput(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- Manejar boost con variabilidad
+    if input.KeyCode == BOOST_KEY then
+        isBoosting = true
+        applyBoost()
+    end
+end
+
+-- Función para actualizar el vuelo
+local function updateFlight(dt)
+    if not flyEnabled or not LocalPlayer.Character then return end
+
+    local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    -- Detener boost si se suelta la tecla
+    if isBoosting and not UserInputService:IsKeyDown(BOOST_KEY) then
+        isBoosting = false
+        currentSpeed = BASE_SPEED
+    end
+    
+    -- Obtener dirección de la cámara
+    local cameraCF = Camera.CFrame
+    local cameraLook = cameraCF.LookVector
+    local horizontalLook = Vector3.new(cameraLook.X, 0, cameraLook.Z).Unit
+    
+    local horizontalDirection = Vector3.new(0, 0, 0)
+    
+    -- Control de movimiento horizontal
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+        horizontalDirection = horizontalDirection + horizontalLook
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+        horizontalDirection = horizontalDirection - horizontalLook
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+        horizontalDirection = horizontalDirection - cameraCF.RightVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+        horizontalDirection = horizontalDirection + cameraCF.RightVector
+    end
+    
+    -- Normalizar dirección horizontal
+    if horizontalDirection.Magnitude > 0 then
+        horizontalDirection = horizontalDirection.Unit
+    end
+    
+    -- Control vertical manual
+    local verticalDirection = 0
+    isAscending = UserInputService:IsKeyDown(Enum.KeyCode.Space)
+    isDescending = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+    
+    if isAscending then
+        verticalDirection = VERTICAL_SPEED
+    elseif isDescending then
+        verticalDirection = -VERTICAL_SPEED
+    end
+    
+    -- Calcular velocidad objetivo
+    local targetVelocity = horizontalDirection * currentSpeed
+    targetVelocity = targetVelocity + Vector3.new(0, verticalDirection, 0)
+    
+    -- Suavizar el movimiento
+    flyVelocity = flyVelocity:Lerp(targetVelocity, SMOOTHNESS)
+    
+    -- Aplicar movimiento con variación aleatoria
+    local velocityVariation = Vector3.new(
+        math.random(-0.5, 0.5),
+        math.random(-0.2, 0.2),
+        math.random(-0.5, 0.5)
+    )
+    
+    rootPart.Velocity = flyVelocity + velocityVariation
+end
+
+return FlyAPI
