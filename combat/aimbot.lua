@@ -1,4 +1,4 @@
--- Servicios esencialesdd
+-- Servicios esenciales
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -9,6 +9,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local predictionFactor = 0.18
 local minTargetDistance = 5
+local maxFOV = 30 -- Grados (ajustable)
 local renderStepped
 local headOffset = Vector3.new(0, 0.2, 0)
 
@@ -98,7 +99,7 @@ local function updateNotification(state)
     end
 end
 
--- Verificación de visibilidad mejorada con detección precisa de obstáculos
+-- Verificación de visibilidad mejorada para cualquier estructura
 local function isTargetVisible(character)
     if not character then return false end
     
@@ -107,7 +108,6 @@ local function isTargetVisible(character)
     if not head then return false end
     
     -- Usamos una posición ligeramente más baja que el centro de la cabeza
-    -- para evitar problemas con techos bajos o bordes
     local headPosition = head.Position + Vector3.new(0, -0.1, 0)
     
     local direction = (headPosition - origin).Unit
@@ -150,25 +150,18 @@ local function isTargetVisible(character)
             return true
         end
         
-        -- Verificar si es parte de un modelo con un humanoid (otro jugador)
-        local hitModel = hitPart:FindFirstAncestorOfClass("Model")
-        if hitModel and hitModel:FindFirstChildOfClass("Humanoid") then
-            -- Si es otro personaje, consideramos que no es visible
-            return false
-        end
-        
-        -- Para otros objetos, verificar la distancia
+        -- Si el obstáculo está más lejos que el objetivo, ignorarlo
         local hitDistance = (result.Position - origin).Magnitude
-        local targetDistance = (headPosition - origin).Magnitude
-        
-        -- Si el objeto está más cerca que el objetivo, entonces bloquea la vista
-        return hitDistance > targetDistance
+        if hitDistance > distance then
+            return true
+        end
     end
     
+    -- Si hay un resultado y no es transparente, entonces está oculto
     return false
 end
 
--- Sistema avanzado de predicción de cabeza con protección (AIMBOT ORIGINAL)
+-- Sistema avanzado de predicción de cabeza con protección
 local function predictHeadPosition(target)
     if not target or target == LocalPlayer then return nil end
     
@@ -189,11 +182,16 @@ local function predictHeadPosition(target)
     return head.Position + (velocity * predictionFactor) + headOffset
 end
 
--- Sistema de seguimiento mejorado (AIMBOT ORIGINAL)
+-- Sistema de seguimiento mejorado con FOV
 local function precisionAim()
     local bestTarget = nil
     local bestHeadPos = nil
     local minScreenDistance = math.huge
+    
+    -- Calcular el radio máximo en píxeles para el FOV
+    local viewportSize = Camera.ViewportSize
+    local center = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+    local maxRadius = math.tan(math.rad(maxFOV / 2)) * viewportSize.Y / 2
     
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
@@ -207,7 +205,14 @@ local function precisionAim()
         
         -- Calcular distancia desde el centro de la pantalla
         local mousePos = UserInputService:GetMouseLocation()
-        local screenDistance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+        local screenPoint = Vector2.new(screenPos.X, screenPos.Y)
+        local screenDistance = (screenPoint - mousePos).Magnitude
+        
+        -- Calcular distancia desde el centro (para FOV)
+        local distanceFromCenter = (screenPoint - center).Magnitude
+        
+        -- Solo considerar objetivos dentro del FOV
+        if distanceFromCenter > maxRadius then continue end
         
         if screenDistance < minScreenDistance then
             minScreenDistance = screenDistance
@@ -216,7 +221,7 @@ local function precisionAim()
         end
     end
     
-    -- ACTUALIZACIÓN: Verificar visibilidad con detección mejorada
+    -- ACTUALIZACIÓN: Verificar visibilidad
     if bestTarget and bestTarget.Character then
         local visible = isTargetVisible(bestTarget.Character)
         if visible then
@@ -283,5 +288,6 @@ return {
         if options.predictionFactor then predictionFactor = options.predictionFactor end
         if options.headOffset then headOffset = options.headOffset end
         if options.minTargetDistance then minTargetDistance = options.minTargetDistance end
+        if options.maxFOV then maxFOV = options.maxFOV end
     end
 }
