@@ -1,4 +1,4 @@
--- Servicios esenciales
+-- Servicios esencialesdd
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -18,11 +18,6 @@ local notificationFrame = nil
 local notificationLabel = nil
 local notificationIcon = nil
 local notificationStroke = nil
-
--- Variables para la detección de visibilidad
-local lastVisibleState = nil
-local stateChangeTime = 0
-local stateDebounce = 0.2 -- 200ms para evitar cambios bruscos
 
 -- Crear notificación elegante
 local function createNotification()
@@ -85,15 +80,6 @@ end
 local function updateNotification(state)
     if not notificationFrame then return end
     
-    -- Sistema de debounce para evitar cambios bruscos
-    if state ~= lastVisibleState then
-        if os.clock() - stateChangeTime < stateDebounce then
-            return -- Ignorar cambios recientes
-        end
-        lastVisibleState = state
-        stateChangeTime = os.clock()
-    end
-    
     if state == nil then
         notificationFrame.Visible = false
         return
@@ -112,72 +98,74 @@ local function updateNotification(state)
     end
 end
 
--- Verificar visibilidad real del objetivo con detección mejorada de obstáculos
+-- Verificación de visibilidad mejorada con detección precisa de obstáculos
 local function isTargetVisible(character)
     if not character then return false end
     
     local origin = Camera.CFrame.Position
     local head = character:FindFirstChild("Head")
-    local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
-    if not head or not torso then return false end
+    if not head then return false end
     
-    -- Comprobamos dos puntos: cabeza y torso
-    local checkPoints = {
-        head.Position,
-        torso.Position
-    }
+    -- Usamos una posición ligeramente más baja que el centro de la cabeza
+    -- para evitar problemas con techos bajos o bordes
+    local headPosition = head.Position + Vector3.new(0, -0.1, 0)
     
-    -- Requerimos que ambos puntos sean visibles
-    for _, point in ipairs(checkPoints) do
-        local direction = (point - origin).Unit
-        local distance = (point - origin).Magnitude
+    local direction = (headPosition - origin).Unit
+    local distance = (headPosition - origin).Magnitude
+    
+    -- Crear parámetros de raycast
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, character}
+    raycastParams.IgnoreWater = true
+    
+    -- Realizar el raycast
+    local result = Workspace:Raycast(origin, direction * distance, raycastParams)
+    
+    -- Si no hay resultado, el objetivo es visible
+    if not result then return true end
+    
+    -- Verificar si lo que bloquea es un objeto transparente o no colisionable
+    local hitPart = result.Instance
+    if hitPart then
+        -- Materiales transparentes
+        local transparentMaterials = {
+            Enum.Material.Glass,
+            Enum.Material.ForceField,
+            Enum.Material.Neon,
+            Enum.Material.Plastic
+        }
         
-        local raycastParams = RaycastParams.new()
-        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-        raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
-        raycastParams.IgnoreWater = true
-        
-        local result = Workspace:Raycast(origin, direction * distance, raycastParams)
-        
-        if result then
-            -- Verificamos si el impacto es parte del personaje objetivo
-            local hitPart = result.Instance
-            local hitCharacter = hitPart:FindFirstAncestorOfClass("Model")
-            
-            -- Si el impacto no es parte del mismo personaje, verificamos obstáculos
-            if hitCharacter ~= character then
-                -- Verificamos propiedades de la parte impactada
-                local material = hitPart.Material
-                local transparency = hitPart.Transparency
-                local canCollide = hitPart.CanCollide
-                
-                -- Materiales que consideramos transparentes
-                local transparentMaterials = {
-                    Enum.Material.Glass,
-                    Enum.Material.ForceField,
-                    Enum.Material.Neon,
-                    Enum.Material.Plastic,
-                    Enum.Material.Air,
-                    Enum.Material.Water
-                }
-                
-                local isTransparent = false
-                for _, mat in ipairs(transparentMaterials) do
-                    if material == mat then
-                        isTransparent = true
-                        break
-                    end
-                end
-                
-                -- Si es un obstáculo sólido, el punto no es visible
-                if transparency <= 0.7 and canCollide and not isTransparent then
-                    return false
-                end
+        -- Verificar propiedades de la parte
+        local isTransparent = false
+        for _, mat in ipairs(transparentMaterials) do
+            if hitPart.Material == mat then
+                isTransparent = true
+                break
             end
         end
+        
+        -- Si es transparente o tiene alta transparencia, considerar visible
+        if isTransparent or hitPart.Transparency > 0.7 or not hitPart.CanCollide then
+            return true
+        end
+        
+        -- Verificar si es parte de un modelo con un humanoid (otro jugador)
+        local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+        if hitModel and hitModel:FindFirstChildOfClass("Humanoid") then
+            -- Si es otro personaje, consideramos que no es visible
+            return false
+        end
+        
+        -- Para otros objetos, verificar la distancia
+        local hitDistance = (result.Position - origin).Magnitude
+        local targetDistance = (headPosition - origin).Magnitude
+        
+        -- Si el objeto está más cerca que el objetivo, entonces bloquea la vista
+        return hitDistance > targetDistance
     end
     
-    return true
+    return false
 end
 
 -- Sistema avanzado de predicción de cabeza con protección (AIMBOT ORIGINAL)
@@ -228,7 +216,7 @@ local function precisionAim()
         end
     end
     
-    -- ACTUALIZACIÓN: Verificar visibilidad con detección mejorada de obstáculos
+    -- ACTUALIZACIÓN: Verificar visibilidad con detección mejorada
     if bestTarget and bestTarget.Character then
         local visible = isTargetVisible(bestTarget.Character)
         if visible then
@@ -295,6 +283,5 @@ return {
         if options.predictionFactor then predictionFactor = options.predictionFactor end
         if options.headOffset then headOffset = options.headOffset end
         if options.minTargetDistance then minTargetDistance = options.minTargetDistance end
-        if options.stateDebounce then stateDebounce = options.stateDebounce end
     end
 }
