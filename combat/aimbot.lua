@@ -79,7 +79,7 @@ local function updateNotification(visible)
     notificationFrame.Visible = visible
 end
 
--- Verificar visibilidad real del objetivo
+-- Verificar visibilidad real del objetivo (SOLO PARA NOTIFICACIÓN)
 local function isTargetVisible(part)
     if not part then return false end
     
@@ -94,21 +94,10 @@ local function isTargetVisible(part)
     
     local result = Workspace:Raycast(origin, direction * distance, raycastParams)
     
-    -- Si no hay resultado o el resultado es el propio jugador
-    if not result then return true end
-    
-    local hitParent = result.Instance
-    while hitParent do
-        if hitParent:IsDescendantOf(part.Parent) then
-            return true
-        end
-        hitParent = hitParent.Parent
-    end
-    
-    return false
+    return not result
 end
 
--- Sistema avanzado de predicción de cabeza con protección
+-- Sistema avanzado de predicción de cabeza con protección (AIMBOT ORIGINAL)
 local function predictHeadPosition(target)
     if not target or target == LocalPlayer then return nil end
     
@@ -122,9 +111,6 @@ local function predictHeadPosition(target)
     local distance = (head.Position - Camera.CFrame.Position).Magnitude
     if distance < minTargetDistance then return nil end
     
-    -- Verificar visibilidad real
-    if not isTargetVisible(head) then return nil end
-    
     -- Calcular velocidad real
     local velocity = head.AssemblyLinearVelocity
     
@@ -132,7 +118,7 @@ local function predictHeadPosition(target)
     return head.Position + (velocity * predictionFactor) + headOffset
 end
 
--- Sistema de seguimiento mejorado
+-- Sistema de seguimiento mejorado (AIMBOT ORIGINAL)
 local function precisionAim()
     local bestTarget = nil
     local bestHeadPos = nil
@@ -158,8 +144,16 @@ local function precisionAim()
         end
     end
     
-    -- Actualizar notificación SOLO si hay objetivo visible
-    updateNotification(bestTarget ~= nil)
+    -- ACTUALIZACIÓN: Verificar visibilidad SOLO para la notificación
+    local showNotification = false
+    if bestTarget and bestTarget.Character then
+        local head = bestTarget.Character:FindFirstChild("Head")
+        if head then
+            showNotification = isTargetVisible(head)
+        end
+    end
+    
+    updateNotification(showNotification)
     
     if not bestTarget or not bestHeadPos then return end
     
