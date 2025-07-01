@@ -6,7 +6,11 @@
   "temporary": [
     {
       "hwid": "HWID_TEMPORAL_1",
-      "expires": 1735689600 " 
+      "expires": 1735689600
+    },
+    {
+      "hwid": "HWID_TEMPORAL_2",
+      "expires": 1750000000
     }
   ]
 }
