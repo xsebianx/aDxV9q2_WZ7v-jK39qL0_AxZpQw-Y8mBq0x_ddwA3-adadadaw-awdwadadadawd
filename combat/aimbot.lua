@@ -3,15 +3,14 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
 
 -- Variables optimizadas
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local predictionFactor = 0.18
-local minTargetDistance = 5  -- Distancia mínima para evitar autoapuntado
+local minTargetDistance = 5
 local renderStepped
-local headOffset = Vector3.new(0, 0.2, 0)  -- Compensación para apuntar a la cabeza
+local headOffset = Vector3.new(0, 0.2, 0)
 
 -- Sistema de notificación visual mejorado
 local notificationGui = nil
@@ -80,6 +79,52 @@ local function updateNotification(visible)
     notificationFrame.Visible = visible
 end
 
+-- Sistema profesional de detección de visibilidad con raycasting multidireccional
+local function isTargetVisible(targetPart)
+    if not targetPart then return false end
+    
+    local origin = Camera.CFrame.Position
+    local targetPosition = targetPart.Position
+    local direction = (targetPosition - origin).Unit
+    local distance = (targetPosition - origin).Magnitude
+    
+    -- Configuración profesional de raycasting
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+    raycastParams.IgnoreWater = true
+    
+    -- Sistema de puntos de verificación múltiple
+    local checkPoints = {
+        Vector3.new(0, 0, 0),        -- Centro
+        Vector3.new(0.3, 0.2, 0),    -- Derecha-Arriba
+        Vector3.new(-0.3, 0.2, 0),   -- Izquierda-Arriba
+        Vector3.new(0, -0.2, 0.3),   -- Abajo-Adelante
+        Vector3.new(0, 0.3, -0.3)    -- Arriba-Atrás
+    }
+    
+    -- Verificación multidireccional
+    for _, offset in ipairs(checkPoints) do
+        local checkPosition = targetPosition + offset
+        local checkDirection = (checkPosition - origin).Unit
+        local checkDistance = (checkPosition - origin).Magnitude
+        
+        local raycastResult = Workspace:Raycast(origin, checkDirection * checkDistance, raycastParams)
+        
+        -- Si no hay obstáculos en esta dirección
+        if not raycastResult then
+            return true
+        end
+        
+        -- Si hay un obstáculo pero es parte del objetivo
+        if raycastResult.Instance:IsDescendantOf(targetPart.Parent) then
+            return true
+        end
+    end
+    
+    return false
+end
+
 -- Sistema avanzado de predicción de cabeza con protección
 local function predictHeadPosition(target)
     if not target or target == LocalPlayer then return nil end
@@ -92,7 +137,7 @@ local function predictHeadPosition(target)
     
     -- Calcular distancia al jugador local
     local distance = (head.Position - Camera.CFrame.Position).Magnitude
-    if distance < minTargetDistance then return nil end  -- Evitar autoapuntado
+    if distance < minTargetDistance then return nil end
     
     -- Calcular velocidad real
     local velocity = head.AssemblyLinearVelocity
@@ -114,7 +159,7 @@ local function precisionAim()
         if not headPos then continue end
         
         local screenPos = Camera:WorldToViewportPoint(headPos)
-        if screenPos.Z < 0 then continue end  -- Detrás de la cámara
+        if screenPos.Z < 0 then continue end
         
         -- Calcular distancia desde el centro de la pantalla
         local mousePos = UserInputService:GetMouseLocation()
@@ -127,8 +172,16 @@ local function precisionAim()
         end
     end
     
-    -- Actualizar notificación
-    updateNotification(bestTarget ~= nil)
+    -- Verificar visibilidad con el sistema profesional
+    local showNotification = false
+    if bestTarget and bestTarget.Character then
+        local head = bestTarget.Character:FindFirstChild("Head")
+        if head then
+            showNotification = isTargetVisible(head)
+        end
+    end
+    
+    updateNotification(showNotification)
     
     if not bestTarget or not bestHeadPos then return end
     
@@ -138,7 +191,7 @@ local function precisionAim()
     local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
     local delta = (targetScreenPos - mousePos)
     
-    mousemoverel(delta.X * 0.7, delta.Y * 0.7)  -- Movimiento directo pero controlado
+    mousemoverel(delta.X * 0.7, delta.Y * 0.7)
 end
 
 -- Loop principal estable
