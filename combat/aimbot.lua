@@ -9,8 +9,10 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local predictionFactor = 0.18
 local minTargetDistance = 5
+local maxTargetDistance = 500
 local renderStepped
 local headOffset = Vector3.new(0, 0.2, 0)
+local mouse = LocalPlayer:GetMouse()
 
 -- Sistema de notificación visual
 local notificationGui = nil
@@ -91,7 +93,7 @@ local function predictHeadPosition(target)
     
     -- Calcular distancia
     local distance = (head.Position - Camera.CFrame.Position).Magnitude
-    if distance < minTargetDistance then return nil end
+    if distance < minTargetDistance or distance > maxTargetDistance then return nil end
     
     -- Calcular velocidad y predecir
     local velocity = head.AssemblyLinearVelocity
@@ -117,7 +119,13 @@ local function isTargetVisible(target)
     
     local raycastResult = Workspace:Raycast(origin, direction * distance, raycastParams)
     
-    return not raycastResult
+    -- Verificar si el rayo golpea al objetivo
+    if raycastResult then
+        local hitPart = raycastResult.Instance
+        return hitPart and hitPart:IsDescendantOf(target.Character)
+    end
+    
+    return true
 end
 
 -- Sistema de seguimiento optimizado
@@ -135,8 +143,8 @@ local function precisionAim()
         local headPos = predictHeadPosition(player)
         if not headPos then continue end
         
-        local screenPos = Camera:WorldToViewportPoint(headPos)
-        if screenPos.Z < 0 then continue end
+        local screenPos, onScreen = Camera:WorldToViewportPoint(headPos)
+        if not onScreen or screenPos.Z < 0 then continue end
         
         -- Calcular distancia en pantalla
         local screenPoint = Vector2.new(screenPos.X, screenPos.Y)
@@ -163,7 +171,10 @@ local function precisionAim()
         local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
         local delta = (targetScreenPos - mousePos)
         
-        mousemoverel(delta.X * 0.7, delta.Y * 0.7)
+        -- Mover el mouse de forma segura
+        pcall(function()
+            mousemoverel(delta.X * 0.7, delta.Y * 0.7)
+        end)
     end
 end
 
@@ -183,6 +194,7 @@ return {
         
         if not renderStepped then
             renderStepped = RunService.RenderStepped:Connect(mainLoop)
+            print("Aimbot activado correctamente")
         end
     end,
     
@@ -190,6 +202,7 @@ return {
         if renderStepped then
             renderStepped:Disconnect()
             renderStepped = nil
+            print("Aimbot desactivado")
         end
         
         if notificationGui then
@@ -203,5 +216,7 @@ return {
         if options.predictionFactor then predictionFactor = options.predictionFactor end
         if options.headOffset then headOffset = options.headOffset end
         if options.minTargetDistance then minTargetDistance = options.minTargetDistance end
+        if options.maxTargetDistance then maxTargetDistance = options.maxTargetDistance end
+        print("Configuración actualizada:", options)
     end
 }
