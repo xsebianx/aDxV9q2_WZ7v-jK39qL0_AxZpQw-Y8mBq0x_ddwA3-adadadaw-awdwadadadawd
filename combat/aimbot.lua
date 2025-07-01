@@ -3,14 +3,15 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 
 -- Variables optimizadas
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local predictionFactor = 0.18
-local minTargetDistance = 5
+local minTargetDistance = 5  -- Distancia mínima para evitar autoapuntado
 local renderStepped
-local headOffset = Vector3.new(0, 0.2, 0)
+local headOffset = Vector3.new(0, 0.2, 0)  -- Compensación para apuntar a la cabeza
 
 -- Sistema de notificación visual mejorado
 local notificationGui = nil
@@ -79,25 +80,7 @@ local function updateNotification(visible)
     notificationFrame.Visible = visible
 end
 
--- Verificar visibilidad real del objetivo (SOLO PARA NOTIFICACIÓN)
-local function isTargetVisible(part)
-    if not part then return false end
-    
-    local origin = Camera.CFrame.Position
-    local direction = (part.Position - origin).Unit
-    local distance = (part.Position - origin).Magnitude
-    
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
-    raycastParams.IgnoreWater = true
-    
-    local result = Workspace:Raycast(origin, direction * distance, raycastParams)
-    
-    return not result
-end
-
--- Sistema avanzado de predicción de cabeza con protección (AIMBOT ORIGINAL)
+-- Sistema avanzado de predicción de cabeza con protección
 local function predictHeadPosition(target)
     if not target or target == LocalPlayer then return nil end
     
@@ -109,7 +92,7 @@ local function predictHeadPosition(target)
     
     -- Calcular distancia al jugador local
     local distance = (head.Position - Camera.CFrame.Position).Magnitude
-    if distance < minTargetDistance then return nil end
+    if distance < minTargetDistance then return nil end  -- Evitar autoapuntado
     
     -- Calcular velocidad real
     local velocity = head.AssemblyLinearVelocity
@@ -118,7 +101,7 @@ local function predictHeadPosition(target)
     return head.Position + (velocity * predictionFactor) + headOffset
 end
 
--- Sistema de seguimiento mejorado (AIMBOT ORIGINAL)
+-- Sistema de seguimiento mejorado
 local function precisionAim()
     local bestTarget = nil
     local bestHeadPos = nil
@@ -131,7 +114,7 @@ local function precisionAim()
         if not headPos then continue end
         
         local screenPos = Camera:WorldToViewportPoint(headPos)
-        if screenPos.Z < 0 then continue end
+        if screenPos.Z < 0 then continue end  -- Detrás de la cámara
         
         -- Calcular distancia desde el centro de la pantalla
         local mousePos = UserInputService:GetMouseLocation()
@@ -144,16 +127,8 @@ local function precisionAim()
         end
     end
     
-    -- ACTUALIZACIÓN: Verificar visibilidad SOLO para la notificación
-    local showNotification = false
-    if bestTarget and bestTarget.Character then
-        local head = bestTarget.Character:FindFirstChild("Head")
-        if head then
-            showNotification = isTargetVisible(head)
-        end
-    end
-    
-    updateNotification(showNotification)
+    -- Actualizar notificación
+    updateNotification(bestTarget ~= nil)
     
     if not bestTarget or not bestHeadPos then return end
     
@@ -163,7 +138,7 @@ local function precisionAim()
     local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
     local delta = (targetScreenPos - mousePos)
     
-    mousemoverel(delta.X * 0.7, delta.Y * 0.7)
+    mousemoverel(delta.X * 0.7, delta.Y * 0.7)  -- Movimiento directo pero controlado
 end
 
 -- Loop principal estable
