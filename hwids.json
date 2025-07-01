@@ -1,13 +1,12 @@
 {
   "permanent": [
-    "",
+    "HWID_PERMANENTE_1",
     "HWID_PERMANENTE_2"
   ],
   "temporary": [
     {
       "hwid": "HWID_TEMPORAL_1",
-      "created": 1680000000,
-      "expires": 1680800000
+      "expires": 1735689600  // Fecha de expiración en timestamp Unix
     }
   ]
 }
