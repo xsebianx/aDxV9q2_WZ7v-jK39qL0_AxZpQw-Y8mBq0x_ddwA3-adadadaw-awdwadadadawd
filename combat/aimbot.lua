@@ -9,7 +9,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local predictionFactor = 0.18
 local minTargetDistance = 5
-local maxFOV = 30 -- Grados (ajustable)
+local maxFOV = 90 -- Grados (ajustable)
 local renderStepped
 local headOffset = Vector3.new(0, 0.2, 0)
 
@@ -77,7 +77,7 @@ local function createNotification()
     notificationLabel.Parent = notificationFrame
 end
 
--- Actualizar notificación con estado: "visible", "not_visible", o nil (ocultar)
+-- Actualizar notificación con estado: "visible", "oculto", o nil (ocultar)
 local function updateNotification(state)
     if not notificationFrame then return end
     
@@ -92,14 +92,14 @@ local function updateNotification(state)
         notificationLabel.Text = "OBJETIVO VISIBLE"
         notificationIcon.ImageColor3 = Color3.new(0, 1, 0)  -- Verde
         notificationStroke.Color = Color3.new(0, 1, 0)     -- Verde
-    elseif state == "not_visible" then
+    elseif state == "oculto" then
         notificationLabel.Text = "OBJETIVO OCULTO"
         notificationIcon.ImageColor3 = Color3.new(1, 0, 0)  -- Rojo
         notificationStroke.Color = Color3.new(1, 0, 0)      -- Rojo
     end
 end
 
--- Verificación de visibilidad mejorada para cualquier estructura
+-- Verificación profesional de visibilidad con detección de obstáculos
 local function isTargetVisible(character)
     if not character then return false end
     
@@ -110,55 +110,70 @@ local function isTargetVisible(character)
     -- Usamos una posición ligeramente más baja que el centro de la cabeza
     local headPosition = head.Position + Vector3.new(0, -0.1, 0)
     
-    local direction = (headPosition - origin).Unit
-    local distance = (headPosition - origin).Magnitude
-    
-    -- Crear parámetros de raycast
+    -- Crear parámetros de raycast profesionales
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, character}
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
     raycastParams.IgnoreWater = true
     
-    -- Realizar el raycast
-    local result = Workspace:Raycast(origin, direction * distance, raycastParams)
+    -- Comprobación de 3 puntos clave para mayor precisión
+    local pointsToCheck = {
+        headPosition, -- Cabeza
+        headPosition + Vector3.new(0, -1.5, 0), -- Torso
+        headPosition + Vector3.new(0, -3, 0) -- Piernas
+    }
     
-    -- Si no hay resultado, el objetivo es visible
-    if not result then return true end
+    local visiblePoints = 0
     
-    -- Verificar si lo que bloquea es un objeto transparente o no colisionable
-    local hitPart = result.Instance
-    if hitPart then
-        -- Materiales transparentes
-        local transparentMaterials = {
-            Enum.Material.Glass,
-            Enum.Material.ForceField,
-            Enum.Material.Neon,
-            Enum.Material.Plastic
-        }
+    for _, point in ipairs(pointsToCheck) do
+        local direction = (point - origin).Unit
+        local distance = (point - origin).Magnitude
         
-        -- Verificar propiedades de la parte
-        local isTransparent = false
-        for _, mat in ipairs(transparentMaterials) do
-            if hitPart.Material == mat then
-                isTransparent = true
-                break
+        -- Realizar el raycast
+        local result = Workspace:Raycast(origin, direction * distance, raycastParams)
+        
+        -- Si no hay resultado, el punto es visible
+        if not result then
+            visiblePoints = visiblePoints + 1
+        else
+            -- Verificar si lo que bloquea es el mismo jugador
+            local hitCharacter = result.Instance:FindFirstAncestorOfClass("Model")
+            if hitCharacter == character then
+                visiblePoints = visiblePoints + 1
+            else
+                -- Verificar propiedades del obstáculo
+                local hitPart = result.Instance
+                local material = hitPart.Material
+                local transparency = hitPart.Transparency
+                
+                -- Materiales transparentes
+                local transparentMaterials = {
+                    Enum.Material.Glass,
+                    Enum.Material.ForceField,
+                    Enum.Material.Neon,
+                    Enum.Material.Plastic,
+                    Enum.Material.Air,
+                    Enum.Material.Water
+                }
+                
+                -- Si es transparente o tiene alta transparencia, considerar visible
+                local isTransparent = false
+                for _, mat in ipairs(transparentMaterials) do
+                    if material == mat then
+                        isTransparent = true
+                        break
+                    end
+                end
+                
+                if isTransparent or transparency > 0.7 or not hitPart.CanCollide then
+                    visiblePoints = visiblePoints + 1
+                end
             end
-        end
-        
-        -- Si es transparente o tiene alta transparencia, considerar visible
-        if isTransparent or hitPart.Transparency > 0.7 or not hitPart.CanCollide then
-            return true
-        end
-        
-        -- Si el obstáculo está más lejos que el objetivo, ignorarlo
-        local hitDistance = (result.Position - origin).Magnitude
-        if hitDistance > distance then
-            return true
         end
     end
     
-    -- Si hay un resultado y no es transparente, entonces está oculto
-    return false
+    -- Considerar visible si al menos 2 de 3 puntos son visibles
+    return visiblePoints >= 2
 end
 
 -- Sistema avanzado de predicción de cabeza con protección
@@ -221,17 +236,17 @@ local function precisionAim()
         end
     end
     
-    -- ACTUALIZACIÓN: Verificar visibilidad
+    -- ACTUALIZACIÓN: Verificar visibilidad profesional
+    local visibilityState = nil
     if bestTarget and bestTarget.Character then
-        local visible = isTargetVisible(bestTarget.Character)
-        if visible then
-            updateNotification("visible")
+        if isTargetVisible(bestTarget.Character) then
+            visibilityState = "visible"
         else
-            updateNotification("not_visible")
+            visibilityState = "oculto"
         end
-    else
-        updateNotification(nil)
     end
+    
+    updateNotification(visibilityState)
     
     if not bestTarget or not bestHeadPos then return end
     
