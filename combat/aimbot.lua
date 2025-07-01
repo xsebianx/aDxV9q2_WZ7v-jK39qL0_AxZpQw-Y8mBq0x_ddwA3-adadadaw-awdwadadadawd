@@ -15,6 +15,9 @@ local headOffset = Vector3.new(0, 0.2, 0)
 -- Sistema de notificación visual mejorado
 local notificationGui = nil
 local notificationFrame = nil
+local lastVisibleState = false
+local visibilityDebounce = 0
+local DEBOUNCE_TIME = 0.2  -- 200ms de persistencia visual
 
 -- Crear notificación elegante
 local function createNotification()
@@ -73,59 +76,69 @@ local function createNotification()
     label.Parent = notificationFrame
 end
 
--- Actualizar notificación
+-- Actualizar notificación con persistencia
 local function updateNotification(visible)
     if not notificationFrame then return end
-    notificationFrame.Visible = visible
+    
+    -- Sistema de persistencia para evitar parpadeos
+    local currentTime = os.clock()
+    if visible then
+        lastVisibleState = true
+        visibilityDebounce = currentTime + DEBOUNCE_TIME
+        notificationFrame.Visible = true
+    elseif currentTime > visibilityDebounce then
+        lastVisibleState = false
+        notificationFrame.Visible = false
+    else
+        notificationFrame.Visible = true
+    end
 end
 
--- Sistema profesional de detección de visibilidad con raycasting multidireccional
-local function isTargetVisible(targetPart)
-    if not targetPart then return false end
+-- Sistema profesional de detección de visibilidad
+local function isTargetVisible(character)
+    if not character then return false end
     
     local origin = Camera.CFrame.Position
-    local targetPosition = targetPart.Position
-    local direction = (targetPosition - origin).Unit
-    local distance = (targetPosition - origin).Magnitude
-    
-    -- Configuración profesional de raycasting
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
     raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
     raycastParams.IgnoreWater = true
-    
-    -- Sistema de puntos de verificación múltiple
-    local checkPoints = {
-        Vector3.new(0, 0, 0),        -- Centro
-        Vector3.new(0.3, 0.2, 0),    -- Derecha-Arriba
-        Vector3.new(-0.3, 0.2, 0),   -- Izquierda-Arriba
-        Vector3.new(0, -0.2, 0.3),   -- Abajo-Adelante
-        Vector3.new(0, 0.3, -0.3)    -- Arriba-Atrás
+
+    -- Puntos estratégicos del cuerpo
+    local bodyPoints = {
+        {part = "Head", offset = Vector3.new(0, 0.5, 0)},
+        {part = "UpperTorso", offset = Vector3.new(0, 0.5, 0)},
+        {part = "HumanoidRootPart", offset = Vector3.new(0, 1.5, 0)},
+        {part = "LeftUpperArm", offset = Vector3.new(0, 0, 0)},
+        {part = "RightUpperArm", offset = Vector3.new(0, 0, 0)}
     }
     
-    -- Verificación multidireccional
-    for _, offset in ipairs(checkPoints) do
-        local checkPosition = targetPosition + offset
-        local checkDirection = (checkPosition - origin).Unit
-        local checkDistance = (checkPosition - origin).Magnitude
-        
-        local raycastResult = Workspace:Raycast(origin, checkDirection * checkDistance, raycastParams)
-        
-        -- Si no hay obstáculos en esta dirección
-        if not raycastResult then
-            return true
-        end
-        
-        -- Si hay un obstáculo pero es parte del objetivo
-        if raycastResult.Instance:IsDescendantOf(targetPart.Parent) then
-            return true
+    -- Verificar múltiples puntos con prioridad estratégica
+    local visiblePoints = 0
+    local requiredPoints = 2  -- Requerir al menos 2 puntos visibles
+    
+    for _, pointData in ipairs(bodyPoints) do
+        local part = character:FindFirstChild(pointData.part)
+        if part then
+            local targetPosition = part.Position + pointData.offset
+            local direction = (targetPosition - origin).Unit
+            local distance = (targetPosition - origin).Magnitude
+            
+            local raycastResult = Workspace:Raycast(origin, direction * distance, raycastParams)
+            
+            if not raycastResult then
+                visiblePoints = visiblePoints + 1
+                if visiblePoints >= requiredPoints then
+                    return true
+                end
+            end
         end
     end
     
     return false
 end
 
--- Sistema avanzado de predicción de cabeza con protección
+-- Sistema avanzado de predicción de cabeza
 local function predictHeadPosition(target)
     if not target or target == LocalPlayer then return nil end
     
@@ -172,26 +185,25 @@ local function precisionAim()
         end
     end
     
-    -- Verificar visibilidad con el sistema profesional
-    local showNotification = false
+    -- Verificar visibilidad con sistema profesional
+    local isVisible = false
     if bestTarget and bestTarget.Character then
-        local head = bestTarget.Character:FindFirstChild("Head")
-        if head then
-            showNotification = isTargetVisible(head)
-        end
+        isVisible = isTargetVisible(bestTarget.Character)
     end
     
-    updateNotification(showNotification)
+    updateNotification(isVisible)
     
     if not bestTarget or not bestHeadPos then return end
     
-    -- Realizar el movimiento del mouse
-    local screenPos = Camera:WorldToViewportPoint(bestHeadPos)
-    local mousePos = UserInputService:GetMouseLocation()
-    local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
-    local delta = (targetScreenPos - mousePos)
-    
-    mousemoverel(delta.X * 0.7, delta.Y * 0.7)
+    -- Realizar el movimiento del mouse solo si el objetivo es visible
+    if isVisible then
+        local screenPos = Camera:WorldToViewportPoint(bestHeadPos)
+        local mousePos = UserInputService:GetMouseLocation()
+        local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
+        local delta = (targetScreenPos - mousePos)
+        
+        mousemoverel(delta.X * 0.7, delta.Y * 0.7)
+    end
 end
 
 -- Loop principal estable
@@ -235,5 +247,6 @@ return {
         if options.predictionFactor then predictionFactor = options.predictionFactor end
         if options.headOffset then headOffset = options.headOffset end
         if options.minTargetDistance then minTargetDistance = options.minTargetDistance end
+        if options.debounceTime then DEBOUNCE_TIME = options.debounceTime end
     end
 }
