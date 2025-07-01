@@ -17,10 +17,6 @@ local mouseButton2DownConnection
 local mouseButton2UpConnection
 local heartbeatConnection
 
--- Evitar ejecución duplicada
-if _G.megaAimbotLoaded then return end
-_G.megaAimbotLoaded = true
-
 -- Función para crear un Highlight en el enemigo
 local function highlightEnemy(enemy)
     if not enemy or not enemy.Character then return end
