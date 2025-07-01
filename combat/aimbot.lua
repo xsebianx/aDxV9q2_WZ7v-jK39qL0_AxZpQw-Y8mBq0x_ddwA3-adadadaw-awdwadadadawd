@@ -9,18 +9,17 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local predictionFactor = 0.18
 local minTargetDistance = 5
-local maxTargetDistance = 500
 local renderStepped
 local headOffset = Vector3.new(0, 0.2, 0)
-local mouse = LocalPlayer:GetMouse()
 
--- Sistema de notificación visual
+-- Sistema de notificación visual mejorado
 local notificationGui = nil
 local notificationFrame = nil
-local lastUpdateTime = 0
-local DEBOUNCE_TIME = 0.15  -- 150ms de persistencia visual
+local notificationLabel = nil
+local notificationIcon = nil
+local notificationStroke = nil
 
--- Crear notificación simple y confiable
+-- Crear notificación elegante
 local function createNotification()
     if notificationGui then return end
     
@@ -35,8 +34,8 @@ local function createNotification()
     notificationFrame.BackgroundColor3 = Color3.new(0, 0, 0)
     notificationFrame.BackgroundTransparency = 0.7
     notificationFrame.BorderSizePixel = 0
-    notificationFrame.Size = UDim2.new(0, 180, 0, 30)
-    notificationFrame.Position = UDim2.new(0.5, -90, 0.02, 0)
+    notificationFrame.Size = UDim2.new(0, 220, 0, 30)  -- Aumentamos el ancho para el nuevo texto
+    notificationFrame.Position = UDim2.new(0.5, -110, 0.02, 0)  -- Ajustamos la posición
     notificationFrame.Visible = false
     notificationFrame.Parent = notificationGui
     
@@ -45,43 +44,98 @@ local function createNotification()
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = notificationFrame
     
-    -- Borde fino
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.new(0, 1, 0)
-    stroke.Thickness = 1
-    stroke.Parent = notificationFrame
+    -- Borde fino (guardamos referencia para cambiar color)
+    notificationStroke = Instance.new("UIStroke")
+    notificationStroke.Color = Color3.new(0, 1, 0)  -- Verde por defecto
+    notificationStroke.Thickness = 1
+    notificationStroke.Parent = notificationFrame
     
-    -- Texto simple
-    local label = Instance.new("TextLabel")
-    label.Name = "Label"
-    label.Text = "OBJETIVO VISIBLE"
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.Font = Enum.Font.GothamMedium
-    label.TextSize = 14
-    label.BackgroundTransparency = 1
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.TextXAlignment = Enum.TextXAlignment.Center
-    label.Parent = notificationFrame
+    -- Icono de objetivo (guardamos referencia)
+    notificationIcon = Instance.new("ImageLabel")
+    notificationIcon.Name = "Icon"
+    notificationIcon.Image = "rbxassetid://3926307971"
+    notificationIcon.ImageRectOffset = Vector2.new(324, 364)
+    notificationIcon.ImageRectSize = Vector2.new(36, 36)
+    notificationIcon.Size = UDim2.new(0, 20, 0, 20)
+    notificationIcon.Position = UDim2.new(0, 5, 0.5, -10)
+    notificationIcon.BackgroundTransparency = 1
+    notificationIcon.ImageColor3 = Color3.new(0, 1, 0)  -- Verde por defecto
+    notificationIcon.Parent = notificationFrame
+    
+    -- Texto elegante (guardamos referencia)
+    notificationLabel = Instance.new("TextLabel")
+    notificationLabel.Name = "Label"
+    notificationLabel.Text = "OBJETIVO VISIBLE"
+    notificationLabel.TextColor3 = Color3.new(1, 1, 1)
+    notificationLabel.Font = Enum.Font.GothamMedium
+    notificationLabel.TextSize = 14
+    notificationLabel.BackgroundTransparency = 1
+    notificationLabel.Size = UDim2.new(0, 160, 1, 0)
+    notificationLabel.Position = UDim2.new(0, 30, 0, 0)
+    notificationLabel.TextXAlignment = Enum.TextXAlignment.Left
+    notificationLabel.Parent = notificationFrame
 end
 
--- Actualizar notificación con sistema simple
-local function updateNotification(visible)
+-- Actualizar notificación con estado: "visible", "not_visible", o nil (ocultar)
+local function updateNotification(state)
     if not notificationFrame then return end
     
-    local currentTime = os.clock()
+    if state == nil then
+        notificationFrame.Visible = false
+        return
+    end
     
-    if visible then
-        lastUpdateTime = currentTime
-        notificationFrame.UIStroke.Color = Color3.new(0, 1, 0)
-        notificationFrame.Visible = true
-    else
-        if currentTime - lastUpdateTime > DEBOUNCE_TIME then
-            notificationFrame.Visible = false
-        end
+    notificationFrame.Visible = true
+    
+    if state == "visible" then
+        notificationLabel.Text = "OBJETIVO VISIBLE"
+        notificationIcon.ImageColor3 = Color3.new(0, 1, 0)  -- Verde
+        notificationStroke.Color = Color3.new(0, 1, 0)     -- Verde
+    elseif state == "not_visible" then
+        notificationLabel.Text = "OBJETIVO NO VISIBLE"
+        notificationIcon.ImageColor3 = Color3.new(1, 0, 0)  -- Rojo
+        notificationStroke.Color = Color3.new(1, 0, 0)      -- Rojo
     end
 end
 
--- Sistema de predicción optimizado
+-- Verificar visibilidad real del objetivo con detección de obstáculos
+local function isTargetVisible(part)
+    if not part then return false end
+    
+    local origin = Camera.CFrame.Position
+    local direction = (part.Position - origin).Unit
+    local distance = (part.Position - origin).Magnitude
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+    raycastParams.IgnoreWater = true
+    
+    local result = Workspace:Raycast(origin, direction * distance, raycastParams)
+    
+    -- Si hay resultado, hay un obstáculo
+    if result then
+        -- Verificamos si el obstáculo está en el mismo equipo que el objetivo
+        local hitPart = result.Instance
+        local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+        
+        -- Si el obstáculo es parte del objetivo, no cuenta como obstáculo
+        if hitModel == part:FindFirstAncestorOfClass("Model") then
+            return true
+        end
+        
+        -- Si el obstáculo es transparente, no cuenta como obstáculo
+        if hitPart.Transparency > 0.5 then
+            return true
+        end
+        
+        return false
+    end
+    
+    return true
+end
+
+-- Sistema avanzado de predicción de cabeza con protección (AIMBOT ORIGINAL)
 local function predictHeadPosition(target)
     if not target or target == LocalPlayer then return nil end
     
@@ -91,51 +145,22 @@ local function predictHeadPosition(target)
     local head = character:FindFirstChild("Head")
     if not head then return nil end
     
-    -- Calcular distancia
+    -- Calcular distancia al jugador local
     local distance = (head.Position - Camera.CFrame.Position).Magnitude
-    if distance < minTargetDistance or distance > maxTargetDistance then return nil end
+    if distance < minTargetDistance then return nil end
     
-    -- Calcular velocidad y predecir
+    -- Calcular velocidad real
     local velocity = head.AssemblyLinearVelocity
+    
+    -- Predecir posición futura
     return head.Position + (velocity * predictionFactor) + headOffset
 end
 
--- Sistema de detección de visibilidad confiable
-local function isTargetVisible(target)
-    if not target or not target.Character then return false end
-    
-    local head = target.Character:FindFirstChild("Head")
-    if not head then return false end
-    
-    local origin = Camera.CFrame.Position
-    local targetPos = head.Position
-    local direction = (targetPos - origin).Unit
-    local distance = (targetPos - origin).Magnitude
-    
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
-    raycastParams.IgnoreWater = true
-    
-    local raycastResult = Workspace:Raycast(origin, direction * distance, raycastParams)
-    
-    -- Verificar si el rayo golpea al objetivo
-    if raycastResult then
-        local hitPart = raycastResult.Instance
-        return hitPart and hitPart:IsDescendantOf(target.Character)
-    end
-    
-    return true
-end
-
--- Sistema de seguimiento optimizado
+-- Sistema de seguimiento mejorado (AIMBOT ORIGINAL)
 local function precisionAim()
     local bestTarget = nil
     local bestHeadPos = nil
     local minScreenDistance = math.huge
-    local isVisible = false
-    
-    local mousePos = UserInputService:GetMouseLocation()
     
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
@@ -143,12 +168,12 @@ local function precisionAim()
         local headPos = predictHeadPosition(player)
         if not headPos then continue end
         
-        local screenPos, onScreen = Camera:WorldToViewportPoint(headPos)
-        if not onScreen or screenPos.Z < 0 then continue end
+        local screenPos = Camera:WorldToViewportPoint(headPos)
+        if screenPos.Z < 0 then continue end
         
-        -- Calcular distancia en pantalla
-        local screenPoint = Vector2.new(screenPos.X, screenPos.Y)
-        local screenDistance = (screenPoint - mousePos).Magnitude
+        -- Calcular distancia desde el centro de la pantalla
+        local mousePos = UserInputService:GetMouseLocation()
+        local screenDistance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
         
         if screenDistance < minScreenDistance then
             minScreenDistance = screenDistance
@@ -157,44 +182,54 @@ local function precisionAim()
         end
     end
     
-    -- Verificar visibilidad solo para el mejor objetivo
-    if bestTarget then
-        isVisible = isTargetVisible(bestTarget)
-        updateNotification(isVisible)
+    -- ACTUALIZACIÓN: Verificar visibilidad con detección de obstáculos
+    if bestTarget and bestTarget.Character then
+        local head = bestTarget.Character:FindFirstChild("Head")
+        if head then
+            local visible = isTargetVisible(head)
+            if visible then
+                updateNotification("visible")
+            else
+                updateNotification("not_visible")
+            end
+        else
+            updateNotification(nil)
+        end
     else
-        updateNotification(false)
+        updateNotification(nil)
     end
     
-    -- Aplicar aimbot solo si hay objetivo visible
-    if bestTarget and bestHeadPos and isVisible then
-        local screenPos = Camera:WorldToViewportPoint(bestHeadPos)
-        local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
-        local delta = (targetScreenPos - mousePos)
-        
-        -- Mover el mouse de forma segura
-        pcall(function()
-            mousemoverel(delta.X * 0.7, delta.Y * 0.7)
-        end)
-    end
+    if not bestTarget or not bestHeadPos then return end
+    
+    -- Realizar el movimiento del mouse
+    local screenPos = Camera:WorldToViewportPoint(bestHeadPos)
+    local mousePos = UserInputService:GetMouseLocation()
+    local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
+    local delta = (targetScreenPos - mousePos)
+    
+    mousemoverel(delta.X * 0.7, delta.Y * 0.7)
 end
 
--- Loop principal simplificado
-local function mainLoop()
+-- Loop principal estable
+local function stableLoop()
     if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
         precisionAim()
     else
-        updateNotification(false)
+        updateNotification(nil)
     end
 end
 
 -- API para el hub
 return {
     activate = function()
+        -- Configuración profesional
+        predictionFactor = 0.15
+        
+        -- Crear notificación
         createNotification()
         
         if not renderStepped then
-            renderStepped = RunService.RenderStepped:Connect(mainLoop)
-            print("Aimbot activado correctamente")
+            renderStepped = RunService.RenderStepped:Connect(stableLoop)
         end
     end,
     
@@ -202,13 +237,16 @@ return {
         if renderStepped then
             renderStepped:Disconnect()
             renderStepped = nil
-            print("Aimbot desactivado")
         end
         
+        -- Eliminar notificación
         if notificationGui then
             notificationGui:Destroy()
             notificationGui = nil
             notificationFrame = nil
+            notificationLabel = nil
+            notificationIcon = nil
+            notificationStroke = nil
         end
     end,
     
@@ -216,7 +254,5 @@ return {
         if options.predictionFactor then predictionFactor = options.predictionFactor end
         if options.headOffset then headOffset = options.headOffset end
         if options.minTargetDistance then minTargetDistance = options.minTargetDistance end
-        if options.maxTargetDistance then maxTargetDistance = options.maxTargetDistance end
-        print("Configuración actualizada:", options)
     end
 }
