@@ -6,7 +6,7 @@
   "temporary": [
     {
       "hwid": "HWID_TEMPORAL_1",
-      "expires": 1735689600  // Fecha de expiración en timestamp Unix
+      "expires": 1735689600 " 
     }
   ]
 }
