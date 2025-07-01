@@ -12,14 +12,13 @@ local minTargetDistance = 5
 local renderStepped
 local headOffset = Vector3.new(0, 0.2, 0)
 
--- Sistema de notificación visual mejorado
+-- Sistema de notificación visual
 local notificationGui = nil
 local notificationFrame = nil
-local lastVisibleState = false
-local visibilityDebounce = 0
-local DEBOUNCE_TIME = 0.2  -- 200ms de persistencia visual
+local lastUpdateTime = 0
+local DEBOUNCE_TIME = 0.15  -- 150ms de persistencia visual
 
--- Crear notificación elegante
+-- Crear notificación simple y confiable
 local function createNotification()
     if notificationGui then return end
     
@@ -50,19 +49,7 @@ local function createNotification()
     stroke.Thickness = 1
     stroke.Parent = notificationFrame
     
-    -- Icono de objetivo
-    local icon = Instance.new("ImageLabel")
-    icon.Name = "Icon"
-    icon.Image = "rbxassetid://3926307971"
-    icon.ImageRectOffset = Vector2.new(324, 364)
-    icon.ImageRectSize = Vector2.new(36, 36)
-    icon.Size = UDim2.new(0, 20, 0, 20)
-    icon.Position = UDim2.new(0, 5, 0.5, -10)
-    icon.BackgroundTransparency = 1
-    icon.ImageColor3 = Color3.new(0, 1, 0)
-    icon.Parent = notificationFrame
-    
-    -- Texto elegante
+    -- Texto simple
     local label = Instance.new("TextLabel")
     label.Name = "Label"
     label.Text = "OBJETIVO VISIBLE"
@@ -70,75 +57,29 @@ local function createNotification()
     label.Font = Enum.Font.GothamMedium
     label.TextSize = 14
     label.BackgroundTransparency = 1
-    label.Size = UDim2.new(0, 120, 1, 0)
-    label.Position = UDim2.new(0, 30, 0, 0)
-    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.TextXAlignment = Enum.TextXAlignment.Center
     label.Parent = notificationFrame
 end
 
--- Actualizar notificación con persistencia
+-- Actualizar notificación con sistema simple
 local function updateNotification(visible)
     if not notificationFrame then return end
     
-    -- Sistema de persistencia para evitar parpadeos
     local currentTime = os.clock()
+    
     if visible then
-        lastVisibleState = true
-        visibilityDebounce = currentTime + DEBOUNCE_TIME
+        lastUpdateTime = currentTime
+        notificationFrame.UIStroke.Color = Color3.new(0, 1, 0)
         notificationFrame.Visible = true
-    elseif currentTime > visibilityDebounce then
-        lastVisibleState = false
-        notificationFrame.Visible = false
     else
-        notificationFrame.Visible = true
-    end
-end
-
--- Sistema profesional de detección de visibilidad
-local function isTargetVisible(character)
-    if not character then return false end
-    
-    local origin = Camera.CFrame.Position
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
-    raycastParams.IgnoreWater = true
-
-    -- Puntos estratégicos del cuerpo
-    local bodyPoints = {
-        {part = "Head", offset = Vector3.new(0, 0.5, 0)},
-        {part = "UpperTorso", offset = Vector3.new(0, 0.5, 0)},
-        {part = "HumanoidRootPart", offset = Vector3.new(0, 1.5, 0)},
-        {part = "LeftUpperArm", offset = Vector3.new(0, 0, 0)},
-        {part = "RightUpperArm", offset = Vector3.new(0, 0, 0)}
-    }
-    
-    -- Verificar múltiples puntos con prioridad estratégica
-    local visiblePoints = 0
-    local requiredPoints = 2  -- Requerir al menos 2 puntos visibles
-    
-    for _, pointData in ipairs(bodyPoints) do
-        local part = character:FindFirstChild(pointData.part)
-        if part then
-            local targetPosition = part.Position + pointData.offset
-            local direction = (targetPosition - origin).Unit
-            local distance = (targetPosition - origin).Magnitude
-            
-            local raycastResult = Workspace:Raycast(origin, direction * distance, raycastParams)
-            
-            if not raycastResult then
-                visiblePoints = visiblePoints + 1
-                if visiblePoints >= requiredPoints then
-                    return true
-                end
-            end
+        if currentTime - lastUpdateTime > DEBOUNCE_TIME then
+            notificationFrame.Visible = false
         end
     end
-    
-    return false
 end
 
--- Sistema avanzado de predicción de cabeza
+-- Sistema de predicción optimizado
 local function predictHeadPosition(target)
     if not target or target == LocalPlayer then return nil end
     
@@ -148,22 +89,45 @@ local function predictHeadPosition(target)
     local head = character:FindFirstChild("Head")
     if not head then return nil end
     
-    -- Calcular distancia al jugador local
+    -- Calcular distancia
     local distance = (head.Position - Camera.CFrame.Position).Magnitude
     if distance < minTargetDistance then return nil end
     
-    -- Calcular velocidad real
+    -- Calcular velocidad y predecir
     local velocity = head.AssemblyLinearVelocity
-    
-    -- Predecir posición futura
     return head.Position + (velocity * predictionFactor) + headOffset
 end
 
--- Sistema de seguimiento mejorado
+-- Sistema de detección de visibilidad confiable
+local function isTargetVisible(target)
+    if not target or not target.Character then return false end
+    
+    local head = target.Character:FindFirstChild("Head")
+    if not head then return false end
+    
+    local origin = Camera.CFrame.Position
+    local targetPos = head.Position
+    local direction = (targetPos - origin).Unit
+    local distance = (targetPos - origin).Magnitude
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+    raycastParams.IgnoreWater = true
+    
+    local raycastResult = Workspace:Raycast(origin, direction * distance, raycastParams)
+    
+    return not raycastResult
+end
+
+-- Sistema de seguimiento optimizado
 local function precisionAim()
     local bestTarget = nil
     local bestHeadPos = nil
     local minScreenDistance = math.huge
+    local isVisible = false
+    
+    local mousePos = UserInputService:GetMouseLocation()
     
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
@@ -174,9 +138,9 @@ local function precisionAim()
         local screenPos = Camera:WorldToViewportPoint(headPos)
         if screenPos.Z < 0 then continue end
         
-        -- Calcular distancia desde el centro de la pantalla
-        local mousePos = UserInputService:GetMouseLocation()
-        local screenDistance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+        -- Calcular distancia en pantalla
+        local screenPoint = Vector2.new(screenPos.X, screenPos.Y)
+        local screenDistance = (screenPoint - mousePos).Magnitude
         
         if screenDistance < minScreenDistance then
             minScreenDistance = screenDistance
@@ -185,20 +149,17 @@ local function precisionAim()
         end
     end
     
-    -- Verificar visibilidad con sistema profesional
-    local isVisible = false
-    if bestTarget and bestTarget.Character then
-        isVisible = isTargetVisible(bestTarget.Character)
+    -- Verificar visibilidad solo para el mejor objetivo
+    if bestTarget then
+        isVisible = isTargetVisible(bestTarget)
+        updateNotification(isVisible)
+    else
+        updateNotification(false)
     end
     
-    updateNotification(isVisible)
-    
-    if not bestTarget or not bestHeadPos then return end
-    
-    -- Realizar el movimiento del mouse solo si el objetivo es visible
-    if isVisible then
+    -- Aplicar aimbot solo si hay objetivo visible
+    if bestTarget and bestHeadPos and isVisible then
         local screenPos = Camera:WorldToViewportPoint(bestHeadPos)
-        local mousePos = UserInputService:GetMouseLocation()
         local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
         local delta = (targetScreenPos - mousePos)
         
@@ -206,8 +167,8 @@ local function precisionAim()
     end
 end
 
--- Loop principal estable
-local function stableLoop()
+-- Loop principal simplificado
+local function mainLoop()
     if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
         precisionAim()
     else
@@ -218,14 +179,10 @@ end
 -- API para el hub
 return {
     activate = function()
-        -- Configuración profesional
-        predictionFactor = 0.15
-        
-        -- Crear notificación
         createNotification()
         
         if not renderStepped then
-            renderStepped = RunService.RenderStepped:Connect(stableLoop)
+            renderStepped = RunService.RenderStepped:Connect(mainLoop)
         end
     end,
     
@@ -235,7 +192,6 @@ return {
             renderStepped = nil
         end
         
-        -- Eliminar notificación
         if notificationGui then
             notificationGui:Destroy()
             notificationGui = nil
@@ -247,6 +203,5 @@ return {
         if options.predictionFactor then predictionFactor = options.predictionFactor end
         if options.headOffset then headOffset = options.headOffset end
         if options.minTargetDistance then minTargetDistance = options.minTargetDistance end
-        if options.debounceTime then DEBOUNCE_TIME = options.debounceTime end
     end
 }
