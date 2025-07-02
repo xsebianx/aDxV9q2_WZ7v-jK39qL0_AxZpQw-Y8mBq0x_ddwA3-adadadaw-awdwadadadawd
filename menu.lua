@@ -33,7 +33,7 @@ local CONFIG = {
     },
     ShadowIntensity = 0.6,
     AnimationSpeed = 0.25,
-    ScriptBaseURL = "https://raw.githubusercontent.com/xsebianx/awdadadawwadwadabadBVWBRwqddadda-adadadaw-awdwadadadawd/main/"
+    ScriptBaseURL = "https://raw.githubusercontent.com/xsebianx/aDxV9q2_WZ7v-jK39qL0_AxZpQw-Y8mBq0x_ddwA3-adadadaw-awdwadadadawd/main/"
 }
 
 -- CÓDIGO DEL TELEPORT MENU INTEGRADO ------------------------------------------
