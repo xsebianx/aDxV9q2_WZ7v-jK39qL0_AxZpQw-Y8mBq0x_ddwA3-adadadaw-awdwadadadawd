@@ -1,9 +1,9 @@
 {
   "permanent": [
-    "AAB7483D-46CC-4A5D-9C02-BDE9C6184349"
+    "TEMPO-5678s"
   ],
   "temporary": {
-    "TEMPO-1234": "2025-12-31",
+    "TEMPO-5678s": "2025-12-31",
     "TEMPO-5678": "2025-06-30"
   },
   "version": "2.0"
