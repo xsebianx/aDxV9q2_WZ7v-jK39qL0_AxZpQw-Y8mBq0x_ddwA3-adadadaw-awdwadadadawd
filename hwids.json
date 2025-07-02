@@ -1,15 +1,8 @@
 {
-  "permanent": [
-    "HWID_PERMANENTE_1",
-    "HWID_PERMANENTE_2"
-  ],
+  "permanent": ["HWID_PERMANENTE_1"],
   "temporary": [
     {
       "hwid": "AAB7483D-46CC-4A5D-9C02-BDE9C6184349",
-      "expires": 1735689600
-    },
-    {
-      "hwid": "HWID_TEMPORAL_2",
       "expires": 1750000000
     }
   ]
