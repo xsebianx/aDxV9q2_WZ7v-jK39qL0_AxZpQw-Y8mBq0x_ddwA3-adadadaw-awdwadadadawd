@@ -695,7 +695,7 @@ end
 local function loadScript(category, scriptName)
     local url = CONFIG.ScriptBaseURL..category:lower().."/"..scriptName:lower()..".lua"
     
-    print("[DRAKHUB] Intentando cargar script: "..url)
+    print("[DRAKHUB] Intentando cargar script: ")
     
     local success, result = pcall(function()
         -- Intento 1: Usar loadstring
