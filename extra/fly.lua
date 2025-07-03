@@ -23,28 +23,65 @@ local inputConnection = nil
 local screenGui = nil
 local statusFrame = nil
 
+-- Función para obtener el jugador local de forma segura
+local function getLocalPlayer()
+    local maxAttempts = 10
+    for i = 1, maxAttempts do
+        local player = Players.LocalPlayer
+        if player then return player end
+        task.wait(0.2)
+    end
+    return nil
+end
+
+-- Función para obtener el root part de forma segura
+local function getRootPart(character)
+    if not character then return nil end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if rootPart then return rootPart end
+    
+    rootPart = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+    return rootPart
+end
+
 -- API de vuelo mejorada
 local FlyAPI = {
     active = false,
     
-    activate = function()
-        if FlyAPI.active then return end
-        FlyAPI.active = true
-        flyEnabled = true
+    activate = function(self)
+        if self.active then return end
         
-        -- Obtener LocalPlayer con verificación en tiempo real
-        local player = Players.LocalPlayer
-        while not player do
-            task.wait(0.1)
-            player = Players.LocalPlayer
+        -- Obtener jugador local con reintentos
+        local player = getLocalPlayer()
+        if not player then
+            warn("[Fly] Error: No se pudo obtener LocalPlayer")
+            return
         end
+        
+        self.active = true
+        flyEnabled = true
         
         -- Crear interfaz si no existe
         if not screenGui then
             screenGui = Instance.new("ScreenGui")
-            screenGui.Parent = player:WaitForChild("PlayerGui")
             screenGui.Name = "FlightStatus"
             screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            
+            -- Esperar por PlayerGui
+            task.spawn(function()
+                local playerGui = player:FindFirstChild("PlayerGui")
+                if not playerGui then
+                    playerGui = player:WaitForChild("PlayerGui", 5)
+                end
+                
+                if playerGui then
+                    screenGui.Parent = playerGui
+                else
+                    warn("[Fly] Error: No se encontró PlayerGui")
+                    return
+                end
+            end)
 
             statusFrame = Instance.new("Frame")
             statusFrame.Size = UDim2.new(0, 280, 0, 80)
@@ -111,9 +148,9 @@ local FlyAPI = {
         inputConnection = UserInputService.InputBegan:Connect(onInput)
     end,
     
-    deactivate = function()
-        if not FlyAPI.active then return end
-        FlyAPI.active = false
+    deactivate = function(self)
+        if not self.active then return end
+        self.active = false
         flyEnabled = false
         
         -- Limpiar conexiones
@@ -133,35 +170,30 @@ local FlyAPI = {
         end
         
         -- Restablecer la velocidad del personaje
-        local player = Players.LocalPlayer
+        local player = getLocalPlayer()
         if player and player.Character then
-            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            local rootPart = getRootPart(player.Character)
             if rootPart then
                 rootPart.Velocity = Vector3.new(0, 0, 0)
+                rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             end
         end
     end
 }
 
--- Sistema de boost mejorado con variabilidad
+-- Sistema de boost
 local function applyBoost()
     if not isBoosting then return end
     
-    -- Aplicar boost con variación aleatoria para evitar detección
-    local variation = math.random(-3, 3)
-    local targetSpeed = BOOST_SPEED + variation
-    
-    -- Transición suave
-    TweenService:Create(script, TweenInfo.new(0.3), {
-        currentSpeed = targetSpeed
-    }):Play()
+    -- Aplicar boost con variación aleatoria
+    currentSpeed = BOOST_SPEED + math.random(-3, 3)
 end
 
 -- Manejo de entrada de usuario
 local function onInput(input, gameProcessed)
     if gameProcessed then return end
     
-    -- Manejar boost con variabilidad
+    -- Manejar boost
     if input.KeyCode == BOOST_KEY then
         isBoosting = true
         applyBoost()
@@ -172,10 +204,10 @@ end
 local function updateFlight(dt)
     if not flyEnabled then return end
 
-    local player = Players.LocalPlayer
+    local player = getLocalPlayer()
     if not player or not player.Character then return end
 
-    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    local rootPart = getRootPart(player.Character)
     if not rootPart then return end
     
     -- Detener boost si se suelta la tecla
