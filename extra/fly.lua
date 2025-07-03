@@ -23,26 +23,26 @@ local inputConnection = nil
 local screenGui = nil
 local statusFrame = nil
 
--- API de vuelo
+-- API de vuelo mejorada
 local FlyAPI = {
     active = false,
     
-    activate = function(self)
-        if self.active then return end
-        self.active = true
+    activate = function()
+        if FlyAPI.active then return end
+        FlyAPI.active = true
         flyEnabled = true
         
-        -- Obtener LocalPlayer de forma segura
-        local LocalPlayer = Players.LocalPlayer
-        if not LocalPlayer then
-            warn("Fly: LocalPlayer no disponible")
-            return
+        -- Obtener LocalPlayer con verificación en tiempo real
+        local player = Players.LocalPlayer
+        while not player do
+            task.wait(0.1)
+            player = Players.LocalPlayer
         end
         
         -- Crear interfaz si no existe
         if not screenGui then
             screenGui = Instance.new("ScreenGui")
-            screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+            screenGui.Parent = player:WaitForChild("PlayerGui")
             screenGui.Name = "FlightStatus"
             screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -111,9 +111,9 @@ local FlyAPI = {
         inputConnection = UserInputService.InputBegan:Connect(onInput)
     end,
     
-    deactivate = function(self)
-        if not self.active then return end
-        self.active = false
+    deactivate = function()
+        if not FlyAPI.active then return end
+        FlyAPI.active = false
         flyEnabled = false
         
         -- Limpiar conexiones
@@ -133,11 +133,11 @@ local FlyAPI = {
         end
         
         -- Restablecer la velocidad del personaje
-        local LocalPlayer = Players.LocalPlayer
-        if LocalPlayer and LocalPlayer.Character then
-            local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local player = Players.LocalPlayer
+        if player and player.Character then
+            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
             if rootPart then
-                rootPart.Velocity = Vector3.new(0,0,0)
+                rootPart.Velocity = Vector3.new(0, 0, 0)
             end
         end
     end
@@ -172,10 +172,10 @@ end
 local function updateFlight(dt)
     if not flyEnabled then return end
 
-    local LocalPlayer = Players.LocalPlayer
-    if not LocalPlayer or not LocalPlayer.Character then return end
+    local player = Players.LocalPlayer
+    if not player or not player.Character then return end
 
-    local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return end
     
     -- Detener boost si se suelta la tecla
