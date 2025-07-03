@@ -8,7 +8,6 @@ local BOOST_SPEED = 40
 local VERTICAL_SPEED = 25
 local SMOOTHNESS = 0.2
 local BOOST_KEY = Enum.KeyCode.LeftControl
-local ACTIVATION_KEY = Enum.KeyCode.F
 
 -- Estado del vuelo
 local flyEnabled = false
@@ -192,25 +191,6 @@ local function updateFlight(dt)
     rootPart.Velocity = flyVelocity + velocityVariation
 end
 
--- API para control externo
-local FlyAPI = {
-    isActive = function()
-        return flyEnabled
-    end,
-    
-    activate = function()
-        if not flyEnabled then
-            toggleFlight()
-        end
-    end,
-    
-    deactivate = function()
-        if flyEnabled then
-            toggleFlight()
-        end
-    end
-}
-
 -- Función para alternar el estado de vuelo
 local function toggleFlight()
     flyEnabled = not flyEnabled
@@ -243,13 +223,28 @@ local function toggleFlight()
     end
 end
 
--- Manejo de entrada (modificado para usar toggleFlight)
+-- API para control externo
+local FlyAPI = {
+    isActive = function()
+        return flyEnabled
+    end,
+    
+    activate = function()
+        if not flyEnabled then
+            toggleFlight()
+        end
+    end,
+    
+    deactivate = function()
+        if flyEnabled then
+            toggleFlight()
+        end
+    end
+}
+
+-- Manejo de entrada (solo para boost)
 local function onInput(input, gameProcessed)
     if gameProcessed then return end
-    
-    if input.KeyCode == ACTIVATION_KEY then
-        toggleFlight()
-    end
     
     -- Manejar boost solo cuando el vuelo está activo
     if flyEnabled and input.KeyCode == BOOST_KEY then
