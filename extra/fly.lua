@@ -1,7 +1,6 @@
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local TweenService = game:GetService("TweenService")
 
@@ -32,6 +31,13 @@ local FlyAPI = {
         if self.active then return end
         self.active = true
         flyEnabled = true
+        
+        -- Obtener LocalPlayer de forma segura
+        local LocalPlayer = Players.LocalPlayer
+        if not LocalPlayer then
+            warn("Fly: LocalPlayer no disponible")
+            return
+        end
         
         -- Crear interfaz si no existe
         if not screenGui then
@@ -127,7 +133,8 @@ local FlyAPI = {
         end
         
         -- Restablecer la velocidad del personaje
-        if LocalPlayer.Character then
+        local LocalPlayer = Players.LocalPlayer
+        if LocalPlayer and LocalPlayer.Character then
             local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if rootPart then
                 rootPart.Velocity = Vector3.new(0,0,0)
@@ -163,7 +170,10 @@ end
 
 -- Función para actualizar el vuelo
 local function updateFlight(dt)
-    if not flyEnabled or not LocalPlayer.Character then return end
+    if not flyEnabled then return end
+
+    local LocalPlayer = Players.LocalPlayer
+    if not LocalPlayer or not LocalPlayer.Character then return end
 
     local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return end
