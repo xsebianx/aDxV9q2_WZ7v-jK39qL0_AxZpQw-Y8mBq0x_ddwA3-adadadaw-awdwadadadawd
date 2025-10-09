@@ -1,4 +1,4 @@
--- aimbot.txtxxx
+-- aimbot.txt
 -- ADVERTENCIA: Este es un script de trampa. Usarlo puede resultar en un baneo permanente.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de programación en Lua.
 
@@ -19,12 +19,16 @@ local smoothingFactor = 0.3 -- Suavizado del movimiento (0=insta, 1=muy lento)
 local humanizationEnabled = true -- Para hacer el movimiento más humano
 local renderStepped
 local keybindConnection
+local playerRemovingConnection -- Para limpiar datos
 local headOffset = Vector3.new(0, 0.2, 0)
 local lastDelta = Vector2.new(0, 0)
 
 -- Sistema de caché para optimización
 local playerCache = {}
 local cacheTimeout = 0.5 -- segundos
+
+-- === NUEVO: Tabla para datos personalizados del jugador ===
+local playerData = {}
 
 -- Sistema de notificación visual mejorado
 local notificationGui = nil
@@ -172,7 +176,7 @@ local function isTargetVisible(character)
     return visiblePoints >= 2
 end
 
--- Sistema de predicción de segundo orden (mejorado)
+-- Sistema de predicción de segundo orden (CORREGIDO)
 local function advancedPrediction(target)
     if not target or target == LocalPlayer then return nil end
     local character = target.Character
@@ -183,20 +187,29 @@ local function advancedPrediction(target)
     local distance = (head.Position - Camera.CFrame.Position).Magnitude
     if distance < minTargetDistance then return nil end
     
-    if not target.PositionHistory then target.PositionHistory = {} end
+    -- === CORRECCIÓN AQUÍ ===
+    -- Asegurarse de que la tabla de datos para este jugador exista
+    if not playerData[target.UserId] then
+        playerData[target.UserId] = {}
+    end
+    if not playerData[target.UserId].PositionHistory then
+        playerData[target.UserId].PositionHistory = {}
+    end
     
-    table.insert(target.PositionHistory, {position = head.Position, time = tick()})
-    if #target.PositionHistory > 5 then table.remove(target.PositionHistory, 1) end
+    local history = playerData[target.UserId].PositionHistory
     
-    if #target.PositionHistory >= 2 then
-        local newest = target.PositionHistory[#target.PositionHistory]
-        local oldest = target.PositionHistory[#target.PositionHistory - 1]
+    table.insert(history, {position = head.Position, time = tick()})
+    if #history > 5 then table.remove(history, 1) end
+    
+    if #history >= 2 then
+        local newest = history[#history]
+        local oldest = history[#history - 1]
         local timeDiff = newest.time - oldest.time
         local velocity = (newest.position - oldest.position) / timeDiff
         
-        if #target.PositionHistory >= 3 then
-            local mid = target.PositionHistory[#target.PositionHistory - 1]
-            local oldest = target.PositionHistory[#target.PositionHistory - 2]
+        if #history >= 3 then
+            local mid = history[#history - 1]
+            local oldest = history[#history - 2]
             local oldVelocity = (mid.position - oldest.position) / (mid.time - oldest.time)
             local acceleration = (velocity - oldVelocity) / timeDiff
             
@@ -223,12 +236,16 @@ local function calculateThreatLevel(player)
     local threatLevel = math.max(0, 100 - distance)
     
     -- Factor si me está apuntando (cálculo simple con producto escalar)
-    local lookVector = character.HumanoidRootPart.CFrame.LookVector
-    local toPlayerVector = (LocalPlayer.Character.HumanoidRootPart.Position - character.HumanoidRootPart.Position).Unit
-    local dotProduct = lookVector:Dot(toPlayerVector)
-    
-    if dotProduct > 0.8 then -- Si está mirando aproximadamente hacia mí
-        threatLevel = threatLevel + 30
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    local myRootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if rootPart and myRootPart then
+        local lookVector = rootPart.CFrame.LookVector
+        local toPlayerVector = (myRootPart.Position - rootPart.Position).Unit
+        local dotProduct = lookVector:Dot(toPlayerVector)
+        
+        if dotProduct > 0.8 then -- Si está mirando aproximadamente hacia mí
+            threatLevel = threatLevel + 30
+        end
     end
     
     return math.min(100, threatLevel)
@@ -264,8 +281,7 @@ local function humanizeAim(targetScreenPos)
     smoothAim(targetScreenPos)
 end
 
--- === FUNCIÓNES DE CACHÉ (CORRECCIÓN APLICADA AQUÍ) ===
--- Funciones de caché
+-- === FUNCIÓNES DE CACHÉ ===
 local function isCacheValid(player)
     local cached = playerCache[player.UserId]
     return cached and (tick() - cached.timestamp) < cacheTimeout
@@ -487,6 +503,13 @@ return {
                 end
             end)
         end
+        -- === NUEVO: Conexión para limpiar datos de jugadores que se van ===
+        if not playerRemovingConnection then
+            playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
+                playerData[player.UserId] = nil
+                playerCache[player.UserId] = nil
+            end)
+        end
     end,
     
     deactivate = function()
@@ -498,6 +521,10 @@ return {
             keybindConnection:Disconnect()
             keybindConnection = nil
         end
+        if playerRemovingConnection then
+            playerRemovingConnection:Disconnect()
+            playerRemovingConnection = nil
+        end
         if notificationGui then
             notificationGui:Destroy()
             notificationGui = nil
@@ -506,12 +533,12 @@ return {
             configGui:Destroy()
             configGui = nil
         end
+        -- Limpiar todas las tablas al desactivar
         playerCache = {}
+        playerData = {}
     end,
     
     configure = function(options)
-        -- La configuración ahora se maneja a través de la GUI (tecla F2)
-        -- pero esta función se mantiene para compatibilidad.
         if options.predictionFactor then predictionFactor = options.predictionFactor end
         if options.headOffset then headOffset = options.headOffset end
         if options.minTargetDistance then minTargetDistance = options.minTargetDistance end
