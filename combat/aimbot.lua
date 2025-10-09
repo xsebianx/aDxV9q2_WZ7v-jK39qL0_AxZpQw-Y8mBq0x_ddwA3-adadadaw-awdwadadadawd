@@ -1,4 +1,4 @@
--- aimbot.txt
+-- aimbot.txtxxx
 -- ADVERTENCIA: Este es un script de trampa. Usarlo puede resultar en un baneo permanente.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de programación en Lua.
 
@@ -264,6 +264,19 @@ local function humanizeAim(targetScreenPos)
     smoothAim(targetScreenPos)
 end
 
+-- === FUNCIÓNES DE CACHÉ (CORRECCIÓN APLICADA AQUÍ) ===
+-- Funciones de caché
+local function isCacheValid(player)
+    local cached = playerCache[player.UserId]
+    return cached and (tick() - cached.timestamp) < cacheTimeout
+end
+
+local function updateCache(player, position)
+    if position then
+        playerCache[player.UserId] = {position = position, timestamp = tick()}
+    end
+end
+
 -- Sistema de seguimiento mejorado con FOV y puntuación
 local function precisionAim()
     local bestTarget = nil
@@ -334,18 +347,6 @@ local function stableLoop()
         precisionAim()
     else
         updateNotification(nil)
-    end
-end
-
--- Funciones de caché
-local function isCacheValid(player)
-    local cached = playerCache[player.UserId]
-    return cached and (tick() - cached.timestamp) < cacheTimeout
-end
-
-local function updateCache(player, position)
-    if position then
-        playerCache[player.UserId] = {position = position, timestamp = tick()}
     end
 end
 
