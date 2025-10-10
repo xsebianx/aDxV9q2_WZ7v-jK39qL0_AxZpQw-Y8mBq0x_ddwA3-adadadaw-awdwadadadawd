@@ -1,4 +1,4 @@
--- fly.txt
+-- fly.txtss
 -- ADVERTENCIA: Este script proporciona ventajas de movimiento que pueden ser consideradas trampas.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
@@ -6,17 +6,19 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 
 -- === CONFIGURACIÓN (AJUSTABLE DESDE EL MENÚ F3) ===
 local BASE_SPEED = 40
 local BOOST_SPEED = 80
 local VERTICAL_SPEED = 25
-local ACCELERATION = 50 -- Unidades/segundo^2 para la aceleración suave
-local BODY_MOVER_P = 5000 -- Potencia de los BodyMovers (más alto = más rígido)
+local ACCELERATION = 50
+-- CAMBIO CLAVE: Fuerza finita para evitar bugs de colisión
+local BODY_MOVER_FORCE = 4000 -- Una fuerza alta pero finita
 
 -- === TECLAS ===
 local BOOST_KEY = Enum.KeyCode.LeftControl
-local NOCLIP_KEY = Enum.KeyCode.B
+local NOCLIP_KEY = Enum.KeyCode.N
 local CONFIG_KEY = Enum.KeyCode.F3
 
 -- === ESTADO DEL VUELO ===
@@ -106,7 +108,6 @@ local function createUI()
     altitudeLabel.BackgroundTransparency = 1
     altitudeLabel.Parent = statusFrame
 
-    -- Barra de velocidad
     local speedBarFrame = Instance.new("Frame")
     speedBarFrame.Size = UDim2.new(0.8, 0, 0, 8)
     speedBarFrame.Position = UDim2.new(0.1, 0, 0.55, 0)
@@ -124,7 +125,6 @@ local function createUI()
     speedFill.Parent = speedBarFrame
     Instance.new("UICorner", speedFill).CornerRadius = UDim.new(0, 4)
 
-    -- Indicador de No-Clip
     noClipLabel = Instance.new("TextLabel")
     noClipLabel.Name = "NoClipLabel"
     noClipLabel.Size = UDim2.new(1, 0, 0, 20)
@@ -139,30 +139,26 @@ local function createUI()
     return statusFrame
 end
 
--- === FUNCIÓN PRINCIPAL DE VUELO (CORREGIDA PARA COLISIONES) ===
+-- === FUNCIÓN PRINCIPAL DE VUELO (CON SEGURIDAD DE COLISIONES) ===
 local function updateFlight(dt)
     if not flyEnabled or not rootPart or not bodyVelocity or not bodyGyro then return end
 
-    -- Actualizar referencias del personaje por si respawn
     character = player.Character
     if not character then return end
     rootPart = character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return end
 
-    -- Lógica de boost
     if isBoosting and not UserInputService:IsKeyDown(BOOST_KEY) then
         isBoosting = false
     end
     targetSpeed = isBoosting and BOOST_SPEED or BASE_SPEED
 
-    -- Sistema de aceleración suave
     if currentSpeed < targetSpeed then
         currentSpeed = math.min(currentSpeed + ACCELERATION * dt, targetSpeed)
     elseif currentSpeed > targetSpeed then
         currentSpeed = math.max(currentSpeed - ACCELERATION * dt, targetSpeed)
     end
     
-    -- Actualizar UI
     if statusFrame and statusFrame.Visible then
         local altitudeLabel = statusFrame:FindFirstChild("AltitudeLabel")
         if altitudeLabel then
@@ -174,7 +170,6 @@ local function updateFlight(dt)
         end
     end
     
-    -- Calcular dirección de movimiento
     local cameraCF = camera.CFrame
     local cameraLook = cameraCF.LookVector
     local horizontalLook = Vector3.new(cameraLook.X, 0, cameraLook.Z).Unit
@@ -185,12 +180,10 @@ local function updateFlight(dt)
     if UserInputService:IsKeyDown(Enum.KeyCode.A) then horizontalDirection -= cameraCF.RightVector end
     if UserInputService:IsKeyDown(Enum.KeyCode.D) then horizontalDirection += cameraCF.RightVector end
     
-    -- Control vertical
     local verticalDirection = 0
     if UserInputService:IsKeyDown(Enum.KeyCode.Space) then verticalDirection = VERTICAL_SPEED end
     if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then verticalDirection = -VERTICAL_SPEED end
     
-    -- Aplicar movimiento de forma más inteligente para evitar bugs de colisión
     local targetVelocity
     if horizontalDirection.Magnitude > 0 then
         horizontalDirection = horizontalDirection.Unit
@@ -201,52 +194,42 @@ local function updateFlight(dt)
     
     -- Aplicar la velocidad calculada con BodyMovers
     bodyVelocity.Velocity = targetVelocity
-    bodyGyro.CFrame = cameraCF -- Mantiene al personaje orientado a la cámara
+    bodyGyro.CFrame = cameraCF
 end
 
--- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (VERSIÓN FINAL) ===
+-- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (VERSIÓN FINAL Y CORREGIDA) ===
 local function toggleFlight()
     flyEnabled = not flyEnabled
     
     if flyEnabled then
-        -- Activar
         statusFrame.Visible = true
         
-        -- Crear BodyMovers
+        -- Crear BodyMovers con la nueva fuerza finita
         bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyVelocity.P = BODY_MOVER_P
+        bodyVelocity.MaxForce = Vector3.new(BODY_MOVER_FORCE, BODY_MOVER_FORCE, BODY_MOVER_FORCE)
+        bodyVelocity.P = 2500 -- Un poco menos de rigidez para que sea más suave
         bodyVelocity.Parent = rootPart
         
         bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-        bodyGyro.P = BODY_MOVER_P
+        bodyGyro.MaxTorque = Vector3.new(BODY_MOVER_FORCE, BODY_MOVER_FORCE, BODY_MOVER_FORCE)
+        bodyGyro.P = 2500
         bodyGyro.CFrame = camera.CFrame
         bodyGyro.Parent = rootPart
 
-        -- Iniciar loop
         if not flightConnection then
             flightConnection = RunService.Heartbeat:Connect(updateFlight)
         end
     else
-        -- Desactivar
         statusFrame.Visible = false
         
-        -- <<< INICIO DE LA DESACTIVACIÓN FINAL Y CORREGIDA >>>
-        
-        -- 1. Destruir los BodyMovers para devolver el control al Humanoid
+        -- Desactivar
         if bodyVelocity then bodyVelocity:Destroy(); bodyVelocity = nil end
         if bodyGyro then bodyGyro:Destroy(); bodyGyro = nil end
-
-        -- 2. ASEGURARSE DE QUE EL NO-CLIP ESTÉ DESACTIVADO AL ATERRIZAR
-        -- Esto es crucial para que el personaje no quede flotando si el usuario lo activó manualmente.
+        
         if noClipEnabled then
             setNoClip(false)
         end
         
-        -- <<< FIN DE LA DESACTIVACIÓN FINAL Y CORREGIDA >>>
-        
-        -- Limpiar conexión y resetear estado
         if flightConnection then
             flightConnection:Disconnect()
             flightConnection = nil
@@ -368,7 +351,6 @@ local function onInput(input, gameProcessed)
         isBoosting = true
     end
     if input.KeyCode == NOCLIP_KEY and flyEnabled then
-        -- El no-clip sigue siendo un toggle manual durante el vuelo
         setNoClip(not noClipEnabled)
     end
     if input.KeyCode == CONFIG_KEY then
@@ -381,10 +363,8 @@ local function onCharacterAdded(char)
     character = char
     rootPart = char:WaitForChild("HumanoidRootPart")
     
-    -- Si el vuelo estaba activo, reactivarlo para el nuevo personaje
     if flyEnabled then
-        -- Desactivar y reactivar para que se re-configure todo
-        flyEnabled = false -- Engañar a la función para que entre en modo de activación
+        flyEnabled = false
         toggleFlight()
     end
 end
@@ -394,7 +374,6 @@ local FlyAPI = {
     isActive = function() return flyEnabled end,
     activate = function()
         if not flyEnabled then toggleFlight() end
-        -- Conectar eventos
         if not inputBeganConnection then
             inputBeganConnection = UserInputService.InputBegan:Connect(onInput)
         end
@@ -404,7 +383,6 @@ local FlyAPI = {
     end,
     deactivate = function()
         if flyEnabled then toggleFlight() end
-        -- Desconectar eventos
         if inputBeganConnection then
             inputBeganConnection:Disconnect()
             inputBeganConnection = nil
@@ -431,9 +409,6 @@ task.spawn(function()
     end
 end)
 
-
--- Inicializar UI
 createUI()
 
--- Devolver la API
 return FlyAPI
