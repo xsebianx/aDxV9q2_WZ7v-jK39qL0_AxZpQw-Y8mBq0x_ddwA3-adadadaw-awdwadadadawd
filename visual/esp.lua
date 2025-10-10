@@ -1,4 +1,4 @@
--- esp.txt
+-- esp.txts
 -- ESP con Sistema de Color Avanzado (Selector RGB y Dinámico por Salud)
 -- ADVERTENCIA: Este script proporciona una ventaja injusta y es considerado trampa.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
