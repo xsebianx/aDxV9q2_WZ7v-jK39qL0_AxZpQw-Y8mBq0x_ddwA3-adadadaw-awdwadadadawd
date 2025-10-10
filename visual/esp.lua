@@ -1,9 +1,9 @@
--- esp.txtss
--- ESP Simple y Funcional
+-- esp.txt
+-- ESP con Cajas Precisas y Barra de Vida Moderna
 -- ADVERTENCIA: Este script proporciona una ventaja injusta y es considerado trampa.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
-local SimpleESP = {
+local ModernESP = {
     Enabled = false,
     Players = {},
     Settings = {
@@ -29,11 +29,11 @@ local Camera = workspace.CurrentCamera
 -- GUI de Configuración
 local configGui = nil
 local configFrame = nil
-local inputBeganConnection = nil -- Guardamos la conexión para poder desconectarla
+local inputBeganConnection = nil
 local CONFIG_KEY = Enum.KeyCode.F4
 
 -- Función para crear un ESP para un jugador
-function SimpleESP:Create(player)
+function ModernESP:Create(player)
     if self.Players[player] then return end
 
     local esp = {
@@ -52,13 +52,15 @@ function SimpleESP:Create(player)
         return drawing
     end
 
-    -- Caja
-    esp.BoxOutline = createDrawing("Square", { Thickness = 2, Color = Color3.new(0, 0, 0), Filled = false })
-    esp.Box = createDrawing("Square", { Thickness = 1, Color = self.Settings.EnemyColor, Filled = false })
+    -- Caja de Esquina (4 líneas)
+    esp.Corner1 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor })
+    esp.Corner2 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor })
+    esp.Corner3 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor })
+    esp.Corner4 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor })
 
-    -- Barra de salud
-    esp.HealthBarOutline = createDrawing("Square", { Thickness = 1, Color = Color3.new(0, 0, 0), Filled = false })
-    esp.HealthBar = createDrawing("Square", { Thickness = 1, Color = Color3.new(0, 1, 0), Filled = true })
+    -- NUEVA: Barra de Vida Moderna (Horizontal)
+    esp.HealthBarBg = createDrawing("Square", { Thickness = 0, Color = Color3.fromRGB(30, 30, 30), Filled = true })
+    esp.HealthBarFill = createDrawing("Square", { Thickness = 0, Color = Color3.fromRGB(0, 1, 0), Filled = true })
 
     -- Textos
     esp.NameText = createDrawing("Text", {
@@ -89,36 +91,39 @@ function SimpleESP:Create(player)
 end
 
 -- Actualizar ESP para un jugador
-function SimpleESP:Update(player)
+function ModernESP:Update(player)
     local esp = self.Players[player]
     if not esp then return end
 
     local character = player.Character
     if not character then
-        for _, drawing in pairs(esp.Drawings) do
-            drawing.Visible = false
-        end
+        for _, drawing in pairs(esp.Drawings) do drawing.Visible = false end
         return
     end
 
-    local humanoid = character:FindFirstChild("Humanoid")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
     local head = character:FindFirstChild("Head")
     local rootPart = character:FindFirstChild("HumanoidRootPart")
+    local feet = character:FindFirstChild("LeftFoot") or character:FindFirstChild("RightFoot") or rootPart
 
-    if not humanoid or not head or not rootPart then
-        for _, drawing in pairs(esp.Drawings) do
-            drawing.Visible = false
-        end
+    if not humanoid or not head or not rootPart or not feet then
+        for _, drawing in pairs(esp.Drawings) do drawing.Visible = false end
         return
     end
 
+    -- NUEVO: Cálculo de caja preciso
     local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+    local feetPos = Camera:WorldToViewportPoint(feet.Position)
+    
     if not onScreen then
-        for _, drawing in pairs(esp.Drawings) do
-            drawing.Visible = false
-        end
+        for _, drawing in pairs(esp.Drawings) do drawing.Visible = false end
         return
     end
+
+    local boxHeight = math.abs(headPos.Y - feetPos.Y)
+    local boxWidth = boxHeight * 0.6 -- Proporción estándar
+    local boxCenter = Vector2.new(headPos.X, (headPos.Y + feetPos.Y) / 2)
+    local position = boxCenter - Vector2.new(boxWidth / 2, boxHeight / 2)
 
     -- Determinar color
     local color = self.Settings.EnemyColor
@@ -126,62 +131,64 @@ function SimpleESP:Update(player)
         color = self.Settings.AllyColor
     end
 
-    -- Calcular tamaño y posición
-    local scaleFactor = 1000 / headPos.Z
-    local width = 40 * scaleFactor
-    local height = 60 * scaleFactor
-    local position = Vector2.new(headPos.X - width / 2, headPos.Y - height / 2)
-
     -- Calcular distancia
     local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
     if distance > self.Settings.MaxDistance then
-        for _, drawing in pairs(esp.Drawings) do
-            drawing.Visible = false
-        end
+        for _, drawing in pairs(esp.Drawings) do drawing.Visible = false end
         return
     end
 
     -- --- DIBUJAR ---
     
-    -- Caja
+    -- NUEVO: Dibujar Caja de Esquina
     if self.Settings.Boxes then
-        esp.BoxOutline.Visible = true
-        esp.BoxOutline.Position = position - Vector2.new(1, 1)
-        esp.BoxOutline.Size = Vector2.new(width + 2, height + 2)
-        
-        esp.Box.Visible = true
-        esp.Box.Position = position
-        esp.Box.Size = Vector2.new(width, height)
-        esp.Box.Color = color
+        local cornerLength = boxWidth / 3
+        local corners = {
+            {From = position, To = position + Vector2.new(cornerLength, 0)},
+            {From = position, To = position + Vector2.new(0, cornerLength)},
+            {From = position + Vector2.new(boxWidth, boxHeight), To = position + Vector2.new(boxWidth - cornerLength, boxHeight)},
+            {From = position + Vector2.new(boxWidth, boxHeight), To = position + Vector2.new(boxWidth, boxHeight - cornerLength)}
+        }
+        esp.Corner1.From = corners[1].From; esp.Corner1.To = corners[1].To
+        esp.Corner2.From = corners[2].From; esp.Corner2.To = corners[2].To
+        esp.Corner3.From = corners[3].From; esp.Corner3.To = corners[3].To
+        esp.Corner4.From = corners[4].From; esp.Corner4.To = corners[4].To
+
+        for _, corner in pairs({esp.Corner1, esp.Corner2, esp.Corner3, esp.Corner4}) do
+            corner.Visible = true
+            corner.Color = color
+        end
     else
-        esp.BoxOutline.Visible = false
-        esp.Box.Visible = false
+        for _, corner in pairs({esp.Corner1, esp.Corner2, esp.Corner3, esp.Corner4}) do
+            corner.Visible = false
+        end
     end
 
-    -- Barra de salud
+    -- NUEVO: Dibujar Barra de Vida Horizontal
     if self.Settings.HealthBars then
-        local health = humanoid.Health / humanoid.MaxHealth
-        local barWidth = 4
-        local barHeight = height * health
+        local health = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+        local barWidth = boxWidth
+        local barHeight = 4
+        local barY = position.Y - self.Settings.TextSize - 6 -- Justo encima de la caja
         
-        esp.HealthBarOutline.Visible = true
-        esp.HealthBarOutline.Position = position - Vector2.new(6, 0)
-        esp.HealthBarOutline.Size = Vector2.new(barWidth + 2, height + 2)
-        
-        esp.HealthBar.Visible = true
-        esp.HealthBar.Position = position - Vector2.new(5, 0) + Vector2.new(0, height - barHeight)
-        esp.HealthBar.Size = Vector2.new(barWidth, barHeight)
-        esp.HealthBar.Color = Color3.new(1 - health, health, 0)
+        esp.HealthBarBg.Visible = true
+        esp.HealthBarBg.Position = Vector2.new(boxCenter.X - barWidth / 2, barY)
+        esp.HealthBarBg.Size = Vector2.new(barWidth, barHeight)
+
+        esp.HealthBarFill.Visible = true
+        esp.HealthBarFill.Position = Vector2.new(boxCenter.X - barWidth / 2, barY)
+        esp.HealthBarFill.Size = Vector2.new(barWidth * health, barHeight)
+        esp.HealthBarFill.Color = Color3.new(1 - health, health, 0) -- Rojo a Verde
     else
-        esp.HealthBarOutline.Visible = false
-        esp.HealthBar.Visible = false
+        esp.HealthBarBg.Visible = false
+        esp.HealthBarFill.Visible = false
     end
 
-    -- Nombre
+    -- Nombre (posicionado sobre la barra de vida)
     if self.Settings.Names then
         esp.NameText.Visible = true
         esp.NameText.Text = player.Name
-        esp.NameText.Position = position + Vector2.new(width / 2, -self.Settings.TextSize - 2)
+        esp.NameText.Position = Vector2.new(boxCenter.X, position.Y - self.Settings.TextSize - 12)
         esp.NameText.Color = color
     else
         esp.NameText.Visible = false
@@ -190,64 +197,45 @@ function SimpleESP:Update(player)
     -- Distancia
     if self.Settings.Distance then
         esp.DistanceText.Visible = true
-        esp.DistanceText.Text = string.format("[%d]", distance)
-        esp.DistanceText.Position = position + Vector2.new(width / 2, height + 2)
+        esp.DistanceText.Text = string.format("[%d m]", distance)
+        esp.DistanceText.Position = Vector2.new(boxCenter.X, position.Y + boxHeight + 2)
     else
         esp.DistanceText.Visible = false
     end
 end
 
 -- Eliminar ESP de un jugador
-function SimpleESP:Remove(player)
+function ModernESP:Remove(player)
     local esp = self.Players[player]
     if esp then
-        for _, conn in pairs(esp.Connections) do
-            conn:Disconnect()
-        end
-        for _, drawing in pairs(esp.Drawings) do
-            drawing:Remove()
-        end
+        for _, conn in pairs(esp.Connections) do conn:Disconnect() end
+        for _, drawing in pairs(esp.Drawings) do drawing:Remove() end
         self.Players[player] = nil
     end
 end
 
 -- Actualizar todos los ESPs
-function SimpleESP:UpdateAll()
+function ModernESP:UpdateAll()
     for player in pairs(self.Players) do
         self:Update(player)
     end
 end
 
 -- Alternar ESP
-function SimpleESP:Toggle(state)
+function ModernESP:Toggle(state)
     self.Enabled = state
-    
     if state then
         for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer then
-                self:Create(player)
-            end
+            if player ~= LocalPlayer then self:Create(player) end
         end
-        
-        self.PlayerAdded = Players.PlayerAdded:Connect(function(player)
-            self:Create(player)
-        end)
-        
-        self.PlayerRemoving = Players.PlayerRemoving:Connect(function(player)
-            self:Remove(player)
-        end)
-        
-        self.UpdateLoop = RunService.RenderStepped:Connect(function()
-            self:UpdateAll()
-        end)
+        self.PlayerAdded = Players.PlayerAdded:Connect(function(player) self:Create(player) end)
+        self.PlayerRemoving = Players.PlayerRemoving:Connect(function(player) self:Remove(player) end)
+        self.UpdateLoop = RunService.RenderStepped:Connect(function() self:UpdateAll() end)
     else
         if self.PlayerAdded then self.PlayerAdded:Disconnect() end
         if self.PlayerRemoving then self.PlayerRemoving:Disconnect() end
         if self.UpdateLoop then self.UpdateLoop:Disconnect() end
-        
-        for player in pairs(self.Players) do
-            self:Remove(player)
-        end
+        for player in pairs(self.Players) do self:Remove(player) end
     end
 end
 
@@ -284,19 +272,19 @@ local function createConfigGui()
         local button = Instance.new("TextButton")
         button.Size = UDim2.new(1, -20, 0, 30)
         button.Position = UDim2.new(0, 10, 0, yPos)
-        button.Text = optionName .. ": " .. (SimpleESP.Settings[optionName] and "ON" or "OFF")
+        button.Text = optionName .. ": " .. (ModernESP.Settings[optionName] and "ON" or "OFF")
         button.TextColor3 = Color3.new(1, 1, 1)
         button.Font = Enum.Font.Gotham
         button.TextSize = 13
-        button.BackgroundColor3 = SimpleESP.Settings[optionName] and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
+        button.BackgroundColor3 = ModernESP.Settings[optionName] and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
         button.BorderSizePixel = 0
         button.Parent = configFrame
         Instance.new("UICorner", button).CornerRadius = UDim.new(0, 4)
 
         button.MouseButton1Click:Connect(function()
-            SimpleESP.Settings[optionName] = not SimpleESP.Settings[optionName]
-            button.Text = optionName .. ": " .. (SimpleESP.Settings[optionName] and "ON" or "OFF")
-            button.BackgroundColor3 = SimpleESP.Settings[optionName] and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
+            ModernESP.Settings[optionName] = not ModernESP.Settings[optionName]
+            button.Text = optionName .. ": " .. (ModernESP.Settings[optionName] and "ON" or "OFF")
+            button.BackgroundColor3 = ModernESP.Settings[optionName] and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
         end)
     end
 
@@ -309,8 +297,7 @@ end
 -- === API PARA CONTROL EXTERNO ===
 return {
     activate = function()
-        SimpleESP:Toggle(true)
-        -- Conectar el evento de la tecla F4 al activar
+        ModernESP:Toggle(true)
         if not inputBeganConnection then
             inputBeganConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
                 if not gameProcessed and input.KeyCode == CONFIG_KEY then
@@ -321,16 +308,11 @@ return {
     end,
     
     deactivate = function()
-        -- 1. Desactivar el ESP
-        SimpleESP:Toggle(false)
-        
-        -- 2. Desconectar el evento de F4 para que no se pueda abrir más
+        ModernESP:Toggle(false)
         if inputBeganConnection then
             inputBeganConnection:Disconnect()
             inputBeganConnection = nil
         end
-        
-        -- 3. Destruir la GUI de configuración si existe
         if configGui then
             configGui:Destroy()
             configGui = nil
@@ -340,8 +322,8 @@ return {
     
     updateSettings = function(settings)
         for k, v in pairs(settings) do
-            if SimpleESP.Settings[k] ~= nil then
-                SimpleESP.Settings[k] = v
+            if ModernESP.Settings[k] ~= nil then
+                ModernESP.Settings[k] = v
             end
         end
     end
