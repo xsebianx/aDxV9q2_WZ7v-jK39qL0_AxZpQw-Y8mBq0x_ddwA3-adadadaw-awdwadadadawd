@@ -1,4 +1,4 @@
--- fly.txtss
+-- fly.txt
 -- ADVERTENCIA: Este script proporciona ventajas de movimiento que pueden ser consideradas trampas.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
@@ -204,7 +204,7 @@ local function updateFlight(dt)
     bodyGyro.CFrame = cameraCF -- Mantiene al personaje orientado a la cámara
 end
 
--- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (SOLUCIÓN DEFINITIVA) ===
+-- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (RESET FÍSICO DEFINITIVO) ===
 local function toggleFlight()
     flyEnabled = not flyEnabled
     
@@ -233,61 +233,66 @@ local function toggleFlight()
         -- Desactivar
         statusFrame.Visible = false
         
-        -- <<< INICIO DE LA SOLUCIÓN DEFINITIVA >>>
+        -- <<< INICIO DEL RESET FÍSICO DEFINITIVO >>>
         
         -- 1. Destruir los BodyMovers para devolver el control al Humanoid
-        if bodyVelocity then
-            bodyVelocity:Destroy()
-            bodyVelocity = nil
-        end
-        if bodyGyro then
-            bodyGyro:Destroy()
-            bodyGyro = nil
-        end
+        if bodyVelocity then bodyVelocity:Destroy(); bodyVelocity = nil end
+        if bodyGyro then bodyGyro:Destroy(); bodyGyro = nil end
 
         -- 2. Forzar una parada total de todo movimiento
         if rootPart then
             rootPart.Velocity = Vector3.new(0, 0, 0)
             rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0) -- Detener también la rotación
+            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         end
 
-        -- 3. Buscar el suelo y teletransportar al personaje a una posición segura
+        -- 3. Buscar el suelo con un raycast más robusto
+        local groundPosition = nil
         if rootPart then
+            local rayOrigin = rootPart.Position
+            local rayDirection = Vector3.new(0, -100, 0) -- Buscar 100 studs hacia abajo
             local raycastParams = RaycastParams.new()
             raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-            raycastParams.FilterDescendantsInstances = {character} -- No detectar a sí mismo
+            raycastParams.FilterDescendantsInstances = {character}
             raycastParams.IgnoreWater = true
             
-            -- Lanzar un rayo hacia abajo desde los pies del personaje
-            local origin = rootPart.Position - Vector3.new(0, rootPart.Size.Y / 2, 0)
-            local result = workspace:Raycast(origin, Vector3.new(0, -10, 0), raycastParams)
-
+            local result = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
             if result and result.Instance then
-                -- Si encontramos el suelo, colocar al personaje justo encima
-                local targetCFrame = CFrame.new(result.Position + Vector3.new(0, rootPart.Size.Y / 2 + 0.1, 0))
-                rootPart.CFrame = targetCFrame
+                groundPosition = result.Position
             end
         end
 
-        -- 4. Forzar el estado del Humanoid a "Landed" para que sepa que está en el suelo
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid:ChangeState(Enum.HumanoidStateType.Landed)
+        -- 4. Si encontramos el suelo, teletransportar y forzar estado del Humanoid
+        if groundPosition and rootPart then
+            -- Teletransportar un poco por encima del suelo para que caiga naturalmente
+            local targetCFrame = CFrame.new(groundPosition + Vector3.new(0, 5, 0))
+            rootPart.CFrame = targetCFrame
+            
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                -- TRUCO: Forzar un cambio de estado para "despertar" al Humanoid
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                task.wait() -- Pequeña pausa para que el estado se registre
+                humanoid:ChangeState(Enum.HumanoidStateType.Landed)
+            end
+        end
+
+        -- 5. Reactivar colisiones de forma manual y directa para todos los partes
+        if character then
+            for _, part in ipairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
         end
         
-        -- 5. Ahora que todo está en orden, reactivar las colisiones
-        setNoClip(false)
+        -- <<< FIN DEL RESET FÍSICO DEFINITIVO >>>
         
-        -- <<< FIN DE LA SOLUCIÓN DEFINITIVA >>>
-        
-        -- Limpiar conexión
+        -- Limpiar conexión y resetear estado
         if flightConnection then
             flightConnection:Disconnect()
             flightConnection = nil
         end
-        
-        -- Resetear estado
         isBoosting = false
         currentSpeed = 0
     end
