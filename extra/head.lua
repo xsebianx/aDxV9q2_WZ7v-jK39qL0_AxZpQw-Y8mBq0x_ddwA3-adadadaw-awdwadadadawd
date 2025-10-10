@@ -1,86 +1,103 @@
--- Head.lua - Expansión real de cabeza con hitbox funcional
+-- head.txt - Expansión de Cabeza/Cuerpo (Corregido y Mejorado)
+-- ADVERTENCIA: Este script proporciona una ventaja visual injusta. Usarlo es considerado trampa.
+-- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
+
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
 -- API principal
 local HeadAPI = {
     active = false,
     connections = {},
-    scaledPlayers = {}
+    scaledPlayers = {},
+    mode = "Head" -- "Head" o "Body"
 }
 
 -- Configuración
-local HEAD_SCALE = 5.0  -- Factor de escala para las cabezas
+local HEAD_SCALE = 5.0
+local BODY_SCALE = 1.5
 local LOCAL_PLAYER = Players.LocalPlayer
-local DAMAGE_COLOR = Color3.fromRGB(255, 0, 0)  -- Color al recibir daño
+local DAMAGE_COLOR = Color3.fromRGB(255, 0, 0)
+local VISUAL_COLOR = Color3.fromRGB(255, 50, 50)
+local CONFIG_KEY = Enum.KeyCode.F5
 
--- Función para expandir la cabeza real
-local function expandRealHead(player)
+-- GUI de Configuración
+local configGui, configFrame
+
+-- Función para expandir una parte específica
+local function expandPart(part, scale)
+    if not part then return end
+    
+    -- Guardar tamaño y propiedades originales
+    local originalSize = part.Size
+    local originalTransparency = part.Transparency
+    local originalMaterial = part.Material
+    local originalColor = part.Color
+    local originalCanCollide = part.CanCollide
+
+    -- Aplicar expansión
+    part.Size = part.Size * scale
+    
+    -- Configurar propiedades visuales
+    part.Transparency = 0.3
+    part.Material = Enum.Material.Neon
+    part.Color = VISUAL_COLOR
+    
+    -- <<< LA CORRECCIÓN CLAVE >>>
+    -- Hacer la parte no colisionable para evitar el bug de la cámara
+    part.CanCollide = false
+    -- <<< FIN DE LA CORRECCIÓN >>>
+    
+    return {
+        part = part,
+        originalSize = originalSize,
+        originalTransparency = originalTransparency,
+        originalMaterial = originalMaterial,
+        originalColor = originalColor,
+        originalCanCollide = originalCanCollide
+    }
+end
+
+-- Función para expandir un jugador completo
+local function expandPlayer(player)
     if not player or player == LOCAL_PLAYER then return end
     if not player.Character then return end
     
-    local head = player.Character:FindFirstChild("Head")
-    if not head then return end
+    local character = player.Character
+    local partsToScale = {}
     
-    -- Guardar tamaño original
-    local originalSize = head.Size
-    local originalTransparency = head.Transparency
-    
-    -- Aplicar expansión
-    head.Size = head.Size * HEAD_SCALE
-    
-    -- Configurar propiedades visuales
-    head.Transparency = 0.3
-    head.Material = Enum.Material.Neon
-    head.Color = Color3.fromRGB(255, 50, 50)
-    
-    -- Guardar referencia para restaurar
-    HeadAPI.scaledPlayers[player] = {
-        originalSize = originalSize,
-        originalTransparency = originalTransparency,
-        originalMaterial = head.Material,
-        originalColor = head.Color
-    }
-    
-    -- Efecto visual al recibir daño
-    local lastDamageTime = 0
-    local damageConnection
-    damageConnection = head.Touched:Connect(function(part)
-        if not HeadAPI.active then return end
-        if tick() - lastDamageTime < 0.2 then return end  -- Prevenir destellos rápidos
-        
-        lastDamageTime = tick()
-        
-        -- Destello de daño
-        local tween = TweenService:Create(head, TweenInfo.new(0.1), {
-            Color = DAMAGE_COLOR
-        })
-        tween:Play()
-        
-        tween.Completed:Wait()
-        
-        if head and head.Parent then
-            TweenService:Create(head, TweenInfo.new(0.2), {
-                Color = Color3.fromRGB(255, 50, 50)
-            }):Play()
+    if HeadAPI.mode == "Head" then
+        local head = character:FindFirstChild("Head")
+        if head then
+            table.insert(partsToScale, expandPart(head, HEAD_SCALE))
         end
-    end)
-    
-    table.insert(HeadAPI.connections, damageConnection)
+    elseif HeadAPI.mode == "Body" then
+        local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+        local lowerTorso = character:FindFirstChild("LowerTorso")
+        if torso then table.insert(partsToScale, expandPart(torso, BODY_SCALE)) end
+        if lowerTorso then table.insert(partsToScale, expandPart(lowerTorso, BODY_SCALE)) end
+    end
+
+    if #partsToScale > 0 then
+        HeadAPI.scaledPlayers[player] = partsToScale
+    end
 end
 
--- Restaura la cabeza a su estado normal
-local function restoreHead(player)
-    local data = HeadAPI.scaledPlayers[player]
-    if not data then return end
+-- Restaura las partes originales de un jugador
+local function restorePlayer(player)
+    local scaledParts = HeadAPI.scaledPlayers[player]
+    if not scaledParts then return end
     
-    local head = player.Character and player.Character:FindFirstChild("Head")
-    if head then
-        head.Size = data.originalSize
-        head.Transparency = data.originalTransparency
-        head.Material = data.originalMaterial
-        head.Color = data.originalColor
+    for _, data in ipairs(scaledParts) do
+        local part = data.part
+        if part and part.Parent then
+            part.Size = data.originalSize
+            part.Transparency = data.originalTransparency
+            part.Material = data.originalMaterial
+            part.Color = data.originalColor
+            part.CanCollide = data.originalCanCollide -- Restaurar colisión original
+        end
     end
     
     HeadAPI.scaledPlayers[player] = nil
@@ -89,20 +106,96 @@ end
 -- Maneja nuevos jugadores
 local function handlePlayerAdded(player)
     if not HeadAPI.active then return end
-    expandRealHead(player)
+    expandPlayer(player)
 end
 
 -- Maneja cambio de personaje
 local function handleCharacterAdded(player, character)
     if not HeadAPI.active then return end
-    
-    -- Esperar a que el personaje esté completo
-    character:WaitForChild("Head", 5)
-    task.wait(0.5)  -- Espera adicional para asegurar estabilidad
-    
-    if character:FindFirstChild("Head") then
-        expandRealHead(player)
+    character:WaitForChild("Humanoid")
+    task.wait(0.5)
+    expandPlayer(player)
+end
+
+-- === MENÚ DE CONFIGURACIÓN ===
+local function createConfigGui()
+    if configGui then
+        configGui.Enabled = not configGui.Enabled
+        return
     end
+
+    configGui = Instance.new("ScreenGui")
+    configGui.Name = "HeadConfigGui"
+    configGui.Parent = LOCAL_PLAYER:WaitForChild("PlayerGui")
+    configGui.ResetOnSpawn = false
+    configGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    configFrame = Instance.new("Frame")
+    configFrame.Size = UDim2.new(0, 250, 0, 150)
+    configFrame.Position = UDim2.new(0.5, -125, 0.5, -75)
+    configFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    configFrame.BorderSizePixel = 0
+    configFrame.Parent = configGui
+    Instance.new("UICorner", configFrame).CornerRadius = UDim.new(0, 8)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Text = "CONFIGURACIÓN DE CABEZA"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 16
+    title.BackgroundTransparency = 1
+    title.Parent = configFrame
+
+    local headButton = Instance.new("TextButton")
+    headButton.Size = UDim2.new(1, -20, 0, 30)
+    headButton.Position = UDim2.new(0, 10, 0, 40)
+    headButton.Text = "Modo: Big Head"
+    headButton.TextColor3 = Color3.new(1, 1, 1)
+    headButton.Font = Enum.Font.Gotham
+    headButton.TextSize = 14
+    headButton.BackgroundColor3 = HeadAPI.mode == "Head" and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
+    headButton.BorderSizePixel = 0
+    headButton.Parent = configFrame
+    Instance.new("UICorner", headButton).CornerRadius = UDim.new(0, 5)
+
+    local bodyButton = Instance.new("TextButton")
+    bodyButton.Size = UDim2.new(1, -20, 0, 30)
+    bodyButton.Position = UDim2.new(0, 10, 0, 80)
+    bodyButton.Text = "Modo: Big Body"
+    bodyButton.TextColor3 = Color3.new(1, 1, 1)
+    bodyButton.Font = Enum.Font.Gotham
+    bodyButton.TextSize = 14
+    bodyButton.BackgroundColor3 = HeadAPI.mode == "Body" and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
+    bodyButton.BorderSizePixel = 0
+    bodyButton.Parent = configFrame
+    Instance.new("UICorner", bodyButton).CornerRadius = UDim.new(0, 5)
+
+    headButton.MouseButton1Click:Connect(function()
+        HeadAPI.mode = "Head"
+        headButton.BackgroundColor3 = Color3.new(0, 0.5, 0)
+        bodyButton.BackgroundColor3 = Color3.new(0.5, 0, 0)
+        -- Re-aplicar a todos los jugadores si está activo
+        if HeadAPI.active then
+            for player, _ in pairs(HeadAPI.scaledPlayers) do
+                restorePlayer(player)
+                expandPlayer(player)
+            end
+        end
+    end)
+
+    bodyButton.MouseButton1Click:Connect(function()
+        HeadAPI.mode = "Body"
+        bodyButton.BackgroundColor3 = Color3.new(0, 0.5, 0)
+        headButton.BackgroundColor3 = Color3.new(0.5, 0, 0)
+        -- Re-aplicar a todos los jugadores si está activo
+        if HeadAPI.active then
+            for player, _ in pairs(HeadAPI.scaledPlayers) do
+                restorePlayer(player)
+                expandPlayer(player)
+            end
+        end
+    end)
 end
 
 -- Activar el script
@@ -110,14 +203,19 @@ function HeadAPI.activate()
     if HeadAPI.active then return false end
     HeadAPI.active = true
     
+    -- Conectar evento de configuración
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == CONFIG_KEY then
+            createConfigGui()
+        end
+    end)
+    
     -- Manejar jugadores existentes
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LOCAL_PLAYER then
             if player.Character then
-                expandRealHead(player)
+                expandPlayer(player)
             end
-            
-            -- Conectar evento para cambio de personaje
             local conn = player.CharacterAdded:Connect(function(char)
                 handleCharacterAdded(player, char)
             end)
@@ -145,29 +243,17 @@ function HeadAPI.deactivate()
     
     -- Restaurar todos los jugadores
     for player in pairs(HeadAPI.scaledPlayers) do
-        restoreHead(player)
+        restorePlayer(player)
     end
     HeadAPI.scaledPlayers = {}
     
-    return true
-end
-
--- Manejo seguro de errores
-function HeadAPI.safeActivate()
-    local success, err = pcall(HeadAPI.activate)
-    if not success then
-        warn("[HEAD ERROR] Activation failed:", err)
-        return false
+    -- Destruir GUI
+    if configGui then
+        configGui:Destroy()
+        configGui = nil
+        configFrame = nil
     end
-    return true
-end
-
-function HeadAPI.safeDeactivate()
-    local success, err = pcall(HeadAPI.deactivate)
-    if not success then
-        warn("[HEAD ERROR] Deactivation failed:", err)
-        return false
-    end
+    
     return true
 end
 
