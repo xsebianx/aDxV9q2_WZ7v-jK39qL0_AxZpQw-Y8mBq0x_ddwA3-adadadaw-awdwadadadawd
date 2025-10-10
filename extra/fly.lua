@@ -16,7 +16,7 @@ local BODY_MOVER_P = 5000 -- Potencia de los BodyMovers (más alto = más rígid
 
 -- === TECLAS ===
 local BOOST_KEY = Enum.KeyCode.LeftControl
-local NOCLIP_KEY = Enum.KeyCode.N
+local NOCLIP_KEY = Enum.KeyCode.B
 local CONFIG_KEY = Enum.KeyCode.F3
 
 -- === ESTADO DEL VUELO ===
