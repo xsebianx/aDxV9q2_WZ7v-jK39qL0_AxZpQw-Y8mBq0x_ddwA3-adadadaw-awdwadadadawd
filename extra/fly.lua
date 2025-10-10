@@ -1,4 +1,4 @@
--- fly.txtss
+-- fly.txt
 -- ADVERTENCIA: Este script proporciona ventajas de movimiento que pueden ser consideradas trampas.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
@@ -139,7 +139,7 @@ local function createUI()
     return statusFrame
 end
 
--- === FUNCIÓN PRINCIPAL DE VUELO ===
+-- === FUNCIÓN PRINCIPAL DE VUELO (CORREGIDA PARA COLISIONES) ===
 local function updateFlight(dt)
     if not flyEnabled or not rootPart or not bodyVelocity or not bodyGyro then return end
 
@@ -185,17 +185,26 @@ local function updateFlight(dt)
     if UserInputService:IsKeyDown(Enum.KeyCode.A) then horizontalDirection -= cameraCF.RightVector end
     if UserInputService:IsKeyDown(Enum.KeyCode.D) then horizontalDirection += cameraCF.RightVector end
     
-    if horizontalDirection.Magnitude > 0 then
-        horizontalDirection = horizontalDirection.Unit
-    end
-    
     -- Control vertical
     local verticalDirection = 0
     if UserInputService:IsKeyDown(Enum.KeyCode.Space) then verticalDirection = VERTICAL_SPEED end
     if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then verticalDirection = -VERTICAL_SPEED end
     
-    -- Aplicar movimiento con BodyMovers
-    local targetVelocity = horizontalDirection * currentSpeed + Vector3.new(0, verticalDirection, 0)
+    -- <<< INICIO DE LA CORRECCIÓN >>>
+    -- Aplicar movimiento de forma más inteligente para evitar bugs de colisión
+    local targetVelocity
+    if horizontalDirection.Magnitude > 0 then
+        -- El jugador se está moviendo horizontalmente, aplicar velocidad completa
+        horizontalDirection = horizontalDirection.Unit
+        targetVelocity = horizontalDirection * currentSpeed + Vector3.new(0, verticalDirection, 0)
+    else
+        -- El jugador NO se mueve horizontalmente. Solo aplicar velocidad vertical.
+        -- Esto evita que el BodyVelocity luche contra las paredes.
+        targetVelocity = Vector3.new(0, verticalDirection, 0)
+    end
+    -- <<< FIN DE LA CORRECCIÓN >>>
+    
+    -- Aplicar la velocidad calculada con BodyMovers
     bodyVelocity.Velocity = targetVelocity
     bodyGyro.CFrame = cameraCF -- Mantiene al personaje orientado a la cámara
 end
@@ -240,13 +249,11 @@ local function toggleFlight()
             bodyGyro = nil
         end
         
-        -- <<< INICIO DE LA CORRECCIÓN >>>
         -- Forzar una parada total para evitar el "arrastre" y bugs de colisión
         if rootPart then
             rootPart.Velocity = Vector3.new(0, 0, 0)
             rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         end
-        -- <<< FIN DE LA CORRECCIÓN >>>
         
         -- Limpiar conexión
         if flightConnection then
