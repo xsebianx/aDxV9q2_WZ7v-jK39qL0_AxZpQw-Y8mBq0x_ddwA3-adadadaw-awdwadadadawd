@@ -1,4 +1,4 @@
--- fly.txt
+-- fly.txtss
 -- ADVERTENCIA: Este script proporciona ventajas de movimiento que pueden ser consideradas trampas.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
@@ -190,26 +190,21 @@ local function updateFlight(dt)
     if UserInputService:IsKeyDown(Enum.KeyCode.Space) then verticalDirection = VERTICAL_SPEED end
     if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then verticalDirection = -VERTICAL_SPEED end
     
-    -- <<< INICIO DE LA CORRECCIÓN >>>
     -- Aplicar movimiento de forma más inteligente para evitar bugs de colisión
     local targetVelocity
     if horizontalDirection.Magnitude > 0 then
-        -- El jugador se está moviendo horizontalmente, aplicar velocidad completa
         horizontalDirection = horizontalDirection.Unit
         targetVelocity = horizontalDirection * currentSpeed + Vector3.new(0, verticalDirection, 0)
     else
-        -- El jugador NO se mueve horizontalmente. Solo aplicar velocidad vertical.
-        -- Esto evita que el BodyVelocity luche contra las paredes.
         targetVelocity = Vector3.new(0, verticalDirection, 0)
     end
-    -- <<< FIN DE LA CORRECCIÓN >>>
     
     -- Aplicar la velocidad calculada con BodyMovers
     bodyVelocity.Velocity = targetVelocity
     bodyGyro.CFrame = cameraCF -- Mantiene al personaje orientado a la cámara
 end
 
--- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (CORREGIDA) ===
+-- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (SOLUCIÓN DEFINITIVA) ===
 local function toggleFlight()
     flyEnabled = not flyEnabled
     
@@ -237,9 +232,10 @@ local function toggleFlight()
     else
         -- Desactivar
         statusFrame.Visible = false
-        setNoClip(false)
         
-        -- Limpiar BodyMovers
+        -- <<< INICIO DE LA SOLUCIÓN DEFINITIVA >>>
+        
+        -- 1. Destruir los BodyMovers para devolver el control al Humanoid
         if bodyVelocity then
             bodyVelocity:Destroy()
             bodyVelocity = nil
@@ -248,12 +244,42 @@ local function toggleFlight()
             bodyGyro:Destroy()
             bodyGyro = nil
         end
-        
-        -- Forzar una parada total para evitar el "arrastre" y bugs de colisión
+
+        -- 2. Forzar una parada total de todo movimiento
         if rootPart then
             rootPart.Velocity = Vector3.new(0, 0, 0)
             rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0) -- Detener también la rotación
         end
+
+        -- 3. Buscar el suelo y teletransportar al personaje a una posición segura
+        if rootPart then
+            local raycastParams = RaycastParams.new()
+            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+            raycastParams.FilterDescendantsInstances = {character} -- No detectar a sí mismo
+            raycastParams.IgnoreWater = true
+            
+            -- Lanzar un rayo hacia abajo desde los pies del personaje
+            local origin = rootPart.Position - Vector3.new(0, rootPart.Size.Y / 2, 0)
+            local result = workspace:Raycast(origin, Vector3.new(0, -10, 0), raycastParams)
+
+            if result and result.Instance then
+                -- Si encontramos el suelo, colocar al personaje justo encima
+                local targetCFrame = CFrame.new(result.Position + Vector3.new(0, rootPart.Size.Y / 2 + 0.1, 0))
+                rootPart.CFrame = targetCFrame
+            end
+        end
+
+        -- 4. Forzar el estado del Humanoid a "Landed" para que sepa que está en el suelo
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Landed)
+        end
+        
+        -- 5. Ahora que todo está en orden, reactivar las colisiones
+        setNoClip(false)
+        
+        -- <<< FIN DE LA SOLUCIÓN DEFINITIVA >>>
         
         -- Limpiar conexión
         if flightConnection then
