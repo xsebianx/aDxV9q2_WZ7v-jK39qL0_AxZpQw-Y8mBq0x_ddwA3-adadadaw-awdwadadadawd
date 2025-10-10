@@ -1,4 +1,4 @@
--- fly.txt
+-- fly sin colision
 -- ADVERTENCIA: Este script proporciona ventajas de movimiento que pueden ser consideradas trampas.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
@@ -52,7 +52,7 @@ local flightConnection
 local characterAddedConnection
 local inputBeganConnection
 
--- === SISTEMA DE NO-CLIP ===
+-- === SISTEMA DE NO-CLIP (MANUAL) ===
 local function setNoClip(enabled)
     noClipEnabled = enabled
     if character then
@@ -204,14 +204,15 @@ local function updateFlight(dt)
     bodyGyro.CFrame = cameraCF -- Mantiene al personaje orientado a la cámara
 end
 
--- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (RESET FÍSICO DEFINITIVO) ===
+-- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (SIN NO-CLIP POR DEFECTO) ===
 local function toggleFlight()
     flyEnabled = not flyEnabled
     
     if flyEnabled then
         -- Activar
         statusFrame.Visible = true
-        setNoClip(true) -- Activar no-clip por defecto al volar
+        -- CAMBIO CLAVE: Ya no se activa el no-clip automáticamente.
+        -- El usuario lo controla manualmente con la tecla 'N'.
         
         -- Crear BodyMovers
         bodyVelocity = Instance.new("BodyVelocity")
@@ -233,60 +234,15 @@ local function toggleFlight()
         -- Desactivar
         statusFrame.Visible = false
         
-        -- <<< INICIO DEL RESET FÍSICO DEFINITIVO >>>
+        -- <<< INICIO DE LA DESACTIVACIÓN SIMPLIFICADA >>>
         
         -- 1. Destruir los BodyMovers para devolver el control al Humanoid
         if bodyVelocity then bodyVelocity:Destroy(); bodyVelocity = nil end
         if bodyGyro then bodyGyro:Destroy(); bodyGyro = nil end
 
-        -- 2. Forzar una parada total de todo movimiento
-        if rootPart then
-            rootPart.Velocity = Vector3.new(0, 0, 0)
-            rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-        end
-
-        -- 3. Buscar el suelo con un raycast más robusto
-        local groundPosition = nil
-        if rootPart then
-            local rayOrigin = rootPart.Position
-            local rayDirection = Vector3.new(0, -100, 0) -- Buscar 100 studs hacia abajo
-            local raycastParams = RaycastParams.new()
-            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-            raycastParams.FilterDescendantsInstances = {character}
-            raycastParams.IgnoreWater = true
-            
-            local result = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-            if result and result.Instance then
-                groundPosition = result.Position
-            end
-        end
-
-        -- 4. Si encontramos el suelo, teletransportar y forzar estado del Humanoid
-        if groundPosition and rootPart then
-            -- Teletransportar un poco por encima del suelo para que caiga naturalmente
-            local targetCFrame = CFrame.new(groundPosition + Vector3.new(0, 5, 0))
-            rootPart.CFrame = targetCFrame
-            
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                -- TRUCO: Forzar un cambio de estado para "despertar" al Humanoid
-                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                task.wait() -- Pequeña pausa para que el estado se registre
-                humanoid:ChangeState(Enum.HumanoidStateType.Landed)
-            end
-        end
-
-        -- 5. Reactivar colisiones de forma manual y directa para todos los partes
-        if character then
-            for _, part in ipairs(character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
-            end
-        end
+        -- 2. NO CAMBIAR EL ESTADO DE NO-CLIP. El personaje caerá naturalmente.
         
-        -- <<< FIN DEL RESET FÍSICO DEFINITIVO >>>
+        -- <<< FIN DE LA DESACTIVACIÓN SIMPLIFICADA >>>
         
         -- Limpiar conexión y resetear estado
         if flightConnection then
@@ -410,6 +366,7 @@ local function onInput(input, gameProcessed)
         isBoosting = true
     end
     if input.KeyCode == NOCLIP_KEY and flyEnabled then
+        -- El no-clip sigue siendo un toggle manual durante el vuelo
         setNoClip(not noClipEnabled)
     end
     if input.KeyCode == CONFIG_KEY then
