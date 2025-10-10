@@ -1,4 +1,4 @@
--- fly sin colision
+-- fly.txt
 -- ADVERTENCIA: Este script proporciona ventajas de movimiento que pueden ser consideradas trampas.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
@@ -204,15 +204,13 @@ local function updateFlight(dt)
     bodyGyro.CFrame = cameraCF -- Mantiene al personaje orientado a la cámara
 end
 
--- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (SIN NO-CLIP POR DEFECTO) ===
+-- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (VERSIÓN FINAL) ===
 local function toggleFlight()
     flyEnabled = not flyEnabled
     
     if flyEnabled then
         -- Activar
         statusFrame.Visible = true
-        -- CAMBIO CLAVE: Ya no se activa el no-clip automáticamente.
-        -- El usuario lo controla manualmente con la tecla 'N'.
         
         -- Crear BodyMovers
         bodyVelocity = Instance.new("BodyVelocity")
@@ -234,15 +232,19 @@ local function toggleFlight()
         -- Desactivar
         statusFrame.Visible = false
         
-        -- <<< INICIO DE LA DESACTIVACIÓN SIMPLIFICADA >>>
+        -- <<< INICIO DE LA DESACTIVACIÓN FINAL Y CORREGIDA >>>
         
         -- 1. Destruir los BodyMovers para devolver el control al Humanoid
         if bodyVelocity then bodyVelocity:Destroy(); bodyVelocity = nil end
         if bodyGyro then bodyGyro:Destroy(); bodyGyro = nil end
 
-        -- 2. NO CAMBIAR EL ESTADO DE NO-CLIP. El personaje caerá naturalmente.
+        -- 2. ASEGURARSE DE QUE EL NO-CLIP ESTÉ DESACTIVADO AL ATERRIZAR
+        -- Esto es crucial para que el personaje no quede flotando si el usuario lo activó manualmente.
+        if noClipEnabled then
+            setNoClip(false)
+        end
         
-        -- <<< FIN DE LA DESACTIVACIÓN SIMPLIFICADA >>>
+        -- <<< FIN DE LA DESACTIVACIÓN FINAL Y CORREGIDA >>>
         
         -- Limpiar conexión y resetear estado
         if flightConnection then
