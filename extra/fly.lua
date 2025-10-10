@@ -1,4 +1,4 @@
--- fly.txt
+-- fly.txtss
 -- ADVERTENCIA: Este script proporciona ventajas de movimiento que pueden ser consideradas trampas.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
@@ -200,7 +200,7 @@ local function updateFlight(dt)
     bodyGyro.CFrame = cameraCF -- Mantiene al personaje orientado a la cámara
 end
 
--- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO ===
+-- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (CORREGIDA) ===
 local function toggleFlight()
     flyEnabled = not flyEnabled
     
@@ -239,6 +239,14 @@ local function toggleFlight()
             bodyGyro:Destroy()
             bodyGyro = nil
         end
+        
+        -- <<< INICIO DE LA CORRECCIÓN >>>
+        -- Forzar una parada total para evitar el "arrastre" y bugs de colisión
+        if rootPart then
+            rootPart.Velocity = Vector3.new(0, 0, 0)
+            rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        end
+        -- <<< FIN DE LA CORRECCIÓN >>>
         
         -- Limpiar conexión
         if flightConnection then
