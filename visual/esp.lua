@@ -1,5 +1,5 @@
 -- esp.txt
--- ESP con Cajas Precisas y Barra de Vida Moderna
+-- ESP con Sistema de Color Avanzado (Selector RGB y Dinámico por Salud)
 -- ADVERTENCIA: Este script proporciona una ventaja injusta y es considerado trampa.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
@@ -12,10 +12,14 @@ local ModernESP = {
         HealthBars = true,
         Distance = true,
         TeamCheck = true,
+        -- NUEVO: Colores personalizables (se cambiarán desde la GUI)
         EnemyColor = Color3.fromRGB(255, 50, 50),
         AllyColor = Color3.fromRGB(0, 255, 0),
+        -- NUEVO: Opción para colores dinámicos por salud
+        DynamicHealthColor = false,
         TextSize = 13,
-        MaxDistance = 1000
+        MaxDistance = 1000,
+        MinBoxSize = 30
     }
 }
 
@@ -52,17 +56,14 @@ function ModernESP:Create(player)
         return drawing
     end
 
-    -- Caja de Esquina (4 líneas)
     esp.Corner1 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor })
     esp.Corner2 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor })
     esp.Corner3 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor })
     esp.Corner4 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor })
 
-    -- NUEVA: Barra de Vida Moderna (Horizontal)
     esp.HealthBarBg = createDrawing("Square", { Thickness = 0, Color = Color3.fromRGB(30, 30, 30), Filled = true })
     esp.HealthBarFill = createDrawing("Square", { Thickness = 0, Color = Color3.fromRGB(0, 1, 0), Filled = true })
 
-    -- Textos
     esp.NameText = createDrawing("Text", {
         Text = player.Name,
         Size = self.Settings.TextSize,
@@ -80,7 +81,6 @@ function ModernESP:Create(player)
         Font = Drawing.Fonts.UI
     })
 
-    -- Conectar eventos
     esp.Connections.CharacterAdded = player.CharacterAdded:Connect(function()
         self:Update(player)
     end)
@@ -111,7 +111,6 @@ function ModernESP:Update(player)
         return
     end
 
-    -- NUEVO: Cálculo de caja preciso
     local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
     local feetPos = Camera:WorldToViewportPoint(feet.Position)
     
@@ -121,17 +120,35 @@ function ModernESP:Update(player)
     end
 
     local boxHeight = math.abs(headPos.Y - feetPos.Y)
-    local boxWidth = boxHeight * 0.6 -- Proporción estándar
+    local boxWidth = boxHeight * 0.6
+
+    if boxWidth < self.Settings.MinBoxSize then
+        boxWidth = self.Settings.MinBoxSize
+        boxHeight = self.Settings.MinBoxSize
+    end
+
     local boxCenter = Vector2.new(headPos.X, (headPos.Y + feetPos.Y) / 2)
     local position = boxCenter - Vector2.new(boxWidth / 2, boxHeight / 2)
 
-    -- Determinar color
+    -- <<< INICIO DE LA LÓGICA DE COLOR AVANZADA >>>
     local color = self.Settings.EnemyColor
     if self.Settings.TeamCheck and player.Team == LocalPlayer.Team then
         color = self.Settings.AllyColor
+    else
+        -- Si es un enemigo y los colores dinámicos están activados
+        if self.Settings.DynamicHealthColor then
+            local healthPercent = humanoid.Health / humanoid.MaxHealth
+            if healthPercent > 0.75 then
+                color = Color3.fromRGB(0, 1, 0) -- Verde
+            elseif healthPercent > 0.25 then
+                color = Color3.fromRGB(1, 1, 0) -- Amarillo
+            else
+                color = Color3.fromRGB(1, 0, 0) -- Rojo
+            end
+        end
     end
+    -- <<< FIN DE LA LÓGICA DE COLOR >>>
 
-    -- Calcular distancia
     local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
     if distance > self.Settings.MaxDistance then
         for _, drawing in pairs(esp.Drawings) do drawing.Visible = false end
@@ -140,7 +157,6 @@ function ModernESP:Update(player)
 
     -- --- DIBUJAR ---
     
-    -- NUEVO: Dibujar Caja de Esquina
     if self.Settings.Boxes then
         local cornerLength = boxWidth / 3
         local corners = {
@@ -164,12 +180,11 @@ function ModernESP:Update(player)
         end
     end
 
-    -- NUEVO: Dibujar Barra de Vida Horizontal
     if self.Settings.HealthBars then
         local health = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
         local barWidth = boxWidth
         local barHeight = 4
-        local barY = position.Y - self.Settings.TextSize - 6 -- Justo encima de la caja
+        local barY = position.Y - self.Settings.TextSize - 6
         
         esp.HealthBarBg.Visible = true
         esp.HealthBarBg.Position = Vector2.new(boxCenter.X - barWidth / 2, barY)
@@ -178,13 +193,12 @@ function ModernESP:Update(player)
         esp.HealthBarFill.Visible = true
         esp.HealthBarFill.Position = Vector2.new(boxCenter.X - barWidth / 2, barY)
         esp.HealthBarFill.Size = Vector2.new(barWidth * health, barHeight)
-        esp.HealthBarFill.Color = Color3.new(1 - health, health, 0) -- Rojo a Verde
+        esp.HealthBarFill.Color = Color3.new(1 - health, health, 0)
     else
         esp.HealthBarBg.Visible = false
         esp.HealthBarFill.Visible = false
     end
 
-    -- Nombre (posicionado sobre la barra de vida)
     if self.Settings.Names then
         esp.NameText.Visible = true
         esp.NameText.Text = player.Name
@@ -194,7 +208,6 @@ function ModernESP:Update(player)
         esp.NameText.Visible = false
     end
 
-    -- Distancia
     if self.Settings.Distance then
         esp.DistanceText.Visible = true
         esp.DistanceText.Text = string.format("[%d m]", distance)
@@ -239,7 +252,7 @@ function ModernESP:Toggle(state)
     end
 end
 
--- === MENÚ DE CONFIGURACIÓN SIMPLE ===
+-- === MENÚ DE CONFIGURACIÓN CON SELECTOR DE COLOR ===
 local function createConfigGui()
     if configGui then
         configGui.Enabled = not configGui.Enabled
@@ -252,8 +265,8 @@ local function createConfigGui()
     configGui.ResetOnSpawn = false
 
     configFrame = Instance.new("Frame")
-    configFrame.Size = UDim2.new(0, 250, 0, 200)
-    configFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
+    configFrame.Size = UDim2.new(0, 300, 0, 450)
+    configFrame.Position = UDim2.new(0.5, -150, 0.5, -225)
     configFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
     configFrame.BorderSizePixel = 0
     configFrame.Parent = configGui
@@ -287,11 +300,81 @@ local function createConfigGui()
             button.BackgroundColor3 = ModernESP.Settings[optionName] and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
         end)
     end
+    
+    -- NUEVO: Función para crear un selector de color
+    local function createColorPicker(colorType, yPos)
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, -20, 0, 20)
+        label.Position = UDim2.new(0, 10, 0, yPos)
+        label.Text = "Color " .. colorType
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 13
+        label.BackgroundTransparency = 1
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = configFrame
+
+        local colorDisplay = Instance.new("Frame")
+        colorDisplay.Size = UDim2.new(0, 20, 0, 20)
+        colorDisplay.Position = UDim2.new(1, -30, 0, yPos)
+        colorDisplay.BackgroundColor3 = ModernESP.Settings[colorType]
+        colorDisplay.BorderSizePixel = 0
+        colorDisplay.Parent = configFrame
+        Instance.new("UICorner", colorDisplay).CornerRadius = UDim.new(0, 4)
+
+        local sliders = {}
+        for i, channel in ipairs({"R", "G", "B"}) do
+            local slider = Instance.new("Frame")
+            slider.Size = UDim2.new(1, -40, 0, 4)
+            slider.Position = UDim2.new(0, 20, 0, yPos + 25 + (i-1) * 20)
+            slider.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+            slider.BorderSizePixel = 0
+            slider.Parent = configFrame
+            Instance.new("UICorner", slider).CornerRadius = UDim.new(0, 2)
+
+            local sliderButton = Instance.new("TextButton")
+            sliderButton.Size = UDim2.new(0, 12, 0, 12)
+            sliderButton.BackgroundColor3 = Color3.new(1, 1, 1)
+            sliderButton.BorderSizePixel = 0
+            sliderButton.Parent = slider
+            Instance.new("UICorner", sliderButton).CornerRadius = UDim.new(0, 6)
+            
+            local val = math.floor(ModernESP.Settings[colorType][channel:lower()] * 255)
+            sliderButton.Position = UDim2.new(val / 255, -6, 0.5, -6)
+            
+            local dragging = false
+            local function updateSlider(input)
+                local relativeX = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
+                sliderButton.Position = UDim2.new(relativeX, -6, 0.5, -6)
+                local newColor = ModernESP.Settings[colorType]
+                newColor = Color3.new(
+                    channel == "R" and relativeX or newColor.R,
+                    channel == "G" and relativeX or newColor.G,
+                    channel == "B" and relativeX or newColor.B
+                )
+                ModernESP.Settings[colorType] = newColor
+                colorDisplay.BackgroundColor3 = newColor
+            end
+            sliderButton.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+            end)
+            UserInputService.InputChanged:Connect(function(input)
+                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end
+            end)
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+            end)
+        end
+    end
 
     createToggle("Boxes", 40)
     createToggle("Names", 80)
     createToggle("HealthBars", 120)
     createToggle("Distance", 160)
+    createToggle("DynamicHealthColor", 200) -- NUEVO
+
+    createColorPicker("EnemyColor", 250) -- NUEVO
+    createColorPicker("AllyColor", 340) -- NUEVO
 end
 
 -- === API PARA CONTROL EXTERNO ===
