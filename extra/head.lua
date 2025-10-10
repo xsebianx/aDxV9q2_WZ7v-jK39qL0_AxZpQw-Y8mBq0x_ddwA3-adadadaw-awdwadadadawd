@@ -15,7 +15,7 @@ local HeadAPI = {
 }
 
 -- Configuración
-local HEAD_SCALE = 5.0
+local HEAD_SCALE = 10.0
 local BODY_SCALE = 1.5
 local LOCAL_PLAYER = Players.LocalPlayer
 local DAMAGE_COLOR = Color3.fromRGB(255, 0, 0)
