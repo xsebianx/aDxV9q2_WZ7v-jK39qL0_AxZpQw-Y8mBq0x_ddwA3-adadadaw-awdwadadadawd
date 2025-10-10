@@ -1,30 +1,21 @@
--- esp.txt
--- ESP Minimalista y Táctico para DrakHub Premium
+-- esp.txtss
+-- ESP Simple y Funcional
 -- ADVERTENCIA: Este script proporciona una ventaja injusta y es considerado trampa.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
-local ProfessionalESP = {
+local SimpleESP = {
     Enabled = false,
     Players = {},
-    ClosestPlayer = nil, -- Para el ESP inteligente
     Settings = {
-        -- Configuración Minimalista por Defecto
-        Boxes = false,
-        CornerBoxes = true, -- Estilo limpio por defecto
+        Boxes = true,
         Names = true,
-        HealthBars = false, -- Desactivado para reducir desorden
-        Tracers = false,    -- Desactivado para reducir desorden
-        Distance = false,   -- Desactivado para reducir desorden
-        Weapon = true,
-        OffScreenArrows = true,
+        HealthBars = true,
+        Distance = true,
         TeamCheck = true,
-        -- Paleta de colores profesional y sutil
-        AllyColor = Color3.fromRGB(150, 200, 255), -- Azul claro
-        EnemyColor = Color3.fromRGB(200, 200, 200), -- Gris claro
-        ClosestEnemyColor = Color3.fromRGB(255, 255, 255), -- Blanco brillante para el más cercano
-        TextSize = 12, -- Texto más pequeño
-        Font = 2,
-        MaxDistance = 1500
+        EnemyColor = Color3.fromRGB(255, 50, 50),
+        AllyColor = Color3.fromRGB(0, 255, 0),
+        TextSize = 13,
+        MaxDistance = 1000
     }
 }
 
@@ -34,76 +25,40 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local TweenService = game:GetService("TweenService")
-
--- Mapeo de fuentes numéricas
-local FontMapping = {
-    [0] = Drawing.Fonts.UI,
-    [1] = Drawing.Fonts.System,
-    [2] = Drawing.Fonts.Plex,
-    [3] = Drawing.Fonts.Monospace
-}
 
 -- GUI de Configuración
-local configGui, configFrame
+local configGui = nil
+local configFrame = nil
+local inputBeganConnection = nil -- Guardamos la conexión para poder desconectarla
 local CONFIG_KEY = Enum.KeyCode.F4
 
--- Función para encontrar al jugador más cercano
-function ProfessionalESP:FindClosestPlayer()
-    local closestDistance = math.huge
-    local closestPlayer = nil
-    local myChar = LocalPlayer.Character
-    if not myChar or not myChar.PrimaryPart then return nil end
-    
-    local myRootPos = myChar.PrimaryPart.Position
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player == LocalPlayer then continue end
-        if self.Settings.TeamCheck and player.Team == LocalPlayer.Team then continue end
-        
-        local char = player.Character
-        if char and char.PrimaryPart then
-            local distance = (char.PrimaryPart.Position - myRootPos).Magnitude
-            if distance < closestDistance and distance < self.Settings.MaxDistance then
-                closestDistance = distance
-                closestPlayer = player
-            end
-        end
-    end
-    
-    self.ClosestPlayer = closestPlayer
-end
-
 -- Función para crear un ESP para un jugador
-function ProfessionalESP:Create(player)
+function SimpleESP:Create(player)
     if self.Players[player] then return end
 
     local esp = {
         Player = player,
         Connections = {},
-        Drawings = {},
-        Cache = {}
+        Drawings = {}
     }
     self.Players[player] = esp
 
     local function createDrawing(type, props)
         local drawing = Drawing.new(type)
         for prop, value in pairs(props) do
-            if prop == "Font" then
-                drawing[prop] = FontMapping[value] or FontMapping[2]
-            else
-                drawing[prop] = value
-            end
+            drawing[prop] = value
         end
         table.insert(esp.Drawings, drawing)
         return drawing
     end
 
-    -- Caja (Estilo esquina)
-    esp.Corner1 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor, Visible = false })
-    esp.Corner2 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor, Visible = false })
-    esp.Corner3 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor, Visible = false })
-    esp.Corner4 = createDrawing("Line", { Thickness = 1.5, Color = self.Settings.EnemyColor, Visible = false })
+    -- Caja
+    esp.BoxOutline = createDrawing("Square", { Thickness = 2, Color = Color3.new(0, 0, 0), Filled = false })
+    esp.Box = createDrawing("Square", { Thickness = 1, Color = self.Settings.EnemyColor, Filled = false })
+
+    -- Barra de salud
+    esp.HealthBarOutline = createDrawing("Square", { Thickness = 1, Color = Color3.new(0, 0, 0), Filled = false })
+    esp.HealthBar = createDrawing("Square", { Thickness = 1, Color = Color3.new(0, 1, 0), Filled = true })
 
     -- Textos
     esp.NameText = createDrawing("Text", {
@@ -112,26 +67,18 @@ function ProfessionalESP:Create(player)
         Outline = true,
         OutlineColor = Color3.new(0, 0, 0),
         Color = Color3.new(1, 1, 1),
-        Font = self.Settings.Font,
-        Visible = false
+        Font = Drawing.Fonts.UI
     })
-    esp.WeaponText = createDrawing("Text", {
+    esp.DistanceText = createDrawing("Text", {
         Text = "",
-        Size = self.Settings.TextSize - 1,
+        Size = self.Settings.TextSize,
         Outline = true,
         OutlineColor = Color3.new(0, 0, 0),
-        Color = Color3.fromRGB(1, 1, 1),
-        Font = self.Settings.Font,
-        Visible = false
+        Color = Color3.new(1, 1, 1),
+        Font = Drawing.Fonts.UI
     })
 
-    -- Flecha fuera de pantalla
-    esp.OffScreenArrow = createDrawing("Line", {
-        Thickness = 1.5,
-        Color = self.Settings.EnemyColor,
-        Visible = false
-    })
-
+    -- Conectar eventos
     esp.Connections.CharacterAdded = player.CharacterAdded:Connect(function()
         self:Update(player)
     end)
@@ -141,176 +88,170 @@ function ProfessionalESP:Create(player)
     end
 end
 
-function ProfessionalESP:IsAiming()
-    if not LocalPlayer.Character then return false end
-    local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-    if not tool then return false end
-    return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
-end
-
-function ProfessionalESP:Update(player)
+-- Actualizar ESP para un jugador
+function SimpleESP:Update(player)
     local esp = self.Players[player]
     if not esp then return end
 
     local character = player.Character
     if not character then
-        for _, drawing in pairs(esp.Drawings) do drawing.Visible = false end
+        for _, drawing in pairs(esp.Drawings) do
+            drawing.Visible = false
+        end
         return
     end
 
-    local humanoid = esp.Cache.Humanoid or character:FindFirstChild("Humanoid")
-    local head = esp.Cache.Head or character:FindFirstChild("Head")
-    local rootPart = esp.Cache.HumanoidRootPart or character:FindFirstChild("HumanoidRootPart")
-
-    if not esp.Cache.Humanoid then esp.Cache.Humanoid = humanoid end
-    if not esp.Cache.Head then esp.Cache.Head = head end
-    if not esp.Cache.HumanoidRootPart then esp.Cache.HumanoidRootPart = rootPart end
+    local humanoid = character:FindFirstChild("Humanoid")
+    local head = character:FindFirstChild("Head")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
 
     if not humanoid or not head or not rootPart then
-        for _, drawing in pairs(esp.Drawings) do drawing.Visible = false end
+        for _, drawing in pairs(esp.Drawings) do
+            drawing.Visible = false
+        end
         return
     end
 
-    local headPos, headOnScreen = Camera:WorldToViewportPoint(head.Position)
-    local rootPos, rootOnScreen = Camera:WorldToViewportPoint(rootPart.Position)
+    local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+    if not onScreen then
+        for _, drawing in pairs(esp.Drawings) do
+            drawing.Visible = false
+        end
+        return
+    end
 
-    -- Determinar color y si es el más cercano
-    local isClosest = (player == self.ClosestPlayer)
+    -- Determinar color
     local color = self.Settings.EnemyColor
-    if isClosest then
-        color = self.Settings.ClosestEnemyColor
-    elseif self.Settings.TeamCheck and player.Team == LocalPlayer.Team then
+    if self.Settings.TeamCheck and player.Team == LocalPlayer.Team then
         color = self.Settings.AllyColor
     end
-    
+
+    -- Calcular tamaño y posición
+    local scaleFactor = 1000 / headPos.Z
+    local width = 40 * scaleFactor
+    local height = 60 * scaleFactor
+    local position = Vector2.new(headPos.X - width / 2, headPos.Y - height / 2)
+
+    -- Calcular distancia
     local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
     if distance > self.Settings.MaxDistance then
-        for _, drawing in pairs(esp.Drawings) do drawing.Visible = false end
-        return
-    end
-
-    -- Factor de transparencia: más brillante si está cerca, más desvanecido si está lejos
-    local fadeFactor = isClosest and 1.0 or 0.4
-    local isAiming = self:IsAiming()
-    if isAiming then fadeFactor = fadeFactor * 0.3 end
-
-    -- Lógica de dibujo
-    if not headOnScreen then
-        if self.Settings.OffScreenArrows then
-            local screenCenter = Camera.ViewportSize / 2
-            local angle = math.atan2(rootPos.Y - screenCenter.Y, rootPos.X - screenCenter.X)
-            local arrowLength = 25
-            local arrowTip = Vector2.new(
-                screenCenter.X + math.cos(angle) * (screenCenter.Magnitude - 40),
-                screenCenter.Y + math.sin(angle) * (screenCenter.Magnitude - 40)
-            )
-            local arrowBase = Vector2.new(
-                arrowTip.X - math.cos(angle) * arrowLength,
-                arrowTip.Y - math.sin(angle) * arrowLength
-            )
-            esp.OffScreenArrow.From = arrowBase
-            esp.OffScreenArrow.To = arrowTip
-            esp.OffScreenArrow.Color = color
-            esp.OffScreenArrow.Transparency = fadeFactor
-            esp.OffScreenArrow.Visible = true
-        end
         for _, drawing in pairs(esp.Drawings) do
-            if drawing ~= esp.OffScreenArrow then drawing.Visible = false end
+            drawing.Visible = false
         end
         return
-    else
-        esp.OffScreenArrow.Visible = false
     end
 
-    -- Escalado más inteligente para evitar cajas gigantes
-    local fovRad = math.rad(Camera.FieldOfView / 2)
-    local scaleFactor = 1 / (headPos.Z * math.tan(fovRad)) * 800 -- Reducido de 1000
-    local width = math.floor(30 * scaleFactor) -- Reducido de 40
-    local height = math.floor(50 * scaleFactor) -- Reducido de 65
-    local position = Vector2.new(headPos.X, headPos.Y) - Vector2.new(width / 2, height / 2)
-
-    -- Actualizar Caja de Esquina
-    if self.Settings.CornerBoxes then
-        local cornerLength = width / 3
-        esp.Corner1.From = position; esp.Corner1.To = position + Vector2.new(cornerLength, 0)
-        esp.Corner2.From = position; esp.Corner2.To = position + Vector2.new(0, cornerLength)
-        esp.Corner3.From = position + Vector2.new(width, height); esp.Corner3.To = position + Vector2.new(width - cornerLength, height)
-        esp.Corner4.From = position + Vector2.new(width, height); esp.Corner4.To = position + Vector2.new(width, height - cornerLength)
+    -- --- DIBUJAR ---
+    
+    -- Caja
+    if self.Settings.Boxes then
+        esp.BoxOutline.Visible = true
+        esp.BoxOutline.Position = position - Vector2.new(1, 1)
+        esp.BoxOutline.Size = Vector2.new(width + 2, height + 2)
         
-        for _, corner in pairs({esp.Corner1, esp.Corner2, esp.Corner3, esp.Corner4}) do
-            corner.Visible = true
-            corner.Color = color
-            corner.Transparency = fadeFactor
-        end
+        esp.Box.Visible = true
+        esp.Box.Position = position
+        esp.Box.Size = Vector2.new(width, height)
+        esp.Box.Color = color
     else
-        for _, corner in pairs({esp.Corner1, esp.Corner2, esp.Corner3, esp.Corner4}) do
-            corner.Visible = false
-        end
+        esp.BoxOutline.Visible = false
+        esp.Box.Visible = false
     end
 
-    -- Actualizar Nombre y Arma (solo en el más cercano para reducir desorden)
-    local yOffset = 0
-    if self.Settings.Names and isClosest then
-        esp.NameText.Visible = not isAiming
+    -- Barra de salud
+    if self.Settings.HealthBars then
+        local health = humanoid.Health / humanoid.MaxHealth
+        local barWidth = 4
+        local barHeight = height * health
+        
+        esp.HealthBarOutline.Visible = true
+        esp.HealthBarOutline.Position = position - Vector2.new(6, 0)
+        esp.HealthBarOutline.Size = Vector2.new(barWidth + 2, height + 2)
+        
+        esp.HealthBar.Visible = true
+        esp.HealthBar.Position = position - Vector2.new(5, 0) + Vector2.new(0, height - barHeight)
+        esp.HealthBar.Size = Vector2.new(barWidth, barHeight)
+        esp.HealthBar.Color = Color3.new(1 - health, health, 0)
+    else
+        esp.HealthBarOutline.Visible = false
+        esp.HealthBar.Visible = false
+    end
+
+    -- Nombre
+    if self.Settings.Names then
+        esp.NameText.Visible = true
         esp.NameText.Text = player.Name
         esp.NameText.Position = position + Vector2.new(width / 2, -self.Settings.TextSize - 2)
         esp.NameText.Color = color
-        esp.NameText.Transparency = fadeFactor
-        yOffset = self.Settings.TextSize + 2
     else
         esp.NameText.Visible = false
     end
 
-    if self.Settings.Weapon and isClosest then
-        local tool = character:FindFirstChildOfClass("Tool")
-        local weaponName = tool and tool.Name or "Sin Arma"
-        esp.WeaponText.Visible = not isAiming
-        esp.WeaponText.Text = "[" .. weaponName .. "]"
-        esp.WeaponText.Position = position + Vector2.new(width / 2, -self.Settings.TextSize - 2 - yOffset)
-        esp.WeaponText.Color = Color3.new(0.7, 0.7, 0.7)
-        esp.WeaponText.Transparency = fadeFactor
+    -- Distancia
+    if self.Settings.Distance then
+        esp.DistanceText.Visible = true
+        esp.DistanceText.Text = string.format("[%d]", distance)
+        esp.DistanceText.Position = position + Vector2.new(width / 2, height + 2)
     else
-        esp.WeaponText.Visible = false
+        esp.DistanceText.Visible = false
     end
 end
 
-function ProfessionalESP:Remove(player)
+-- Eliminar ESP de un jugador
+function SimpleESP:Remove(player)
     local esp = self.Players[player]
     if esp then
-        for _, conn in pairs(esp.Connections) do conn:Disconnect() end
-        for _, drawing in pairs(esp.Drawings) do drawing:Remove() end
+        for _, conn in pairs(esp.Connections) do
+            conn:Disconnect()
+        end
+        for _, drawing in pairs(esp.Drawings) do
+            drawing:Remove()
+        end
         self.Players[player] = nil
     end
 end
 
-function ProfessionalESP:UpdateAll()
-    -- Primero, encontrar al más cercano
-    self:FindClosestPlayer()
-    -- Luego, actualizar a todos con esa información
+-- Actualizar todos los ESPs
+function SimpleESP:UpdateAll()
     for player in pairs(self.Players) do
         self:Update(player)
     end
 end
 
-function ProfessionalESP:Toggle(state)
+-- Alternar ESP
+function SimpleESP:Toggle(state)
     self.Enabled = state
+    
     if state then
         for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer then self:Create(player) end
+            if player ~= LocalPlayer then
+                self:Create(player)
+            end
         end
-        self.PlayerAdded = Players.PlayerAdded:Connect(function(player) self:Create(player) end)
-        self.PlayerRemoving = Players.PlayerRemoving:Connect(function(player) self:Remove(player) end)
-        self.UpdateLoop = RunService.RenderStepped:Connect(function() self:UpdateAll() end)
+        
+        self.PlayerAdded = Players.PlayerAdded:Connect(function(player)
+            self:Create(player)
+        end)
+        
+        self.PlayerRemoving = Players.PlayerRemoving:Connect(function(player)
+            self:Remove(player)
+        end)
+        
+        self.UpdateLoop = RunService.RenderStepped:Connect(function()
+            self:UpdateAll()
+        end)
     else
         if self.PlayerAdded then self.PlayerAdded:Disconnect() end
         if self.PlayerRemoving then self.PlayerRemoving:Disconnect() end
         if self.UpdateLoop then self.UpdateLoop:Disconnect() end
-        for player in pairs(self.Players) do self:Remove(player) end
-        self.ClosestPlayer = nil
+        
+        for player in pairs(self.Players) do
+            self:Remove(player)
+        end
     end
 end
 
--- === MENÚ DE CONFIGURACIÓN CON PREAJUSTES (COMPLETO) ===
+-- === MENÚ DE CONFIGURACIÓN SIMPLE ===
 local function createConfigGui()
     if configGui then
         configGui.Enabled = not configGui.Enabled
@@ -321,22 +262,21 @@ local function createConfigGui()
     configGui.Name = "ESPConfigGui"
     configGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     configGui.ResetOnSpawn = false
-    configGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     configFrame = Instance.new("Frame")
-    configFrame.Size = UDim2.new(0, 320, 0, 500)
-    configFrame.Position = UDim2.new(0.5, -160, 0.5, -250)
+    configFrame.Size = UDim2.new(0, 250, 0, 200)
+    configFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
     configFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
     configFrame.BorderSizePixel = 0
     configFrame.Parent = configGui
-    Instance.new("UICorner", configFrame).CornerRadius = UDim.new(0, 10)
+    Instance.new("UICorner", configFrame).CornerRadius = UDim.new(0, 8)
 
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Text = "CONFIGURACIÓN ESP"
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Text = "Configuración ESP"
     title.TextColor3 = Color3.new(1, 1, 1)
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 18
+    title.TextSize = 16
     title.BackgroundTransparency = 1
     title.Parent = configFrame
 
@@ -344,84 +284,64 @@ local function createConfigGui()
         local button = Instance.new("TextButton")
         button.Size = UDim2.new(1, -20, 0, 30)
         button.Position = UDim2.new(0, 10, 0, yPos)
-        button.Text = optionName .. ": " .. (ProfessionalESP.Settings[optionName] and "ON" or "OFF")
+        button.Text = optionName .. ": " .. (SimpleESP.Settings[optionName] and "ON" or "OFF")
         button.TextColor3 = Color3.new(1, 1, 1)
         button.Font = Enum.Font.Gotham
-        button.TextSize = 14
-        button.BackgroundColor3 = ProfessionalESP.Settings[optionName] and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
+        button.TextSize = 13
+        button.BackgroundColor3 = SimpleESP.Settings[optionName] and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
         button.BorderSizePixel = 0
         button.Parent = configFrame
-        Instance.new("UICorner", button).CornerRadius = UDim.new(0, 5)
+        Instance.new("UICorner", button).CornerRadius = UDim.new(0, 4)
 
         button.MouseButton1Click:Connect(function()
-            ProfessionalESP.Settings[optionName] = not ProfessionalESP.Settings[optionName]
-            button.Text = optionName .. ": " .. (ProfessionalESP.Settings[optionName] and "ON" or "OFF")
-            button.BackgroundColor3 = ProfessionalESP.Settings[optionName] and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
+            SimpleESP.Settings[optionName] = not SimpleESP.Settings[optionName]
+            button.Text = optionName .. ": " .. (SimpleESP.Settings[optionName] and "ON" or "OFF")
+            button.BackgroundColor3 = SimpleESP.Settings[optionName] and Color3.new(0, 0.5, 0) or Color3.new(0.5, 0, 0)
         end)
     end
 
-    local toggleOptions = {"Boxes", "CornerBoxes", "Names", "HealthBars", "Tracers", "Distance", "Weapon", "OffScreenArrows", "TeamCheck"}
-    for i, option in ipairs(toggleOptions) do
-        createToggle(option, 50 + (i-1) * 35)
-    end
-
-    -- Botón de Preajuste Minimalista
-    local presetButton = Instance.new("TextButton")
-    presetButton.Size = UDim2.new(1, -20, 0, 35)
-    presetButton.Position = UDim2.new(0, 10, 0, 380)
-    presetButton.Text = "Aplicar Modo Minimalista"
-    presetButton.TextColor3 = Color3.new(1, 1, 1)
-    presetButton.Font = Enum.Font.GothamBold
-    presetButton.TextSize = 14
-    presetButton.BackgroundColor3 = Color3.fromRGB(0, 0.4, 0.8)
-    presetButton.BorderSizePixel = 0
-    presetButton.Parent = configFrame
-    Instance.new("UICorner", presetButton).CornerRadius = UDim.new(0, 5)
-
-    presetButton.MouseButton1Click:Connect(function()
-        -- Aplicar configuración minimalista
-        ProfessionalESP.Settings.Boxes = false
-        ProfessionalESP.Settings.CornerBoxes = true
-        ProfessionalESP.Settings.Names = true
-        ProfessionalESP.Settings.HealthBars = false
-        ProfessionalESP.Settings.Tracers = false
-        ProfessionalESP.Settings.Distance = false
-        ProfessionalESP.Settings.Weapon = true
-        ProfessionalESP.Settings.OffScreenArrows = true
-        
-        -- Actualizar texto de los botones (requiere refrescar la GUI)
-        configGui:Destroy()
-        configGui = nil
-        createConfigGui() -- Re-abre la GUI con los nuevos valores
-    end)
+    createToggle("Boxes", 40)
+    createToggle("Names", 80)
+    createToggle("HealthBars", 120)
+    createToggle("Distance", 160)
 end
 
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == CONFIG_KEY then
-        createConfigGui()
-    end
-end)
-
--- API para integrar con DrakHub
+-- === API PARA CONTROL EXTERNO ===
 return {
     activate = function()
-        ProfessionalESP:Toggle(true)
+        SimpleESP:Toggle(true)
+        -- Conectar el evento de la tecla F4 al activar
+        if not inputBeganConnection then
+            inputBeganConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                if not gameProcessed and input.KeyCode == CONFIG_KEY then
+                    createConfigGui()
+                end
+            end)
+        end
     end,
+    
     deactivate = function()
-        ProfessionalESP:Toggle(false)
-        -- <<< INICIO DE LA CORRECCIÓN >>>
-        -- Asegurarse de que la GUI de configuración también se destruya
+        -- 1. Desactivar el ESP
+        SimpleESP:Toggle(false)
+        
+        -- 2. Desconectar el evento de F4 para que no se pueda abrir más
+        if inputBeganConnection then
+            inputBeganConnection:Disconnect()
+            inputBeganConnection = nil
+        end
+        
+        -- 3. Destruir la GUI de configuración si existe
         if configGui then
             configGui:Destroy()
             configGui = nil
             configFrame = nil
         end
-        -- <<< FIN DE LA CORRECCIÓN >>>
     end,
+    
     updateSettings = function(settings)
         for k, v in pairs(settings) do
-            if ProfessionalESP.Settings[k] ~= nil then
-                ProfessionalESP.Settings[k] = v
+            if SimpleESP.Settings[k] ~= nil then
+                SimpleESP.Settings[k] = v
             end
         end
     end
