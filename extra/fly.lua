@@ -1,4 +1,4 @@
--- fly.txtss
+-- fly.txt
 -- ADVERTENCIA: Este script proporciona ventajas de movimiento que pueden ser consideradas trampas.
 -- Se proporciona únicamente con fines educativos para demostrar técnicas de scripting en Lua.
 
@@ -13,8 +13,9 @@ local BASE_SPEED = 40
 local BOOST_SPEED = 80
 local VERTICAL_SPEED = 25
 local ACCELERATION = 50
--- CAMBIO CLAVE: Fuerza finita para evitar bugs de colisión
-local BODY_MOVER_FORCE = 4000 -- Una fuerza alta pero finita
+-- NUEVO: Velocidad máxima para evitar inestabilidad física
+local MAX_SPEED = 120 -- Un límite seguro y alto
+local BODY_MOVER_FORCE = 3000 -- Reducido para mayor estabilidad
 
 -- === TECLAS ===
 local BOOST_KEY = Enum.KeyCode.LeftControl
@@ -139,7 +140,7 @@ local function createUI()
     return statusFrame
 end
 
--- === FUNCIÓN PRINCIPAL DE VUELO (CON SEGURIDAD DE COLISIONES) ===
+-- === FUNCIÓN PRINCIPAL DE VUELO (CON LÍMITE DE VELOCIDAD) ===
 local function updateFlight(dt)
     if not flyEnabled or not rootPart or not bodyVelocity or not bodyGyro then return end
 
@@ -159,13 +160,19 @@ local function updateFlight(dt)
         currentSpeed = math.max(currentSpeed - ACCELERATION * dt, targetSpeed)
     end
     
+    -- <<< LA CORRECCIÓN CLAVE >>>
+    -- Limitar la velocidad actual a la velocidad máxima permitida
+    currentSpeed = math.clamp(currentSpeed, 0, MAX_SPEED)
+    -- <<< FIN DE LA CORRECCIÓN >>>
+    
     if statusFrame and statusFrame.Visible then
         local altitudeLabel = statusFrame:FindFirstChild("AltitudeLabel")
         if altitudeLabel then
             altitudeLabel.Text = "ALTITUD: " .. math.floor(rootPart.Position.Y) .. " u"
         end
         if speedFill then
-            local speedPercentage = currentSpeed / BOOST_SPEED
+            -- Usar MAX_SPEED para la barra de progreso
+            local speedPercentage = currentSpeed / MAX_SPEED
             speedFill:TweenSize(UDim2.new(speedPercentage, 0, 1, 0), "Out", "Quad", 0.1, true)
         end
     end
@@ -192,22 +199,20 @@ local function updateFlight(dt)
         targetVelocity = Vector3.new(0, verticalDirection, 0)
     end
     
-    -- Aplicar la velocidad calculada con BodyMovers
     bodyVelocity.Velocity = targetVelocity
     bodyGyro.CFrame = cameraCF
 end
 
--- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO (VERSIÓN FINAL Y CORREGIDA) ===
+-- === FUNCIÓN PARA ACTIVAR/DESACTIVAR EL VUELO ===
 local function toggleFlight()
     flyEnabled = not flyEnabled
     
     if flyEnabled then
         statusFrame.Visible = true
         
-        -- Crear BodyMovers con la nueva fuerza finita
         bodyVelocity = Instance.new("BodyVelocity")
         bodyVelocity.MaxForce = Vector3.new(BODY_MOVER_FORCE, BODY_MOVER_FORCE, BODY_MOVER_FORCE)
-        bodyVelocity.P = 2500 -- Un poco menos de rigidez para que sea más suave
+        bodyVelocity.P = 2500
         bodyVelocity.Parent = rootPart
         
         bodyGyro = Instance.new("BodyGyro")
@@ -222,7 +227,6 @@ local function toggleFlight()
     else
         statusFrame.Visible = false
         
-        -- Desactivar
         if bodyVelocity then bodyVelocity:Destroy(); bodyVelocity = nil end
         if bodyGyro then bodyGyro:Destroy(); bodyGyro = nil end
         
@@ -254,8 +258,8 @@ local function createConfigGui()
     configGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     configFrame = Instance.new("Frame")
-    configFrame.Size = UDim2.new(0, 300, 0, 350)
-    configFrame.Position = UDim2.new(0.5, -150, 0.5, -175)
+    configFrame.Size = UDim2.new(0, 300, 0, 420) -- Un poco más alto para el nuevo slider
+    configFrame.Position = UDim2.new(0.5, -150, 0.5, -210)
     configFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
     configFrame.BorderSizePixel = 0
     configFrame.Parent = configGui
@@ -336,6 +340,7 @@ local function createConfigGui()
         {name = "Velocidad de Boost", value = BOOST_SPEED, min = 20, max = 400, id = "BOOST_SPEED"},
         {name = "Velocidad Vertical", value = VERTICAL_SPEED, min = 10, max = 100, id = "VERTICAL_SPEED"},
         {name = "Aceleración", value = ACCELERATION, min = 10, max = 200, id = "ACCELERATION"},
+        {name = "Velocidad Máxima", value = MAX_SPEED, min = 50, max = 250, id = "MAX_SPEED"}, -- NUEVO
     }
 
     for i, option in ipairs(options) do
@@ -405,6 +410,7 @@ task.spawn(function()
         if _G.BOOST_SPEED then BOOST_SPEED = _G.BOOST_SPEED end
         if _G.VERTICAL_SPEED then VERTICAL_SPEED = _G.VERTICAL_SPEED end
         if _G.ACCELERATION then ACCELERATION = _G.ACCELERATION end
+        if _G.MAX_SPEED then MAX_SPEED = _G.MAX_SPEED end -- Cargar la nueva variable
         task.wait(1)
     end
 end)
