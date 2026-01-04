@@ -1,47 +1,48 @@
--- aimbot.txt
--- ADVERTENCIA: Este es un script de trampa. Usarlo puede resultar en un baneo permanente.
--- Se proporciona únicamente con fines educativos para demostrar técnicas de programación en Lua.
-
--- Servicios esenciales
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
 
--- Variables optimizadas
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local predictionFactor = 0.15
 local minTargetDistance = 5
-local maxFOV = 90 -- Grados (ajustable)
-local smoothingFactor = 0.3 -- Suavizado del movimiento (0=insta, 1=muy lento)
-local humanizationEnabled = true -- Para hacer el movimiento más humano
+local maxFOV = 90
+local smoothingFactor = 0.3
+local humanizationEnabled = true
 local renderStepped
 local keybindConnection
-local playerRemovingConnection -- Para limpiar datos
+local playerRemovingConnection
 local headOffset = Vector3.new(0, 0.2, 0)
 local lastDelta = Vector2.new(0, 0)
+local visibilityCache = {}
+local visibilityCacheDuration = 0.1
+local raycastParams = RaycastParams.new()
+raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+raycastParams.IgnoreWater = true
+local transparentMaterials = {
+    [Enum.Material.Glass] = true,
+    [Enum.Material.ForceField] = true,
+    [Enum.Material.Neon] = true,
+    [Enum.Material.Plastic] = true,
+    [Enum.Material.Air] = true,
+    [Enum.Material.Water] = true
+}
 
--- Sistema de caché para optimización
 local playerCache = {}
-local cacheTimeout = 0.5 -- segundos
+local cacheTimeout = 0.5
 
--- === NUEVO: Tabla para datos personalizados del jugador ===
 local playerData = {}
 
--- Sistema de notificación visual mejorado
 local notificationGui = nil
 local notificationFrame = nil
 local notificationLabel = nil
 local notificationIcon = nil
 local notificationStroke = nil
 
--- GUI de Configuración
 local configGui = nil
 local configFrame = nil
 
--- Crear notificación elegante
 local function createNotification()
     if notificationGui then return end
     
@@ -94,7 +95,6 @@ local function createNotification()
     notificationLabel.Parent = notificationFrame
 end
 
--- Actualizar notificación con estado: "visible", "oculto", o nil (ocultar)
 local function updateNotification(state)
     if not notificationFrame then return end
     
@@ -111,39 +111,44 @@ local function updateNotification(state)
         notificationStroke.Color = Color3.new(0, 1, 0)
     elseif state == "oculto" then
         notificationLabel.Text = "OBJETIVO OCULTO"
-        notificationIcon.ImageColor3 = Color3.new(1, 0.5, 0) -- Naranja para oculto
+        notificationIcon.ImageColor3 = Color3.new(1, 0.5, 0)
         notificationStroke.Color = Color3.new(1, 0.5, 0)
     end
 end
 
--- Verificación profesional de visibilidad con detección de obstáculos
-local function isTargetVisible(character)
+local function now()
+    return os.clock()
+end
+
+local function isTargetVisible(player)
+    local character = player and player.Character
     if not character then return false end
-    
+
+    local cache = visibilityCache[player.UserId]
+    if cache and (now() - cache.time) < visibilityCacheDuration then
+        return cache.visible
+    end
+
     local origin = Camera.CFrame.Position
     local head = character:FindFirstChild("Head")
     if not head then return false end
-    
     local headPosition = head.Position + Vector3.new(0, -0.1, 0)
-    
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+
     raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
-    raycastParams.IgnoreWater = true
-    
+
     local pointsToCheck = {
         headPosition,
         headPosition + Vector3.new(0, -1.5, 0),
         headPosition + Vector3.new(0, -3, 0)
     }
-    
+
     local visiblePoints = 0
-    
+
     for _, point in ipairs(pointsToCheck) do
         local direction = (point - origin).Unit
         local distance = (point - origin).Magnitude
         local result = Workspace:Raycast(origin, direction * distance, raycastParams)
-        
+
         if not result then
             visiblePoints = visiblePoints + 1
         else
@@ -154,146 +159,137 @@ local function isTargetVisible(character)
                 local hitPart = result.Instance
                 local material = hitPart.Material
                 local transparency = hitPart.Transparency
-                
-                local transparentMaterials = {
-                    Enum.Material.Glass, Enum.Material.ForceField,
-                    Enum.Material.Neon, Enum.Material.Plastic,
-                    Enum.Material.Air, Enum.Material.Water
-                }
-                
-                local isTransparent = false
-                for _, mat in ipairs(transparentMaterials) do
-                    if material == mat then isTransparent = true; break end
-                end
-                
-                if isTransparent or transparency > 0.7 or not hitPart.CanCollide then
+
+                local isTransparent = transparentMaterials[material] == true
+                local hasCollision = hitPart.CanCollide and hitPart.CanQuery
+                local isCustomNoCollide = hitPart:GetAttribute("NoAimObstruction") == true
+
+                if isTransparent or transparency > 0.7 or not hasCollision or isCustomNoCollide then
                     visiblePoints = visiblePoints + 1
                 end
             end
         end
     end
-    
-    return visiblePoints >= 2
+
+    local visible = visiblePoints >= 2
+    visibilityCache[player.UserId] = {visible = visible, time = now()}
+    return visible
 end
 
--- Sistema de predicción de segundo orden (CORREGIDO)
+local function clampVelocity(vec, maxMag)
+    local mag = vec.Magnitude
+    if mag > maxMag then
+        return vec.Unit * maxMag
+    end
+    return vec
+end
+
 local function advancedPrediction(target)
     if not target or target == LocalPlayer then return nil end
     local character = target.Character
     if not character then return nil end
     local head = character:FindFirstChild("Head")
     if not head then return nil end
-    
+
     local distance = (head.Position - Camera.CFrame.Position).Magnitude
     if distance < minTargetDistance then return nil end
-    
-    -- === CORRECCIÓN AQUÍ ===
-    -- Asegurarse de que la tabla de datos para este jugador exista
-    if not playerData[target.UserId] then
-        playerData[target.UserId] = {}
-    end
-    if not playerData[target.UserId].PositionHistory then
-        playerData[target.UserId].PositionHistory = {}
-    end
-    
+
+    playerData[target.UserId] = playerData[target.UserId] or {}
+    playerData[target.UserId].PositionHistory = playerData[target.UserId].PositionHistory or {}
+
     local history = playerData[target.UserId].PositionHistory
-    
-    table.insert(history, {position = head.Position, time = tick()})
-    if #history > 5 then table.remove(history, 1) end
-    
+    local currentTime = now()
+
+    table.insert(history, {position = head.Position, time = currentTime})
+    while history[1] and (currentTime - history[1].time) > 0.35 do
+        table.remove(history, 1)
+    end
+
     if #history >= 2 then
         local newest = history[#history]
-        local oldest = history[#history - 1]
-        local timeDiff = newest.time - oldest.time
-        local velocity = (newest.position - oldest.position) / timeDiff
-        
+        local previous = history[#history - 1]
+        local timeDiff = math.max(newest.time - previous.time, 1e-3)
+        local velocity = clampVelocity((newest.position - previous.position) / timeDiff, 75)
+
+        playerData[target.UserId].LastVelocity = velocity
+
         if #history >= 3 then
             local mid = history[#history - 1]
             local oldest = history[#history - 2]
-            local oldVelocity = (mid.position - oldest.position) / (mid.time - oldest.time)
-            local acceleration = (velocity - oldVelocity) / timeDiff
-            
-            return head.Position + (velocity * predictionFactor) + (0.5 * acceleration * predictionFactor^2) + headOffset
+            local oldVelocity = clampVelocity((mid.position - oldest.position) / math.max(mid.time - oldest.time, 1e-3), 75)
+            local acceleration = clampVelocity((velocity - oldVelocity) / timeDiff, 120)
+            return head.Position + (velocity * predictionFactor) + (0.5 * acceleration * predictionFactor * predictionFactor) + headOffset
         else
             return head.Position + (velocity * predictionFactor) + headOffset
         end
     end
-    
+
     return head.Position + headOffset
 end
 
--- Sistema de cálculo de amenaza (simplificado)
 local function calculateThreatLevel(player)
     local character = player.Character
     if not character then return 0 end
-    
+
     local head = character:FindFirstChild("Head")
     if not head then return 0 end
-    
+
     local distance = (head.Position - Camera.CFrame.Position).Magnitude
-    
-    -- Factor distancia (más cerca = más amenaza)
+
     local threatLevel = math.max(0, 100 - distance)
-    
-    -- Factor si me está apuntando (cálculo simple con producto escalar)
+
     local rootPart = character:FindFirstChild("HumanoidRootPart")
     local myRootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if rootPart and myRootPart then
         local lookVector = rootPart.CFrame.LookVector
         local toPlayerVector = (myRootPart.Position - rootPart.Position).Unit
         local dotProduct = lookVector:Dot(toPlayerVector)
-        
-        if dotProduct > 0.8 then -- Si está mirando aproximadamente hacia mí
+
+        if dotProduct > 0.8 then
             threatLevel = threatLevel + 30
         end
     end
-    
+
     return math.min(100, threatLevel)
 end
 
--- Sistema de suavizado de movimiento
-local function smoothAim(targetScreenPos)
+local function smoothAim(targetScreenPos, factor)
     local mousePos = UserInputService:GetMouseLocation()
     local delta = (targetScreenPos - mousePos)
-    local smoothedDelta = lastDelta:lerp(delta, smoothingFactor)
+    local smoothedDelta = lastDelta:lerp(delta, factor or smoothingFactor)
     lastDelta = smoothedDelta
     mousemoverel(smoothedDelta.X, smoothedDelta.Y)
 end
 
--- Sistema de humanización para evadir anti-cheats
-local function humanizeAim(targetScreenPos)
+local function humanizeAim(targetScreenPos, factor)
     if not humanizationEnabled then
-        smoothAim(targetScreenPos)
+        smoothAim(targetScreenPos, factor)
         return
     end
     
     local mousePos = UserInputService:GetMouseLocation()
     local delta = (targetScreenPos - mousePos)
     
-    -- Añadir jitter aleatorio
-    local jitter = Vector2.new(math.random(-50, 50) / 100, math.random(-50, 50) / 100)
+    local jitter = Vector2.new(math.random(-20, 20) / 100, math.random(-20, 20) / 100)
     delta = delta + jitter
     
-    -- Añadir retraso variable
     local delay = math.random(5, 15) / 1000
     task.wait(delay)
     
-    smoothAim(targetScreenPos)
+    smoothAim(targetScreenPos, factor)
 end
 
--- === FUNCIÓNES DE CACHÉ ===
 local function isCacheValid(player)
     local cached = playerCache[player.UserId]
-    return cached and (tick() - cached.timestamp) < cacheTimeout
+    return cached and (now() - cached.timestamp) < cacheTimeout
 end
 
 local function updateCache(player, position)
     if position then
-        playerCache[player.UserId] = {position = position, timestamp = tick()}
+        playerCache[player.UserId] = {position = position, timestamp = now()}
     end
 end
 
--- Sistema de seguimiento mejorado con FOV y puntuación
 local function precisionAim()
     local bestTarget = nil
     local bestHeadPos = nil
@@ -306,8 +302,10 @@ local function precisionAim()
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
         if not player.Character then continue end
+
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid and humanoid.Health <= 0 then continue end
         
-        -- Usar caché
         local headPos
         if isCacheValid(player) then
             headPos = playerCache[player.UserId].position
@@ -324,13 +322,18 @@ local function precisionAim()
         local screenPoint = Vector2.new(screenPos.X, screenPos.Y)
         local distanceFromCenter = (screenPoint - center).Magnitude
         if distanceFromCenter > maxRadius then continue end
+
+        local toTarget = (headPos - Camera.CFrame.Position)
+        if toTarget.Magnitude < 1e-3 then continue end
+        local lookDir = Camera.CFrame.LookVector
+        local angle = math.deg(math.acos(math.clamp(lookDir:Dot(toTarget.Unit), -1, 1)))
+        if angle > (maxFOV / 2) then continue end
         
         local mousePos = UserInputService:GetMouseLocation()
         local screenDistance = (screenPoint - mousePos).Magnitude
         
-        -- Calcular puntuación: combina distancia y amenaza
         local threat = calculateThreatLevel(player)
-        local score = screenDistance * (1 - threat / 200) -- La amenaza reduce la puntuación
+        local score = screenDistance * (1 - threat / 200)
         
         if score < bestScore then
             bestScore = score
@@ -339,10 +342,9 @@ local function precisionAim()
         end
     end
     
-    -- Verificar visibilidad y actualizar notificación
     local visibilityState = nil
     if bestTarget and bestTarget.Character then
-        if isTargetVisible(bestTarget.Character) then
+        if isTargetVisible(bestTarget) then
             visibilityState = "visible"
         else
             visibilityState = "oculto"
@@ -353,11 +355,14 @@ local function precisionAim()
     if bestTarget and bestHeadPos and visibilityState == "visible" then
         local screenPos = Camera:WorldToViewportPoint(bestHeadPos)
         local targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
-        humanizeAim(targetScreenPos)
+        local velocity = playerData[bestTarget.UserId] and playerData[bestTarget.UserId].LastVelocity
+        local speed = velocity and velocity.Magnitude or 0
+        local distance = (bestHeadPos - Camera.CFrame.Position).Magnitude
+        local dynamicSmoothing = math.clamp(smoothingFactor * (1 + (distance / 120)) / math.max(1, speed / 25), 0.05, 1)
+        humanizeAim(targetScreenPos, dynamicSmoothing)
     end
 end
 
--- Loop principal
 local function stableLoop()
     if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
         precisionAim()
@@ -366,7 +371,6 @@ local function stableLoop()
     end
 end
 
--- Crear GUI de Configuración
 local function createConfigGui()
     if configGui then
         configGui.Enabled = not configGui.Enabled
@@ -469,7 +473,6 @@ local function createConfigGui()
         createSlider(option, 60 + (i-1) * 80)
     end
     
-    -- Botón de humanización
     local humanizeButton = Instance.new("TextButton")
     humanizeButton.Size = UDim2.new(1, -20, 0, 30)
     humanizeButton.Position = UDim2.new(0, 10, 0, 380)
@@ -489,7 +492,6 @@ local function createConfigGui()
     end)
 end
 
--- API para el hub
 return {
     activate = function()
         createNotification()
@@ -503,11 +505,11 @@ return {
                 end
             end)
         end
-        -- === NUEVO: Conexión para limpiar datos de jugadores que se van ===
         if not playerRemovingConnection then
             playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
                 playerData[player.UserId] = nil
                 playerCache[player.UserId] = nil
+                visibilityCache[player.UserId] = nil
             end)
         end
     end,
@@ -533,9 +535,9 @@ return {
             configGui:Destroy()
             configGui = nil
         end
-        -- Limpiar todas las tablas al desactivar
         playerCache = {}
         playerData = {}
+        visibilityCache = {}
     end,
     
     configure = function(options)
